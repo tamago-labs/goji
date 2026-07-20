@@ -1,0 +1,11 @@
+frontend/
+out/
+test/
+.github/
+AGENTS.md
+.prettierrc
+.gitignore
+.gitattributes
+LICENSE
+NOTICE
+README.md

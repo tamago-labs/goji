@@ -2,7 +2,7 @@
 
 **Visual Payment Flows for DAOs & Teams**
 
-Goji turns payroll, contributor payments, and one-off transfers into something you can actually *see* — a canvas where wallets, recipients, contracts, and payslips connect like a flow diagram, instead of a spreadsheet no one fully trusts.
+Goji turns payroll, contributor payments, and one-off transfers into something you can actually _see_ — a canvas where wallets, recipients, contracts, and payslips connect like a flow diagram, instead of a spreadsheet no one fully trusts.
 
 ---
 
@@ -10,7 +10,7 @@ Goji turns payroll, contributor payments, and one-off transfers into something y
 
 Most DAOs and small teams run payments through a patchwork of tools: a spreadsheet for who-gets-paid-what, a block explorer to confirm it landed, a Discord thread for the contract, and a multisig app for the actual signature. Nothing shows the full picture in one place, and reviewing a payout means trusting a wall of addresses and numbers rather than seeing the relationships behind them.
 
-Existing crypto payroll and accounting tools solve pieces of this — compliance, reconciliation, tax reporting — but they're still forms and dashboards. None of them let you *draw* a payment flow and *see* it before it moves.
+Existing crypto payroll and accounting tools solve pieces of this — compliance, reconciliation, tax reporting — but they're still forms and dashboards. None of them let you _draw_ a payment flow and _see_ it before it moves.
 
 ## What Goji does
 

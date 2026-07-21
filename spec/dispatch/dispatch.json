@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "offset": 0,
+  "schema": [
+    {
+      "id": 0,
+      "name": "@goji/add-writer",
+      "requestType": "@goji/writer",
+      "version": 1
+    },
+    {
+      "id": 1,
+      "name": "@goji/add-invite",
+      "requestType": "@goji/invite",
+      "version": 1
+    },
+    {
+      "id": 2,
+      "name": "@goji/add-board",
+      "requestType": "@goji/board",
+      "version": 1
+    },
+    {
+      "id": 3,
+      "name": "@goji/rename-board",
+      "requestType": "@goji/board-rename",
+      "version": 1
+    },
+    {
+      "id": 4,
+      "name": "@goji/delete-board",
+      "requestType": "@goji/board-delete",
+      "version": 1
+    },
+    {
+      "id": 5,
+      "name": "@goji/add-card",
+      "requestType": "@goji/card",
+      "version": 1
+    },
+    {
+      "id": 6,
+      "name": "@goji/update-card",
+      "requestType": "@goji/card-update",
+      "version": 1
+    },
+    {
+      "id": 7,
+      "name": "@goji/remove-card",
+      "requestType": "@goji/card-remove",
+      "version": 1
+    },
+    {
+      "id": 8,
+      "name": "@goji/add-connection",
+      "requestType": "@goji/connection-add",
+      "version": 1
+    },
+    {
+      "id": 9,
+      "name": "@goji/remove-connection",
+      "requestType": "@goji/connection-remove",
+      "version": 1
+    },
+    {
+      "id": 10,
+      "name": "@goji/add-chat",
+      "requestType": "@goji/chat-msg",
+      "version": 1
+    },
+    {
+      "id": 11,
+      "name": "@goji/remove-chats",
+      "requestType": "@goji/chats-remove",
+      "version": 1
+    },
+    {
+      "id": 12,
+      "name": "@goji/update-identity",
+      "requestType": "@goji/identity",
+      "version": 1
+    }
+  ]
+}

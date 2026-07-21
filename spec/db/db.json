@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "offset": 0,
+  "schema": [
+    {
+      "name": "boards",
+      "namespace": "goji",
+      "id": 0,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/board",
+      "derived": false,
+      "key": ["id"],
+      "trigger": null
+    },
+    {
+      "name": "cards",
+      "namespace": "goji",
+      "id": 1,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/card",
+      "derived": false,
+      "key": ["id"],
+      "trigger": null
+    },
+    {
+      "name": "connections",
+      "namespace": "goji",
+      "id": 2,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/connection",
+      "derived": false,
+      "key": ["id"],
+      "trigger": null
+    },
+    {
+      "name": "chat",
+      "namespace": "goji",
+      "id": 3,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/chat-msg",
+      "derived": false,
+      "key": ["id"],
+      "trigger": null
+    },
+    {
+      "name": "invites",
+      "namespace": "goji",
+      "id": 4,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/invite",
+      "derived": false,
+      "key": ["id"],
+      "trigger": null
+    },
+    {
+      "name": "identity",
+      "namespace": "goji",
+      "id": 5,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/identity",
+      "derived": false,
+      "key": ["writerKey"],
+      "trigger": null
+    }
+  ]
+}

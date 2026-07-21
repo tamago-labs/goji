@@ -1,12 +1,12 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme inline {
-  --color-lavender: #F2F0FA;
-  --color-ink: #2B2440;
-  --color-mint: #7FD9B0;
-  --color-coral: #FF8A73;
-  --color-violet: #8B7FD6;
-  --color-card: #FFFFFF;
+  --color-lavender: #f2f0fa;
+  --color-ink: #2b2440;
+  --color-mint: #7fd9b0;
+  --color-coral: #ff8a73;
+  --color-violet: #8b7fd6;
+  --color-card: #ffffff;
   --font-display: var(--font-fredoka);
   --font-body: var(--font-dm-sans);
 }

@@ -1,9 +1,9 @@
-import StartPage from "../components/start/StartPage";
+import StartPage from '../components/start/StartPage'
 
 export const metadata = {
-  title: "Goji — Your payment flows",
-};
+  title: 'Goji — Your payment flows'
+}
 
 export default function Page() {
-  return <StartPage />;
+  return <StartPage />
 }

@@ -2,6 +2,8 @@ frontend/
 out/
 test/
 .github/
+.goji-storage/
+tmp-guest/
 AGENTS.md
 .prettierrc
 .gitignore
@@ -9,3 +11,5 @@ AGENTS.md
 LICENSE
 NOTICE
 README.md
+spec/
+arc-stablecoin-fx/

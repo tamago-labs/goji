@@ -11,8 +11,9 @@ const GojiDispatch = require('../spec/dispatch')
 const GojiDb = require('../spec/db')
 
 const PORT = parseInt(process.argv.find((a, i) => process.argv[i - 1] === '--port') || '3001', 10)
-const isGuest = process.argv.includes('--guest')
-const INVITE = process.argv.find((a, i) => process.argv[i - 1] === '--join') || null
+const isGuest = process.argv.includes('--guest') || process.argv.includes('--join')
+const joinIdx = process.argv.indexOf('--join')
+const INVITE = joinIdx !== -1 ? process.argv[joinIdx + 1] : null
 const NAME = process.argv.find((a, i) => process.argv[i - 1] === '--name') || null
 const STORAGE = isGuest ? './tmp-guest' : './.goji-storage'
 
@@ -370,6 +371,7 @@ const readline = require('readline')
 
 async function main() {
   console.log(`goji v0.1.0`)
+  console.log(`args: ${process.argv.slice(2).join(' ')}`)
   console.log(`mode: ${isGuest ? 'guest' : 'host'}`)
   console.log(`port: ${PORT}`)
 

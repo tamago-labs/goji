@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import CardCanvas from "./CardCanvas";
 
 const fadeUp = (delay = 0) => ({
@@ -38,12 +39,12 @@ export default function Hero() {
           USDC moves.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className="flex gap-3.5">
-          <a
-            href="#"
+          <Link
+            href="/start"
             className="bg-ink text-lavender px-[26px] py-[15px] rounded-3xl text-[15px] font-medium hover:opacity-90 transition-opacity"
           >
             Start a board
-          </a>
+          </Link>
           <a
             href="#"
             className="text-ink text-[15px] font-medium py-[15px] px-2.5 hover:opacity-70 transition-opacity"

@@ -104,8 +104,6 @@ class GojiRoom {
       }))
     })
     this.router.add('@goji/delete-board', async (data, ctx) => {
-      const boards = await ctx.view.find('@goji/boards', {}).toArray()
-      if (boards.length <= 1) return
       const cards = await ctx.view.find('@goji/cards', {}).toArray()
       for (const c of cards) {
         if (b4a.equals(c.boardId, data.id)) await ctx.view.delete('@goji/cards', { id: c.id })
@@ -471,6 +469,17 @@ async function main() {
     const board = { id, name: req.body.name || 'Untitled', createdAt: now, updatedAt: now }
     await room.appendBoard({ type: 'add-board', board })
     res.json(board)
+  })
+
+  app.put('/api/boards/:id', async (req, res) => {
+    await room.appendBoard({ type: 'rename-board', id: req.params.id, name: req.body.name, at: Date.now() })
+    res.json({ ok: true })
+  })
+
+  app.delete('/api/boards/:id', async (req, res) => {
+    await room.appendBoard({ type: 'delete-board', id: req.params.id })
+    wsBroadcast({ type: 'board:deleted', id: req.params.id })
+    res.json({ ok: true })
   })
 
   app.get('/api/cards', async (req, res) => {

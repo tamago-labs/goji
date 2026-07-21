@@ -1,13 +1,19 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { DndContext, type DragEndEvent } from '@dnd-kit/core'
+import { motion, AnimatePresence } from 'framer-motion'
 import Canvas from './Canvas'
 import CanvasCard from './CanvasCard'
 import CanvasLines from './CanvasLines'
 import Toolbar from './Toolbar'
 import AddCardPopover from './AddCardPopover'
 import { type FlowCard, type Connection, type CardCategory } from './types'
+
+const API = typeof window !== 'undefined'
+  ? localStorage.getItem('goji-api-url') || 'http://localhost:3001'
+  : 'http://localhost:3001'
 
 let nextId = 1
 function genId() {
@@ -20,12 +26,14 @@ function genConnId() {
 }
 
 interface FlowBuilderProps {
+  boardId?: string
   initialCards?: FlowCard[]
   initialConnections?: Connection[]
   flowName?: string
 }
 
 export default function FlowBuilder({
+  boardId,
   initialCards = [],
   initialConnections = [],
   flowName = 'Untitled flow'
@@ -37,27 +45,169 @@ export default function FlowBuilder({
   const [name, setName] = useState(flowName)
   const [zoom, setZoom] = useState(1)
   const [showAddCard, setShowAddCard] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const wsRef = useRef<WebSocket | null>(null)
+  const boardIdRef = useRef(boardId)
+  const router = useRouter()
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { delta, active } = event
-    const placementId = active.data.current?.placementId
-    if (!placementId) return
-    setCards((prev) =>
-      prev.map((c) => (c.id === placementId ? { ...c, x: c.x + delta.x, y: c.y + delta.y } : c))
-    )
-  }, [])
+  // Load data from API on mount
+  useEffect(() => {
+    if (!boardId) return
 
-  const addCard = useCallback((category: CardCategory) => {
-    const id = genId()
-    const templates: Record<CardCategory, { title: string; fields: Record<string, string> }> = {
-      wallet: { title: 'Wallet', fields: { address: '', balance: '' } },
-      recipient: { title: 'Recipient', fields: { address: '', amount: '', doc: '' } },
-      gate: { title: 'Multisig Gate', fields: { required: '2', total: '3' } }
+    async function load() {
+      try {
+        const [cardsRes, connsRes] = await Promise.all([
+          fetch(`${API}/api/cards?boardId=${boardId}`),
+          fetch(`${API}/api/connections?boardId=${boardId}`)
+        ])
+        if (cardsRes.ok) {
+          const loadedCards = await cardsRes.json()
+          if (loadedCards.length > 0) setCards(loadedCards)
+        }
+        if (connsRes.ok) {
+          const loadedConns = await connsRes.json()
+          if (loadedConns.length > 0) setConnections(loadedConns)
+        }
+      } catch (err) {
+        console.error('[canvas] failed to load:', err)
+      }
     }
-    const t = templates[category]
-    setCards((prev) => [
-      ...prev,
-      {
+    load()
+  }, [boardId])
+
+  // WebSocket for real-time sync
+  useEffect(() => {
+    if (!API) return
+    const wsUrl = API.replace('http', 'ws')
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'card:added' && msg.card.boardId === boardIdRef.current) {
+          setCards((prev) => {
+            if (prev.some((c) => c.id === msg.card.id)) return prev
+            return [...prev, msg.card]
+          })
+        } else if (msg.type === 'card:updated' && msg.id) {
+          setCards((prev) =>
+            prev.map((c) => (c.id === msg.id ? { ...c, ...msg.patch } : c))
+          )
+        } else if (msg.type === 'card:deleted' && msg.id) {
+          setCards((prev) => prev.filter((c) => c.id !== msg.id))
+          setConnections((prev) => prev.filter((c) => c.from !== msg.id && c.to !== msg.id))
+        } else if (msg.type === 'connection:added' && msg.connection) {
+          setConnections((prev) => {
+            if (prev.some((c) => c.id === msg.connection.id)) return prev
+            return [...prev, msg.connection]
+          })
+        } else if (msg.type === 'connection:deleted' && msg.id) {
+          setConnections((prev) => prev.filter((c) => c.id !== msg.id))
+        }
+      } catch {}
+    }
+
+    ws.onclose = () => {
+      setTimeout(() => {
+        if (wsRef.current === ws) {
+          wsRef.current = new WebSocket(wsUrl)
+        }
+      }, 3000)
+    }
+
+    return () => {
+      ws.close()
+      wsRef.current = null
+    }
+  }, [API])
+
+  const saveCard = useCallback(
+    async (card: FlowCard) => {
+      if (!boardId) return
+      try {
+        await fetch(`${API}/api/cards`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...card, boardId })
+        })
+      } catch {}
+    },
+    [boardId, API]
+  )
+
+  const updateCard = useCallback(
+    async (id: string, patch: Partial<FlowCard>) => {
+      try {
+        await fetch(`${API}/api/cards/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patch })
+        })
+      } catch {}
+    },
+    [API]
+  )
+
+  const deleteCardApi = useCallback(
+    async (id: string) => {
+      try {
+        await fetch(`${API}/api/cards/${id}`, { method: 'DELETE' })
+      } catch {}
+    },
+    [API]
+  )
+
+  const saveConnection = useCallback(
+    async (conn: Connection) => {
+      if (!boardId) return
+      try {
+        await fetch(`${API}/api/connections`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...conn, boardId })
+        })
+      } catch {}
+    },
+    [boardId, API]
+  )
+
+  const deleteConnectionApi = useCallback(
+    async (id: string) => {
+      try {
+        await fetch(`${API}/api/connections/${id}`, { method: 'DELETE' })
+      } catch {}
+    },
+    [API]
+  )
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { delta, active } = event
+      const placementId = active.data.current?.placementId
+      if (!placementId) return
+      setCards((prev) => {
+        const updated = prev.map((c) =>
+          c.id === placementId ? { ...c, x: c.x + delta.x, y: c.y + delta.y } : c
+        )
+        const card = updated.find((c) => c.id === placementId)
+        if (card) updateCard(card.id, { x: card.x, y: card.y })
+        return updated
+      })
+    },
+    [updateCard]
+  )
+
+  const addCard = useCallback(
+    (category: CardCategory) => {
+      const id = genId()
+      const templates: Record<CardCategory, { title: string; fields: Record<string, string> }> = {
+        wallet: { title: 'Wallet', fields: { address: '', balance: '' } },
+        recipient: { title: 'Recipient', fields: { address: '', amount: '', doc: '' } },
+        gate: { title: 'Multisig Gate', fields: { required: '2', total: '3' } }
+      }
+      const t = templates[category]
+      const card: FlowCard = {
         id,
         category,
         title: t.title,
@@ -65,16 +215,20 @@ export default function FlowBuilder({
         y: 150 + Math.random() * 100,
         fields: { ...t.fields }
       }
-    ])
-  }, [])
+      setCards((prev) => [...prev, card])
+      saveCard(card)
+    },
+    [saveCard]
+  )
 
   const deleteCard = useCallback(
     (id: string) => {
       setCards((prev) => prev.filter((c) => c.id !== id))
       setConnections((prev) => prev.filter((c) => c.from !== id && c.to !== id))
       if (selected === id) setSelected(null)
+      deleteCardApi(id)
     },
-    [selected]
+    [selected, deleteCardApi]
   )
 
   const handlePortClick = useCallback(
@@ -91,7 +245,6 @@ export default function FlowBuilder({
           return
         }
 
-        // Validate connection rules
         const valid =
           (fromCard.category === 'wallet' &&
             (toCard.category === 'gate' || toCard.category === 'recipient')) ||
@@ -100,35 +253,62 @@ export default function FlowBuilder({
         if (valid) {
           const exists = connections.some((c) => c.from === connectFrom && c.to === cardId)
           if (!exists) {
-            setConnections((prev) => [
-              ...prev,
-              {
-                id: genConnId(),
-                from: connectFrom,
-                fromPort: 'output',
-                to: cardId,
-                toPort: 'input'
-              }
-            ])
+            const conn: Connection = {
+              id: genConnId(),
+              from: connectFrom,
+              fromPort: 'output',
+              to: cardId,
+              toPort: 'input'
+            }
+            setConnections((prev) => [...prev, conn])
+            saveConnection(conn)
           }
         }
         setConnectFrom(null)
       }
     },
-    [connectFrom, connections, cards]
+    [connectFrom, connections, cards, saveConnection]
   )
 
-  const deleteConnection = useCallback((id: string) => {
-    setConnections((prev) => prev.filter((c) => c.id !== id))
-  }, [])
+  const deleteConnection = useCallback(
+    (id: string) => {
+      setConnections((prev) => prev.filter((c) => c.id !== id))
+      deleteConnectionApi(id)
+    },
+    [deleteConnectionApi]
+  )
+
+  const handleNameChange = useCallback(
+    (newName: string) => {
+      setName(newName)
+      const id = boardIdRef.current
+      if (id) {
+        fetch(`${API}/api/boards/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName })
+        }).catch(() => {})
+      }
+    },
+    [API]
+  )
+
+  const deleteBoard = useCallback(async () => {
+    if (!boardId) return
+    try {
+      await fetch(`${API}/api/boards/${boardId}`, { method: 'DELETE' })
+      router.push('/start')
+    } catch {}
+  }, [boardId, API, router])
 
   return (
     <div className='h-screen flex flex-col bg-lavender'>
       <div className='relative'>
         <Toolbar
           flowName={name}
-          onNameChange={setName}
+          onNameChange={handleNameChange}
           onAddCard={() => setShowAddCard(!showAddCard)}
+          onSettings={() => setShowSettings(true)}
           zoom={zoom}
           onZoomChange={setZoom}
         />
@@ -186,6 +366,44 @@ export default function FlowBuilder({
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {showSettings && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 bg-black/30 z-50'
+              onClick={() => setShowSettings(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] p-6 w-[380px]'
+            >
+              <div className='flex items-center justify-between mb-5'>
+                <h3 className='font-display text-lg font-semibold'>Board Settings</h3>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
+                >
+                  &times;
+                </button>
+              </div>
+
+              <button
+                onClick={deleteBoard}
+                className='w-full px-4 py-2.5 bg-coral/10 text-coral text-sm font-medium rounded-xl hover:bg-coral/20 transition-colors'
+              >
+                Delete Board
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

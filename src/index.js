@@ -417,7 +417,8 @@ async function main() {
   console.log(`[swarm] DHT bootstrap nodes: ${swarm.dht?.bootstrap?.length || 'default'}`)
   console.log(`[swarm] peer ID: ${z32.encode(room.localBase.key)}`)
 
-  const identityName = NAME || `User-${room.localBase.key.toString('hex').slice(-4)}`
+  const identityPath = require('path').join(STORAGE, 'identity.json')
+  let identityName = NAME || await loadIdentity(identityPath) || `User-${room.localBase.key.toString('hex').slice(-4)}`
   await room.appendIdentity({ displayName: identityName })
 
   const inviteCode = await room.getInvite()
@@ -449,6 +450,8 @@ async function main() {
       timestamp: Date.now()
     })
   )
+
+  app.get('/api/username', (req, res) => res.json({ name: identityName }))
 
   app.get('/api/boards', async (req, res) => {
     const boards = await room.getBoards()
@@ -550,6 +553,17 @@ async function main() {
     res.json({ ok: true })
   })
 
+  app.put('/api/username', async (req, res) => {
+    const { name } = req.body
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'name required' })
+    }
+    identityName = name
+    await saveIdentity(identityPath, name)
+    await room.appendIdentity({ displayName: name })
+    res.json({ ok: true, name })
+  })
+
   const server = app.listen(PORT, () => {
     console.log(`[goji] HTTP  http://localhost:${PORT}/api/health`)
     console.log(`[goji] WS    ws://localhost:${PORT}\n`)
@@ -592,6 +606,22 @@ async function ensureDefaultBoard(room) {
     board: { id: b4a.toString(id, 'hex'), name: 'Untitled', createdAt: now, updatedAt: now }
   })
   console.log('[goji] seeded default board')
+}
+
+async function loadIdentity(path) {
+  try {
+    const data = await require('fs').promises.readFile(path, 'utf-8')
+    const json = JSON.parse(data)
+    return json.name || null
+  } catch {
+    return null
+  }
+}
+
+async function saveIdentity(path, name) {
+  const dir = require('path').dirname(path)
+  await require('fs').promises.mkdir(dir, { recursive: true })
+  await require('fs').promises.writeFile(path, JSON.stringify({ name }))
 }
 
 main().catch((err) => {

@@ -17,3 +17,15 @@ body {
   font-family: var(--font-body);
   overflow-x: hidden;
 }
+
+@keyframes marble-orbit {
+  0%   { transform: translate(-50%, -50%) translate(0px, 0px); }
+  25%  { transform: translate(-50%, -50%) translate(5px, -3px); }
+  50%  { transform: translate(-50%, -50%) translate(0px, -6px); }
+  75%  { transform: translate(-50%, -50%) translate(-5px, -3px); }
+  100% { transform: translate(-50%, -50%) translate(-5px, -3px); }
+}
+
+@keyframes marble-hold {
+  0%, 100% { transform: translate(-50%, -50%) translate(-5px, -3px); }
+}

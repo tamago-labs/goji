@@ -23,19 +23,19 @@ export default function Hero() {
           {...fadeUp(0.1)}
           className="font-display text-[50px] font-semibold leading-[1.12] mb-[22px]"
         >
-          Payroll,
+          Payments,
           <br />
           <span className="underline decoration-mint decoration-[6px] underline-offset-[4px]">
-            sketched out.
+            made visual
           </span>
         </motion.h1>
         <motion.p
           {...fadeUp(0.2)}
           className="text-[17px] leading-[1.6] text-ink/70 max-w-[420px] mb-[34px]"
         >
-          Drag a wallet. Connect a contributor. Attach the invoice. Your
-          contributor payments, laid out like they actually work — then sent
-          straight from your Safe.
+          Goji turns a sentence or a spreadsheet into a live payment canvas
+          where every wallet, payment, and contract is reviewed together before
+          USDC moves.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className="flex gap-3.5">
           <a

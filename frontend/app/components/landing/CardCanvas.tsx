@@ -22,7 +22,7 @@ export default function CardCanvas() {
   return (
     <div className="relative h-[420px]">
       <svg
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full hidden md:block"
         viewBox="0 0 400 420"
         fill="none"
       >

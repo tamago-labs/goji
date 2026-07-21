@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Goji — Node Garden",
+  title: "Goji — Visual Payment Flows for DAOs & Teams",
   description: "Payroll, sketched out.",
 };
 

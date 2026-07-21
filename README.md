@@ -1,150 +1,48 @@
-# hello-pear-bare
+# Goji
 
-> Pear Hello World for Standalone Bare Processes with `pear-runtime` worker
+**Visual Payment Flows for DAOs & Teams**
 
-End-to-end boilerplate for embedding [pear-runtime] into the [Bare] worker of a [Bare] CLI with peer-to-peer OTA update support.
+Goji turns payroll, contributor payments, and one-off transfers into something you can actually *see* — a canvas where wallets, recipients, contracts, and payslips connect like a flow diagram, instead of a spreadsheet no one fully trusts.
 
-- Peer-to-Peer deployment with [pear][pear-docs] CLI
-- Peer-to-Peer Over-the-Air updates with [`pear-runtime`][pear-runtime] module
-- Bare worker process via `PearRuntime.run(...)`
-- Cross-platform standalone distributables via [`bare-build`][bare-build]
+---
 
-## Variants
+## The problem
 
-- (current) [`main`](https://github.com/holepunchto/hello-pear-bare/tree/main): runs `pear-runtime` inside a Bare worker thread.
-- [`single-thread`](https://github.com/holepunchto/hello-pear-bare/tree/variant/single-thread): workerless with `pear-runtime` updates.
+Most DAOs and small teams run payments through a patchwork of tools: a spreadsheet for who-gets-paid-what, a block explorer to confirm it landed, a Discord thread for the contract, and a multisig app for the actual signature. Nothing shows the full picture in one place, and reviewing a payout means trusting a wall of addresses and numbers rather than seeing the relationships behind them.
 
-## Table of Contents
+Existing crypto payroll and accounting tools solve pieces of this — compliance, reconciliation, tax reporting — but they're still forms and dashboards. None of them let you *draw* a payment flow and *see* it before it moves.
 
-- [OS Support](#os-support)
-- [Requirements](#requirements)
-- [Development](#development)
-  - [Install Dependencies](#install-dependencies)
-  - [Create an upgrade link](#create-an-upgrade-link)
-  - [Start](#start)
-- [Architecture](#architecture)
-  - [Updates](#updates)
-  - [Workers](#workers)
-- [Peer-to-Peer Deployments](#peer-to-peer-deployments)
-- [Installing Distributables](#installing-distributables)
-- [Scripts](#scripts)
-- [Project Structure](#project-structure)
-- [Troubleshooting](#troubleshooting)
+## What Goji does
 
-## OS Support
+Describe who needs to get paid — in plain language or a spreadsheet — and Goji drafts the flow for you: a wallet connected to recipients, each carrying its amount, schedule, and any attached document (a contract, an invoice, a payslip). You review it, edit anything that's wrong, and approve it. Once approved, the flow executes and settles instantly in USDC.
 
-- **macOS** — arm64, x64
-- **Linux** — arm64, x64
-- **Windows** — arm64, x64
+Because the flow is visual, every reviewer — a co-signer, a finance lead, a teammate — can look at the same canvas and understand exactly where money is going and why, before anyone has to trust a transaction hash.
 
-## Requirements
+## Who it's for
 
-- `npm` via [Node.js][nodejs]
-- [pear][pear-docs] - `npx pear`
+- **DAOs** paying contributors and grant recipients out of a shared treasury, where more than one person needs to review and approve before funds move.
+- **Small web3 teams** running recurring contributor payroll without the overhead of a full compliance/accounting platform.
+- **Freelancers and clients** who want the contract, the payment, and the receipt to live in one place instead of scattered across email and chat.
+- **Anyone splitting a payment peer-to-peer** — a shared cost, a one-off transfer — who wants something as simple as drawing it out.
 
-## Development
+## Use cases
 
-### Install Dependencies
+- **Contributor payroll** — recurring stablecoin payments to a fixed set of people, drafted automatically from a list and reviewed each cycle.
+- **Freelance & contract work** — payment and signed agreement attached to the same card, so proof of the work and proof of payment live together.
+- **DAO grants & contributor pay** — every payout visibly linked to the decision that authorized it, reviewable before a multisig signature is requested.
+- **Peer-to-peer payments** — splitting a cost or sending money to someone directly, without needing a spreadsheet or a reminder to "send it later."
 
-```sh
-npm install
-```
+## How it works, at a glance
 
-### Create an upgrade link
+1. **Describe it.** Type an instruction or drop in a list of who needs to be paid.
+2. **Review the draft.** The flow appears on the canvas automatically — wallets, recipients, amounts, documents — ready to edit.
+3. **Approve together.** Anyone who needs to sign off sees the same canvas before anything moves.
+4. **It settles.** Approved payments execute and generate a receipt or payslip attached right back to the flow.
 
-This template expects `package.json` to contain a valid `pear://` link in the `upgrade` field. If it still contains the placeholder `pear://<YOUR_KEY_HERE>`, startup will fail with `INVALID_URL`.
+## Status
 
-Create a link with [`pear touch`](https://docs.pears.com/reference/cli.html#pear-touch-flags-channel):
+This project is being built for the Encode x Arc "Programmable Money" hackathon, with the goal of continuing into the accompanying accelerator. What's here is an early-stage prototype — expect the shape of things to change quickly.
 
-```sh
-pear touch
-```
+## License
 
-Copy the generated `pear://...` link into the `upgrade` field in `package.json`.
-
-### Start
-
-Start app in development mode:
-
-```sh
-npm start
-```
-
-By default this repo starts with `--no-updates` in development to avoid local dev binaries being swapped while you iterate.
-
-Enable updates for local flow testing:
-
-```sh
-npm start -- --updates
-```
-
-## Architecture
-
-### Updates
-
-Updates are managed by the `App` class in `app.js`, which wraps the updater lifecycle as a ready resource and emits update events for `bin.mjs` to log.
-
-The worker uses `pear-runtime` and the configured `upgrade` link in `package.json`.
-
-Per-run disable updates:
-
-```sh
-npm start -- --no-updates
-```
-
-### Workers
-
-The main CLI starts `workers/main.js` as a Bare sidecar and communicates with it over framed IPC.
-
-## Peer-to-Peer Deployments
-
-Use the [`pear`][pear-docs] CLI to deploy applications.
-
-Set the `upgrade` field in `package.json` to your distribution drive link, then follow the default flow from section 4 onward:
-
-[hello-pear-electron: 4. Build Deployment Directory and onward](https://github.com/holepunchto/hello-pear-electron#4-build-deployment-directory-)
-
-## Installing Distributables
-
-Once the `pear://<key>` upgrade link is seeding the build deployment folder the CLI standalone binary can be installed peer-to-peer directly onto the system with Pear:
-
-```sh
-npx pear-install pear://<key>
-```
-
-## Scripts
-
-- `npm start` - run the Bare CLI in dev mode (`bare bin.mjs --no-updates`)
-- `npm test` - run `brittle-bare` tests
-- `npm run lint` - run prettier check and lunte
-- `npm run format` - format repository with prettier
-- `npm run make` - auto-detect host OS/arch and run matching build target
-- `npm run make:darwin-arm64` - build standalone to `out/darwin-arm64`
-- `npm run make:darwin-x64` - build standalone to `out/darwin-x64`
-- `npm run make:linux-arm64` - build standalone to `out/linux-arm64`
-- `npm run make:linux-x64` - build standalone to `out/linux-x64`
-- `npm run make:win32-arm64` - build standalone to `out/win32-arm64`
-- `npm run make:win32-x64` - build standalone to `out/win32-x64`
-
-## Project Structure
-
-- `bin.mjs` - CLI entrypoint and runtime wiring
-- `app.js` - update resource used by the entrypoint
-- `workers/main.js` - Bare worker example
-- `scripts/make.js` - platform/arch build target selector
-- `test/index.js` - brittle-bare tests
-
-## Troubleshooting
-
-- `INVALID_URL: Invalid URL 'pear://<YOUR_KEY_HERE>'` means the placeholder `upgrade` link in `package.json` has not been replaced. Run `pear touch`, then put the generated `pear://...` link in `package.json`.
-- If updates do not trigger, verify `package.json` contains a valid `upgrade` Pear link and that peers are seeding the target drive.
-- If `npm run make` fails on unsupported hosts, run a specific `make:<platform>-<arch>` script or build on a supported host.
-- This template does not implement app-level data persistence; it is a minimal CLI + updater example.
-
-<!-- Reference Links -->
-
-[pear-docs]: https://docs.pears.com
-[pear-runtime]: https://github.com/holepunchto/pear-runtime
-[Bare]: https://github.com/holepunchto/bare
-[nodejs]: https://nodejs.org
-[bare-build]: https://github.com/holepunchto/bare-build
+TBD.

@@ -3,3 +3,5 @@ dist/
 out/
 .next/
 .DS_Store
+tmp-guest/
+.goji-storage/

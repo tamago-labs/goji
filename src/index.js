@@ -403,8 +403,17 @@ async function main() {
     })
   })
 
+  swarm.on('update', () => {
+    console.log(`[swarm] update (peers: ${swarm.peers.length}, connections: ${swarm.connections.size})`)
+  })
+
   await store.ready()
   await room.open()
+
+  console.log(`[swarm] discovery: ${room.base.discoveryKey.toString('hex').slice(0, 16)}...`)
+  console.log(`[swarm] listening on port: ${swarm.dht?.server?.address()?.port || 'unknown'}`)
+  console.log(`[swarm] DHT bootstrap nodes: ${swarm.dht?.bootstrap?.length || 'default'}`)
+  console.log(`[swarm] peer ID: ${z32.encode(room.localBase.key)}`)
 
   const identityName = NAME || `User-${room.localBase.key.toString('hex').slice(-4)}`
   await room.appendIdentity({ displayName: identityName })

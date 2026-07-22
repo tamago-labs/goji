@@ -1,8 +1,11 @@
 {
-  "name": "goji",
+  "name": "@tamago-labs/goji",
   "version": "0.1.0",
-  "description": "Visual payment flows for DAOs and teams.",
-  "private": true,
+  "description": "Visual payment flows for DAOs and teams. P2P collaborative canvas with Circle Wallets integration.",
+  "main": "src/index.js",
+  "bin": {
+    "goji": "src/index.js"
+  },
   "scripts": {
     "start": "node src/index.js --port 3001",
     "start:guest": "node src/index.js --port 3002 --guest",
@@ -11,6 +14,17 @@
     "lint": "prettier . --check && lunte",
     "format": "prettier . --write"
   },
+  "keywords": [
+    "dao",
+    "payroll",
+    "p2p",
+    "hyperswarm",
+    "circle",
+    "wallet",
+    "usdc",
+    "collaboration",
+    "canvas"
+  ],
   "dependencies": {
     "autobase": "^7.28.1",
     "b4a": "^1.8.1",
@@ -35,8 +49,23 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tamago-labs/goji.git"
+    "url": "https://github.com/tamago-labs/goji.git",
+    "directory": "frontend"
+  },
+  "homepage": "https://github.com/tamago-labs/goji",
+  "bugs": {
+    "url": "https://github.com/tamago-labs/goji/issues"
   },
   "author": "Tamago Labs",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "src/",
+    "spec/",
+    "scripts/",
+    "schema.js",
+    "README.md"
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "@tamago-labs/goji",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Visual payment flows for DAOs and teams. P2P collaborative canvas with Circle Wallets integration.",
   "main": "src/index.js",
   "bin": {

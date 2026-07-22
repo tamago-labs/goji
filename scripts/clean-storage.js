@@ -3,15 +3,18 @@
 
 const fs = require('fs')
 const path = require('path')
+const os = require('os')
 
-const root = path.resolve(__dirname, '..')
-const dirs = [path.join(root, '.goji-storage'), path.join(root, 'tmp-guest')]
+const dirs = [
+  path.join(os.homedir(), '.goji', 'host'),
+  path.join(os.homedir(), '.goji', 'guest')
+]
 
 let cleaned = 0
 for (const dir of dirs) {
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true })
-    console.log(`  cleaned: ${path.relative(root, dir)}`)
+    console.log(`  cleaned: ${dir}`)
     cleaned++
   }
 }

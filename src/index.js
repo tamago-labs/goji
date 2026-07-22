@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const express = require('express')
 const { WebSocketServer } = require('ws')
 const Autobase = require('autobase')
@@ -24,7 +26,9 @@ const isGuest = process.argv.includes('--guest') || process.argv.includes('--joi
 const joinIdx = process.argv.indexOf('--join')
 const INVITE = joinIdx !== -1 ? process.argv[joinIdx + 1] : null
 const NAME = process.argv.find((a, i) => process.argv[i - 1] === '--name') || null
-const STORAGE = isGuest ? './tmp-guest' : './.goji-storage'
+const STORAGE = isGuest
+  ? require('path').join(require('os').homedir(), '.goji', 'guest')
+  : require('path').join(require('os').homedir(), '.goji', 'host')
 
 class GojiRoom {
   constructor(store, swarm, invite) {

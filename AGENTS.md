@@ -1,41 +1,72 @@
 # Goji
 
-Two independent stacks in one repo:
+Visual payment flows for DAOs and teams. Two independent stacks in one repo:
 
-- **Root** (`/`) — Bare CLI app with pear-runtime for OTA updates. Written in CommonJS (app.js) and ESM (bin.mjs). Uses the Bare runtime, not Node.js.
-- **`frontend/`** — Next.js 16 + React 19 + Tailwind v4 app (TypeScript). Completely separate `package.json` and `node_modules`.
+- **Root** (`/`) — Node.js CLI with P2P rooms (Autobase + Hyperswarm + BlindPairing). Express HTTP API + WebSocket for frontend communication.
+- **`frontend/`** — Next.js 16 + React 19 + Tailwind v4 + RainbowKit app (TypeScript). Completely separate `package.json` and `node_modules`.
 
 ## Commands
 
-### Root (Bare CLI)
+### Root (Terminal CLI)
 
 ```
-npm install          # install deps
-npm start            # bare bin.mjs --no-updates (dev mode, updates off by default)
-npm test             # brittle-bare test/index.js
-npm run lint         # prettier --check && lunte
-npm run format       # prettier . --write
+npm install              # install deps
+npm start                # host mode (port 3001)
+npm start -- --join <code>  # guest mode
+npm run start:guest      # guest shortcut (port 3002)
+npm run build:specs      # rebuild hyperschema specs
+npm run clean:storage    # wipe .goji-storage and tmp-guest
+npm run lint             # prettier --check && lunte
+npm run format           # prettier . --write
 ```
-
-To test OTA update flow: `npm start -- --updates`
 
 ### Frontend (Next.js)
 
 ```
 cd frontend
 npm install
-npm run dev          # next dev (port 3000)
-npm run build        # next build
-npm run lint         # eslint
+npm run dev              # next dev --webpack (port 3000)
+npm run build            # next build --webpack
+npm run lint             # eslint
 ```
+
+## Architecture
+
+### Root (Terminal)
+
+- `src/index.js` — Main entry: Express server, WebSocket, P2P room
+- `schema.js` — Hyperschema + HyperDB collections (boards, cards, connections, chat, invites, identity)
+- `spec/` — Generated schema/dispatch/db specs
+- `scripts/clean-storage.js` — Wipe storage directories
+- Keet identity key integration for portable P2P identities
+
+### Frontend
+
+- `app/components/landing/` — Landing page (Nav, Hero, UseCases, CardCanvas, HowItWorks)
+- `app/components/start/` — Start page (dashboard with boards + templates)
+- `app/components/flow/` — Canvas/flow builder (Canvas, CanvasCard, CanvasLines, FlowBuilder, Toolbar, AddCardPopover)
+- `app/components/common/` — Shared components (Logo)
+- `app/providers.tsx` — RainbowKit + wagmi + React Query providers
+- `lib/wagmi.ts` — Wagmi config with Arc Testnet
+
+## API Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | /api/health | Server status, peer info, name |
+| GET/POST | /api/boards | List/create boards |
+| PUT/DELETE | /api/boards/:id | Rename/delete board |
+| GET/POST/PUT/DELETE | /api/cards | Card CRUD |
+| GET/POST/DELETE | /api/connections | Connection CRUD |
+| GET/POST | /api/chat | Chat messages |
+| PUT | /api/username | Update display name |
+| WebSocket | ws://localhost:3001 | Real-time sync |
 
 ## Gotchas
 
-- **`bare` vs `node`**: Root code runs on Bare, not Node. `bin.mjs` detects dev mode via `path.basename(Bare.argv[0]) === 'bare'`. Don't `node bin.mjs` — use `npm start`.
-- **Upgrade link required**: `package.json` `upgrade` field must be a valid `pear://` link. Placeholder `pear://<YOUR_KEY_HERE>` causes `INVALID_URL` crash. Fix with `pear touch`, then paste the link.
-- **Prettier config**: `.prettierrc` points to `prettier-config-holepunch` (shared config). Don't override with custom rules unless intended.
-- **Test runner**: Tests use `brittle-bare`, not `jest` or `node:test`. Single test file at `test/index.js`.
-- **`lunte`**: Used as the linter for root Bare code. Installed as a devDependency.
-- **Platform builds**: `npm run make` auto-detects host OS/arch. Supports darwin/linux/win32 x arm64/x64. Outputs to `out/<platform>-<arch>/`.
-- **`frontend/AGENTS.md`**: Contains a Next.js-specific warning — Next.js 16 has breaking changes from training data. Read `node_modules/next/dist/docs/` before modifying frontend code.
-- **No monorepo tooling**: These are two separate npm projects, not a workspace. Run `npm install` independently in each directory.
+- **`--webpack` flag**: Frontend scripts use `--webpack` because RainbowKit has Turbopack compatibility issues.
+- **Lockfile warning**: Next.js warns about multiple lockfiles (root + frontend). This is cosmetic — ignore it.
+- **P2P requires UDP**: Hyperswarm uses UDP for peer discovery. Cloud servers need UDP open.
+- **Keet identity**: First run prompts for identity setup (generate/import mnemonic). Saved to `identity.json` in storage folder.
+- **No monorepo tooling**: Two separate npm projects. Run `npm install` independently in each directory.
+- **`frontend/AGENTS.md`**: Next.js 16 has breaking changes from training data. Read `node_modules/next/dist/docs/` before modifying frontend code.

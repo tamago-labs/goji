@@ -48,6 +48,7 @@ export default function FlowBuilder({
   const [showSettings, setShowSettings] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const boardIdRef = useRef(boardId)
+  const recentCardsRef = useRef<Set<string>>(new Set())
   const router = useRouter()
 
   // Load data from API on mount
@@ -86,6 +87,10 @@ export default function FlowBuilder({
       try {
         const msg = JSON.parse(event.data)
         if (msg.type === 'card:added' && msg.card.boardId === boardIdRef.current) {
+          if (recentCardsRef.current.has(msg.card.id)) {
+            recentCardsRef.current.delete(msg.card.id)
+            return
+          }
           setCards((prev) => {
             if (prev.some((c) => c.id === msg.card.id)) return prev
             return [...prev, msg.card]
@@ -122,20 +127,6 @@ export default function FlowBuilder({
     }
   }, [API])
 
-  const saveCard = useCallback(
-    async (card: FlowCard) => {
-      if (!boardId) return
-      try {
-        await fetch(`${API}/api/cards`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...card, boardId })
-        })
-      } catch {}
-    },
-    [boardId, API]
-  )
-
   const updateCard = useCallback(
     async (id: string, patch: Partial<FlowCard>) => {
       try {
@@ -156,20 +147,6 @@ export default function FlowBuilder({
       } catch {}
     },
     [API]
-  )
-
-  const saveConnection = useCallback(
-    async (conn: Connection) => {
-      if (!boardId) return
-      try {
-        await fetch(`${API}/api/connections`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...conn, boardId })
-        })
-      } catch {}
-    },
-    [boardId, API]
   )
 
   const deleteConnectionApi = useCallback(
@@ -199,26 +176,46 @@ export default function FlowBuilder({
   )
 
   const addCard = useCallback(
-    (category: CardCategory) => {
-      const id = genId()
+    async (category: CardCategory) => {
       const templates: Record<CardCategory, { title: string; fields: Record<string, string> }> = {
         wallet: { title: 'Wallet', fields: { address: '', balance: '' } },
         recipient: { title: 'Recipient', fields: { address: '', amount: '', doc: '' } },
         gate: { title: 'Multisig Gate', fields: { required: '2', total: '3' } }
       }
       const t = templates[category]
-      const card: FlowCard = {
-        id,
-        category,
-        title: t.title,
-        x: 200 + Math.random() * 100,
-        y: 150 + Math.random() * 100,
-        fields: { ...t.fields }
+
+      if (boardId) {
+        // Let API + WebSocket handle adding
+        try {
+          const res = await fetch(`${API}/api/cards`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: genId(),
+              category,
+              title: t.title,
+              x: 200 + Math.random() * 100,
+              y: 150 + Math.random() * 100,
+              fields: { ...t.fields },
+              boardId
+            })
+          })
+          // Card will arrive via WebSocket
+        } catch {}
+      } else {
+        // Offline mode — add locally only
+        const card: FlowCard = {
+          id: genId(),
+          category,
+          title: t.title,
+          x: 200 + Math.random() * 100,
+          y: 150 + Math.random() * 100,
+          fields: { ...t.fields }
+        }
+        setCards((prev) => [...prev, card])
       }
-      setCards((prev) => [...prev, card])
-      saveCard(card)
     },
-    [saveCard]
+    [boardId, API]
   )
 
   const deleteCard = useCallback(
@@ -253,21 +250,37 @@ export default function FlowBuilder({
         if (valid) {
           const exists = connections.some((c) => c.from === connectFrom && c.to === cardId)
           if (!exists) {
-            const conn: Connection = {
-              id: genConnId(),
-              from: connectFrom,
-              fromPort: 'output',
-              to: cardId,
-              toPort: 'input'
+            if (boardId) {
+              // Let API + WebSocket handle adding
+              fetch(`${API}/api/connections`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: genConnId(),
+                  from: connectFrom,
+                  fromPort: 'output',
+                  to: cardId,
+                  toPort: 'input',
+                  boardId
+                })
+              }).catch(() => {})
+            } else {
+              // Offline mode
+              const conn: Connection = {
+                id: genConnId(),
+                from: connectFrom,
+                fromPort: 'output',
+                to: cardId,
+                toPort: 'input'
+              }
+              setConnections((prev) => [...prev, conn])
             }
-            setConnections((prev) => [...prev, conn])
-            saveConnection(conn)
           }
         }
         setConnectFrom(null)
       }
     },
-    [connectFrom, connections, cards, saveConnection]
+    [connectFrom, connections, cards, boardId, API]
   )
 
   const deleteConnection = useCallback(

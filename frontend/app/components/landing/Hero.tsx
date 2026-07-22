@@ -27,7 +27,7 @@ export default function Hero() {
           Payments,
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            made visual
+            made together
           </span>
         </motion.h1>
         <motion.p

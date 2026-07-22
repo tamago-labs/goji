@@ -9,6 +9,7 @@ import CanvasCard from './CanvasCard'
 import CanvasLines from './CanvasLines'
 import Toolbar from './Toolbar'
 import AddCardPopover from './AddCardPopover'
+import FloatingChatButton from '../chat/FloatingChatButton'
 import { type FlowCard, type Connection, type CardCategory } from './types'
 
 const API = typeof window !== 'undefined'
@@ -187,7 +188,7 @@ export default function FlowBuilder({
       if (boardId) {
         // Let API + WebSocket handle adding
         try {
-          const res = await fetch(`${API}/api/cards`, {
+          await fetch(`${API}/api/cards`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -417,6 +418,8 @@ export default function FlowBuilder({
           </>
         )}
       </AnimatePresence>
+
+      <FloatingChatButton />
     </div>
   )
 }

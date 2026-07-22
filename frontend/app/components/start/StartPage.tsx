@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Logo from '../common/Logo'
+import FloatingChatButton from '../chat/FloatingChatButton'
 
 const DEFAULT_URL = 'http://localhost:3001'
 
@@ -49,18 +50,16 @@ interface Board {
   updatedAt: number
 }
 
-function getStoredUrl() {
-  if (typeof window === 'undefined') return DEFAULT_URL
-  return localStorage.getItem('goji-api-url') || DEFAULT_URL
-}
-
 function truncateAddress(addr: string) {
   if (!addr) return ''
   return addr.slice(0, 6) + '...' + addr.slice(-4)
 }
 
 export default function StartPage() {
-  const [apiUrl, setApiUrl] = useState(DEFAULT_URL)
+  const [apiUrl, setApiUrl] = useState(() => {
+    if (typeof window === 'undefined') return DEFAULT_URL
+    return localStorage.getItem('goji-api-url') || DEFAULT_URL
+  })
   const [health, setHealth] = useState<Health | null>(null)
   const [boards, setBoards] = useState<Board[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,12 +74,6 @@ export default function StartPage() {
 
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
-
-  useEffect(() => {
-    const stored = getStoredUrl()
-    setApiUrl(stored)
-    setSettingsInput(stored)
-  }, [])
 
   const fetchHealth = useCallback(
     async (url: string) => {
@@ -132,6 +125,10 @@ export default function StartPage() {
     const url = settingsInput.replace(/\/+$/, '')
     localStorage.setItem('goji-api-url', url)
     setApiUrl(url)
+    setHealth(null)
+    setBoards([])
+    setLoading(true)
+    setError(null)
     setShowSettings(false)
   }
 
@@ -139,6 +136,10 @@ export default function StartPage() {
     setSettingsInput(DEFAULT_URL)
     localStorage.setItem('goji-api-url', DEFAULT_URL)
     setApiUrl(DEFAULT_URL)
+    setHealth(null)
+    setBoards([])
+    setLoading(true)
+    setError(null)
     setShowSettings(false)
   }
 
@@ -521,6 +522,8 @@ export default function StartPage() {
           </>
         )}
       </AnimatePresence>
+
+      <FloatingChatButton />
     </div>
   )
 }

@@ -37,6 +37,7 @@ class GojiRoom {
     this.localBase = Autobase.getLocalCore(this.store)
     this.base = null
     this.pairMember = null
+    this.identities = new Map()
   }
 
   async open() {
@@ -172,6 +173,12 @@ class GojiRoom {
       } else {
         await ctx.view.insert('@goji/identity', next)
       }
+      // Cache for peers endpoint
+      this.identities.set(b4a.toString(writerKey, 'hex'), {
+        key: b4a.toString(writerKey, 'hex'),
+        name: data.displayName,
+        updatedAt: next.updatedAt
+      })
     })
   }
 
@@ -562,12 +569,43 @@ async function main() {
   })
 
   app.post('/api/chat', async (req, res) => {
-    await room.addMessage(req.body.text, {
-      name: identityName,
-      key: z32.encode(room.localBase.key),
-      at: Date.now()
-    })
+    const msg = {
+      id: Math.random().toString(16).slice(2),
+      text: req.body.text,
+      info: {
+        name: identityName,
+        key: z32.encode(room.localBase.key),
+        at: Date.now()
+      }
+    }
+    await room.addMessage(msg.text, msg.info)
+    wsBroadcast({ type: 'chat:message', message: msg })
+    res.json(msg)
+  })
+
+  app.delete('/api/chat/:id', async (req, res) => {
+    const { id } = req.params
+    const role = isGuest ? 'guest' : 'host'
+    await room.base.append(
+      GojiDispatch.encode('@goji/remove-chats', { ids: [id] })
+    )
+    wsBroadcast({ type: 'chat:deleted', id })
     res.json({ ok: true })
+  })
+
+  app.get('/api/peers', async (req, res) => {
+    // Load from view to get all identities including remote peers
+    const rows = await room.view.find('@goji/identity', {}).toArray()
+    const seen = new Set()
+    const peers = []
+    for (const r of rows) {
+      const key = b4a.toString(r.writerKey, 'hex')
+      if (!seen.has(key)) {
+        seen.add(key)
+        peers.push({ key, name: r.displayName, updatedAt: r.updatedAt })
+      }
+    }
+    res.json(peers)
   })
 
   app.put('/api/username', async (req, res) => {

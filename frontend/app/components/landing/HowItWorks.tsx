@@ -106,7 +106,7 @@ export default function HowItWorks() {
   const showGuest = phase === 'guest-type' || phase === 'guest-output'
 
   return (
-    <section className='max-w-[1320px] mx-auto px-6 md:px-13 py-20'>
+    <section id='how-it-works' className='max-w-[1320px] mx-auto px-6 md:px-13 py-20'>
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}

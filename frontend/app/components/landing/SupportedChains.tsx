@@ -33,7 +33,7 @@ const chains = [
 
 export default function SupportedChains() {
   return (
-    <section className='max-w-[1024px] mx-auto px-6 md:px-13 py-16'>
+    <section id='supported-chains' className='max-w-[1024px] mx-auto px-6 md:px-13 py-16'>
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}

@@ -41,7 +41,7 @@ export default function UseCases() {
   const [active, setActive] = useState(0)
 
   return (
-    <section className='max-w-[1320px] mx-auto px-5 md:px-13 py-16'>
+    <section id='use-cases' className='max-w-[1320px] mx-auto px-5 md:px-13 py-16'>
       <div className='flex justify-center mb-14'>
         <div className='flex flex-wrap justify-center gap-1.5 bg-card rounded-xl md:rounded-full p-3 md:p-1.5 shadow-[0_2px_12px_rgba(43,36,64,0.06)] mx-4 md:mx-0'>
           {tabs.map((tab, i) => (

@@ -11,6 +11,10 @@
   --font-body: var(--font-dm-sans);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--color-lavender);
   color: var(--color-ink);

@@ -41,7 +41,7 @@ export default function Hero() {
             href='/start'
             className='bg-ink text-lavender px-[26px] py-[15px] rounded-3xl text-[15px] font-medium hover:opacity-90 transition-opacity'
           >
-            Start a board
+            Create a flow
           </Link>
           <a
             href='#'

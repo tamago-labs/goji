@@ -12,6 +12,13 @@ const tabs = [
       'Turn recurring payroll into a visual payment flow. Import a spreadsheet or describe your team in plain English, review every payment together, then settle salaries in USDC with attached payslips.'
   },
   {
+    id: 'treasury',
+    label: 'Treasury Operations',
+    title: 'Treasury Operations',
+    description:
+      'Move funds between operational, payroll, and reserve wallets with a clear visual representation of every transfer before execution.'
+  },
+  {
     id: 'payouts',
     label: 'DAO Payouts',
     title: 'DAO Payouts',
@@ -24,13 +31,6 @@ const tabs = [
     title: 'Bonuses & Incentives',
     description:
       'Reward contributors with one-off bonuses or milestone payments. Create, review, and approve distributions visually before funds leave the treasury.'
-  },
-  {
-    id: 'treasury',
-    label: 'Treasury Operations',
-    title: 'Treasury Operations',
-    description:
-      'Move funds between operational, payroll, and reserve wallets with a clear visual representation of every transfer before execution.'
   }
 ]
 

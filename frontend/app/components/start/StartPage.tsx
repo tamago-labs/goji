@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Logo from '../common/Logo'
 
 const DEFAULT_URL = 'http://localhost:3001'
@@ -52,6 +54,11 @@ function getStoredUrl() {
   return localStorage.getItem('goji-api-url') || DEFAULT_URL
 }
 
+function truncateAddress(addr: string) {
+  if (!addr) return ''
+  return addr.slice(0, 6) + '...' + addr.slice(-4)
+}
+
 export default function StartPage() {
   const [apiUrl, setApiUrl] = useState(DEFAULT_URL)
   const [health, setHealth] = useState<Health | null>(null)
@@ -61,10 +68,13 @@ export default function StartPage() {
   const [copied, setCopied] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [settingsInput, setSettingsInput] = useState(DEFAULT_URL)
-  const [showUsername, setShowUsername] = useState(false)
-  const [usernameInput, setUsernameInput] = useState('')
-  const [showWallet, setShowWallet] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showUsernameModal, setShowUsernameModal] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [usernameInput, setUsernameInput] = useState('')
+
+  const { address, isConnected } = useAccount()
+  const { disconnect } = useDisconnect()
 
   useEffect(() => {
     const stored = getStoredUrl()
@@ -86,9 +96,7 @@ export default function StartPage() {
           }
           return true
         }
-      } catch {
-        // not reachable
-      }
+      } catch {}
       return false
     },
     []
@@ -149,16 +157,12 @@ export default function StartPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: usernameInput.trim() })
       })
-    } catch {
-      // ignore
-    }
+    } catch {}
     if (health) {
       setHealth({ ...health, name: usernameInput.trim() })
     }
-    setShowUsername(false)
+    setShowUsernameModal(false)
   }
-
-  const truncateId = (id: string) => id.slice(0, 16) + '...'
 
   return (
     <div className='min-h-screen bg-lavender'>
@@ -184,47 +188,66 @@ export default function StartPage() {
                 {health.peers} peer{health.peers !== 1 ? 's' : ''}
               </span>
               <span className='w-px h-3 bg-ink/10' />
-              <button
-                onClick={() => {
-                  setUsernameInput(health.name)
-                  setShowUsername(true)
-                }}
-                className='flex items-center gap-1.5 text-[11px] text-ink/60 font-medium bg-ink/5 hover:bg-ink/10 rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer'
-              >
-                <svg className='w-3 h-3 text-ink/30' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
-                </svg>
-                {health.name}
-              </button>
+
               <div className='relative'>
                 <button
-                  onClick={() => setShowWallet(!showWallet)}
-                  className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors'
-                  title='Wallet'
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className='flex items-center gap-1.5 text-[11px] text-ink/60 font-medium bg-ink/5 hover:bg-ink/10 rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer'
                 >
-                  <svg className='w-4 h-4 text-ink/40' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' />
+                  <svg className='w-3 h-3 text-ink/30' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
                   </svg>
+                  {health.name}
                 </button>
+
                 <AnimatePresence>
-                  {showWallet && (
+                  {showUserMenu && (
                     <motion.div
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 4 }}
                       transition={{ duration: 0.15 }}
-                      className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-64 z-50'
+                      className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
                     >
-                      <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>Circle Wallet</p>
-                      <p className='font-mono text-xs text-ink/60 break-all mb-3'>0x4F8a2b3c9d1e5f6a7b8c0d2e3f4a5b6c7d8e9C1</p>
-                      <div className='flex items-center gap-2'>
-                        <span className='w-2 h-2 rounded-full bg-mint' />
-                        <span className='text-[11px] text-ink/40'>Connected</span>
+                      <div className='mb-3'>
+                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-1.5'>Wallet</p>
+                        {isConnected ? (
+                          <div className='flex items-center justify-between'>
+                            <div className='flex items-center gap-2'>
+                              <span className='w-2 h-2 rounded-full bg-mint' />
+                              <span className='font-mono text-xs text-ink/60'>{truncateAddress(address || '')}</span>
+                            </div>
+                            <button
+                              onClick={() => disconnect()}
+                              className='text-[10px] text-ink/30 hover:text-coral transition-colors'
+                            >
+                              Disconnect
+                            </button>
+                          </div>
+                        ) : (
+                          <div className='[&>div]:!bg-transparent [&>div]:!p-0 [&>button]:!bg-ink [&>button]:!text-lavender [&>button]:!rounded-xl [&>button]:!px-3 [&>button]:!py-2 [&>button]:!text-xs [&>button]:!font-medium [&>button]:!w-full'>
+                            <ConnectButton />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className='border-t border-ink/8 pt-3'>
+                        <button
+                          onClick={() => {
+                            setUsernameInput(health.name)
+                            setShowUsernameModal(true)
+                            setShowUserMenu(false)
+                          }}
+                          className='w-full text-left text-xs text-ink/50 hover:text-ink/70 transition-colors py-1.5'
+                        >
+                          Change username
+                        </button>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
+
               {health.role === 'host' && (
                 <div className='relative'>
                   <button
@@ -266,6 +289,7 @@ export default function StartPage() {
               )}
             </>
           )}
+
           <button
             onClick={() => {
               setSettingsInput(apiUrl)
@@ -281,7 +305,7 @@ export default function StartPage() {
         </div>
       </nav>
 
-      <main className='max-w-[960px] mx-auto px-6 py-20 pt-10'>
+      <main className='max-w-[960px] mx-auto px-6 py-20'>
         {error && (
           <div className='bg-coral/10 border border-coral/20 rounded-2xl p-5 mb-10 flex items-center justify-between'>
             <p className='text-sm text-ink/70'>{error}</p>
@@ -298,17 +322,15 @@ export default function StartPage() {
           </div>
         )}
 
-        <h1 className='font-display text-4xl font-semibold mb-10'>
-          Team payment flows
-        </h1>
+        <h1 className='font-display text-4xl font-semibold mb-10'>Team payment flows</h1>
 
         <h2 className='font-display text-xl font-semibold mb-4'>Active boards</h2>
         {boards.length === 0 ? (
-          <div className='bg-card rounded-2xl p-8 shadow-[0_4px_20px_rgba(43,36,64,0.06)] text-center mb-12'>
+          <div className={`bg-card rounded-2xl p-8 shadow-[0_4px_20px_rgba(43,36,64,0.06)] text-center mb-12 ${loading || error ? ' opacity-50 pointer-events-none' : ''}`}>
             <p className='text-ink/40 text-sm'>No boards yet. Create one below.</p>
           </div>
         ) : (
-          <div className={`space-y-3 mb-12 ${loading || error ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className={`space-y-3 mb-12 ${loading || error ? ' opacity-50 pointer-events-none' : ''}`}>
             {boards.map((board) => (
               <Link
                 key={board.id}
@@ -328,7 +350,9 @@ export default function StartPage() {
         )}
 
         <h2 className='font-display text-xl font-semibold mb-4'>Create new</h2>
-        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-5 ${loading || error ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div
+          className={`grid grid-cols-1 sm:grid-cols-3 gap-5 ${loading || error ? 'opacity-50 pointer-events-none' : ''}`}
+        >
           <Link
             href='/flow/new?type=blank'
             className='group bg-card rounded-2xl p-6 shadow-[0_4px_20px_rgba(43,36,64,0.06)] hover:shadow-[0_8px_30px_rgba(43,36,64,0.1)] transition-shadow border-2 border-dashed border-ink/15 hover:border-mint/50 flex flex-col items-center justify-center min-h-[180px]'
@@ -441,14 +465,14 @@ export default function StartPage() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showUsername && (
+        {showUsernameModal && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className='fixed inset-0 bg-black/30 z-50'
-              onClick={() => setShowUsername(false)}
+              onClick={() => setShowUsernameModal(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -460,7 +484,7 @@ export default function StartPage() {
               <div className='flex items-center justify-between mb-5'>
                 <h3 className='font-display text-lg font-semibold'>Change Username</h3>
                 <button
-                  onClick={() => setShowUsername(false)}
+                  onClick={() => setShowUsernameModal(false)}
                   className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
                 >
                   &times;
@@ -481,7 +505,7 @@ export default function StartPage() {
 
               <div className='flex justify-end gap-2'>
                 <button
-                  onClick={() => setShowUsername(false)}
+                  onClick={() => setShowUsernameModal(false)}
                   className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'
                 >
                   Cancel

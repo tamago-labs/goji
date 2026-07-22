@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Fredoka, DM_Sans } from 'next/font/google'
+import '@rainbow-me/rainbowkit/styles.css'
 import './globals.css'
+import { Providers } from './providers'
 
 const fredoka = Fredoka({
   variable: '--font-fredoka',
@@ -26,7 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' className={`${fredoka.variable} ${dmSans.variable}`}>
-      <body className='min-h-screen bg-lavender text-ink font-body antialiased'>{children}</body>
+      <body className='min-h-screen bg-lavender text-ink font-body antialiased'>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }

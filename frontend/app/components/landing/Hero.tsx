@@ -34,8 +34,7 @@ export default function Hero() {
           {...fadeUp(0.2)}
           className='text-[17px] leading-[1.6] text-ink/70 max-w-[420px] mb-[34px]'
         >
-          Goji turns a sentence or a spreadsheet into a live payment canvas where every wallet,
-          payment, and contract is reviewed together before USDC moves.
+         Goji turns a sentence or a spreadsheet into a live payment canvas where wallets, recipients, contracts, and approvals come together before USDC moves.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5'>
           <Link

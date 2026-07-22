@@ -120,7 +120,7 @@ export default function HowItWorks() {
         <p className='text-ink/60 text-[17px] max-w-[520px] mx-auto leading-relaxed'>
           Your payment workspace starts from a single command. Launch a local AI
           agent, collaborate over P2P, review payment flows together — powered
-          by Circle Wallets.
+          by Circle's App Kits.
         </p>
       </motion.div>
 

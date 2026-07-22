@@ -9,28 +9,28 @@ const tabs = [
     label: 'Contributor Payroll',
     title: 'Contributor Payroll',
     description:
-      'Turn recurring payroll into a visual payment flow. Import a spreadsheet or describe your team in plain English, review every payment together, then settle salaries in USDC with attached payslips.'
+      'Turn recurring payroll into a visual payment flow. Import a spreadsheet, review every payment together, then settle salaries in USDC with attached payslips.'
   },
   {
     id: 'treasury',
-    label: 'Treasury Operations',
-    title: 'Treasury Operations',
+    label: 'Shared Treasury',
+    title: 'Shared Treasury',
     description:
-      'Move funds between operational, payroll, and reserve wallets with a clear visual representation of every transfer before execution.'
+      'Manage a shared wallet with configurable approval rules. Every outgoing payment is reviewed visually before the required signers authorize settlement.'
   },
   {
-    id: 'payouts',
-    label: 'DAO Payouts',
-    title: 'DAO Payouts',
+    id: 'requests',
+    label: 'Payment Requests',
+    title: 'Payment Requests',
     description:
-      'Map grants, contributor rewards, and operational expenses on a shared canvas. Every payout is visible before multisig approval, making treasury reviews faster and easier to understand.'
+      'Create payment requests with invoices, contracts, or receipts attached. Teammates review the full payment flow before it becomes an approved USDC transfer.'
   },
   {
     id: 'bonuses',
-    label: 'Bonuses & Incentives',
-    title: 'Bonuses & Incentives',
+    label: 'One-Click Conversion',
+    title: 'One-Click Conversion',
     description:
-      'Reward contributors with one-off bonuses or milestone payments. Create, review, and approve distributions visually before funds leave the treasury.'
+      'Convert tokens as part of your flow instead of switching between multiple apps. Swaps become another step on the canvas, reviewed before funds move.'
   }
 ]
 

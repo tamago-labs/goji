@@ -7,8 +7,17 @@ const Corestore = require('corestore')
 const HyperDB = require('hyperdb')
 const Hyperswarm = require('hyperswarm')
 const z32 = require('z32')
+const readline = require('readline')
 const GojiDispatch = require('../spec/dispatch')
 const GojiDb = require('../spec/db')
+
+let Identity, crypto
+try {
+  Identity = require('keet-identity-key')
+  crypto = require('hypercore-crypto')
+} catch {
+  // keet-identity-key not installed, fallback to basic identity
+}
 
 const PORT = parseInt(process.argv.find((a, i) => process.argv[i - 1] === '--port') || '3001', 10)
 const isGuest = process.argv.includes('--guest') || process.argv.includes('--join')
@@ -365,8 +374,6 @@ function decodeConnection(raw) {
   }
 }
 
-const readline = require('readline')
-
 async function main() {
   console.log(`goji v0.1.0`)
   console.log(`args: ${process.argv.slice(2).join(' ')}`)
@@ -416,7 +423,8 @@ async function main() {
   console.log(`[swarm] peer ID: ${z32.encode(room.localBase.key)}`)
 
   const identityPath = require('path').join(STORAGE, 'identity.json')
-  let identityName = NAME || await loadIdentity(identityPath) || `User-${room.localBase.key.toString('hex').slice(-4)}`
+  const identityData = await setupIdentity(STORAGE)
+  let identityName = NAME || (identityData ? identityData.name : null) || `User-${room.localBase.key.toString('hex').slice(-4)}`
   await room.appendIdentity({ displayName: identityName })
 
   const inviteCode = await room.getInvite()
@@ -568,7 +576,10 @@ async function main() {
       return res.status(400).json({ error: 'name required' })
     }
     identityName = name
-    await saveIdentity(identityPath, name)
+    const existing = await loadIdentity(identityPath)
+    if (existing) {
+      await saveIdentity(identityPath, { ...existing, name })
+    }
     await room.appendIdentity({ displayName: name })
     res.json({ ok: true, name })
   })
@@ -621,16 +632,91 @@ async function loadIdentity(path) {
   try {
     const data = await require('fs').promises.readFile(path, 'utf-8')
     const json = JSON.parse(data)
-    return json.name || null
+    return json
   } catch {
     return null
   }
 }
 
-async function saveIdentity(path, name) {
+async function saveIdentity(path, data) {
   const dir = require('path').dirname(path)
   await require('fs').promises.mkdir(dir, { recursive: true })
-  await require('fs').promises.writeFile(path, JSON.stringify({ name }))
+  await require('fs').promises.writeFile(path, JSON.stringify(data, null, 2))
+}
+
+async function setupIdentity(storagePath) {
+  const identityPath = require('path').join(storagePath, 'identity.json')
+
+  // Check if identity already exists
+  const existing = await loadIdentity(identityPath)
+  if (existing && existing.mnemonic) {
+    console.log(`[identity] loaded existing identity: ${existing.name}`)
+    return existing
+  }
+
+  // No identity found - prompt for setup
+  if (!Identity) {
+    console.error('[identity] keet-identity-key not available')
+    return null
+  }
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+  const prompt = (q) => new Promise((resolve) => rl.question(q, resolve))
+
+  console.log('\n┌───────────────────────────────────────────┐')
+  console.log('│  No identity found                        │')
+  console.log('│                                           │')
+  console.log('│  1. Generate new identity                 │')
+  console.log('│  2. Import existing mnemonic              │')
+  console.log('└───────────────────────────────────────────┘')
+  console.log('  Note: This is your P2P identity for collaborating')
+  console.log('        with your team over Hyperswarm. (Not a wallet)\n')
+
+  let choice = ''
+  while (choice !== '1' && choice !== '2') {
+    choice = await prompt('Choose (1 or 2): ')
+  }
+
+  let mnemonic, identityPublicKey, name
+
+  if (choice === '1') {
+    // Generate new identity
+    mnemonic = Identity.generateMnemonic()
+    const identity = await Identity.from({ mnemonic })
+    identityPublicKey = identity.identityPublicKey
+
+    console.log('\n✓ New identity generated')
+    console.log(`\n  Mnemonic:\n  ${mnemonic}\n`)
+    console.log('  ⚠ Save this mnemonic! It\'s your portable identity.\n')
+
+    name = await prompt('Enter display name: ')
+    name = name.trim() || `User-${Date.now().toString(16).slice(-4)}`
+  } else {
+    // Import existing mnemonic
+    const input = await prompt('Enter 24-word mnemonic: ')
+    mnemonic = input.trim()
+
+    try {
+      const identity = await Identity.from({ mnemonic })
+      identityPublicKey = identity.identityPublicKey
+      console.log('\n✓ Mnemonic validated')
+    } catch (err) {
+      console.error('\n✗ Invalid mnemonic:', err.message)
+      rl.close()
+      return null
+    }
+
+    name = await prompt('Enter display name: ')
+    name = name.trim() || `User-${Date.now().toString(16).slice(-4)}`
+  }
+
+  rl.close()
+
+  const identityData = { name, mnemonic, identityPublicKey }
+  await saveIdentity(identityPath, identityData)
+  console.log(`✓ Identity saved to ${identityPath}\n`)
+
+  return identityData
 }
 
 main().catch((err) => {

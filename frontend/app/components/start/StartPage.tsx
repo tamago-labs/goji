@@ -110,7 +110,7 @@ export default function StartPage() {
         await new Promise((r) => setTimeout(r, 1000))
       }
       if (!cancelled) {
-        setError('Could not connect to terminal. Make sure it is running: npx @tamago-labs/goji')
+        setError('Could not establish a connection. Make sure you are using Chrome and running: npx @tamago-labs/goji')
         setLoading(false)
       }
     }
@@ -172,7 +172,10 @@ export default function StartPage() {
 
         <div className='flex items-center gap-2'>
           {loading && (
-            <div className='w-4 h-4 border-2 border-ink/20 border-t-ink/60 rounded-full animate-spin' />
+            <div className='flex items-center gap-2 text-xs text-ink/40'>
+              <div className='w-3.5 h-3.5 border-2 border-ink/15 border-t-ink/50 rounded-full animate-spin' />
+              <span>Finding your terminal...</span>
+            </div>
           )}
           {health && (
             <>
@@ -415,10 +418,11 @@ export default function StartPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] p-6 w-[420px]'
+              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[560px] max-h-[80vh] flex flex-col'
             >
-              <div className='flex items-center justify-between mb-5'>
-                <h3 className='font-display text-lg font-semibold'>Terminal Settings</h3>
+              {/* Header */}
+              <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
+                <h3 className='font-display text-lg font-semibold'>Settings</h3>
                 <button
                   onClick={() => setShowSettings(false)}
                   className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
@@ -427,37 +431,48 @@ export default function StartPage() {
                 </button>
               </div>
 
-              <label className='block mb-4'>
-                <span className='text-xs text-ink/40 mb-1.5 block'>API URL</span>
-                <input
-                  value={settingsInput}
-                  onChange={(e) => setSettingsInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && saveSettings()}
-                  className='w-full text-sm text-ink font-mono bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-                  placeholder='http://localhost:3001'
-                />
-              </label>
+              <div className='flex flex-1 min-h-0'>
+                {/* Sidebar */}
+                <div className='w-[140px] border-r border-ink/8 py-4 px-3'>
+                  <button className='w-full text-left px-3 py-2 rounded-lg bg-ink/5 text-sm font-medium text-ink'>
+                    Terminal
+                  </button>
+                </div>
 
-              <div className='flex items-center justify-between'>
-                <button
-                  onClick={resetSettings}
-                  className='text-xs text-ink/30 hover:text-coral transition-colors'
-                >
-                  Reset to default
-                </button>
-                <div className='flex gap-2'>
+                {/* Content */}
+                <div className='flex-1 flex flex-col p-6'>
+                  <label className='block mb-4'>
+                    <span className='text-xs text-ink/40 mb-1.5 block'>API URL</span>
+                    <input
+                      value={settingsInput}
+                      onChange={(e) => setSettingsInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && saveSettings()}
+                      className='w-full text-sm text-ink font-mono bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
+                      placeholder='http://localhost:3001'
+                    />
+                  </label>
+
                   <button
-                    onClick={() => setShowSettings(false)}
-                    className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'
+                    onClick={resetSettings}
+                    className='text-xs text-ink/30 hover:text-coral transition-colors self-start mb-auto'
                   >
-                    Cancel
+                    Reset to default
                   </button>
-                  <button
-                    onClick={saveSettings}
-                    className='px-4 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
-                  >
-                    Save & Reconnect
-                  </button>
+
+                  <div className='flex justify-end gap-2 mt-6 pt-4 border-t border-ink/8'>
+                    <button
+                      onClick={() => setShowSettings(false)}
+                      className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveSettings}
+                      className='px-4 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+                    >
+                      Save & Reconnect
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

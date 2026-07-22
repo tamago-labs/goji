@@ -117,10 +117,9 @@ export default function HowItWorks() {
         <h2 className='font-display text-3xl md:text-4xl font-semibold mb-4'>
           Run it locally. Collaborate globally.
         </h2>
-        <p className='text-ink/60 text-[17px] max-w-[520px] mx-auto leading-relaxed'>
-          Your payment workspace starts from a single command. Launch a local AI
-          agent, collaborate over P2P, review payment flows together — powered
-          by Circle's App Kits.
+        <p className='text-ink/60 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
+          Launch a workspace from your terminal. Invite teammates over P2P,
+          review every payment flow together, and settle with confidence.
         </p>
       </motion.div>
 

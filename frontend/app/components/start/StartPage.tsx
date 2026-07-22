@@ -306,7 +306,7 @@ export default function StartPage() {
         </div>
       </nav>
 
-      <main className='max-w-[960px] mx-auto px-6 py-20'>
+      <main className='max-w-[960px] mx-auto px-6 py-20 pt-10'>
         {error && (
           <div className='bg-coral/10 border border-coral/20 rounded-2xl p-5 mb-10 flex items-center justify-between'>
             <p className='text-sm text-ink/70'>{error}</p>

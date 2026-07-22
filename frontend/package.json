@@ -13,6 +13,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@tanstack/react-query": "^5.101.4",
+    "@web3icons/react": "^4.1.19",
     "@x402/core": "^2.19.0",
     "@x402/evm": "^2.19.0",
     "@x402/svm": "^2.19.0",

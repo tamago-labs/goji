@@ -3,24 +3,27 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const shortCode = 'yry797uajfwwpos...'
-const hostCmd = 'npx @tamago-labs/goji --host'
-const guestCmd = 'npx @tamago-labs/goji --join ' + shortCode
+const hostCmd = 'npx @tamago-labs/goji'
+const guestCmd = 'npx @tamago-labs/goji --join'
 
 const hostOutput = [
-  { text: '✓ Starting local AI agent...', color: 'text-ink/60' },
-  { text: '✓ Connecting to Hyperswarm...', color: 'text-ink/60' },
-  { text: '✓ Linking Circle Wallets...', color: 'text-ink/60' },
-  { text: '✓ Hosting payment workspace...', color: 'text-ink/60' },
+  { text: 'mode: host', color: 'text-ink/50' },
+  { text: '', color: '' },
+  { text: '✓ Keet identity ready', color: 'text-[#28C840]' },
+  { text: '✓ P2P workspace hosted', color: 'text-[#28C840]' },
+  { text: '', color: '' },
+  { text: '  invite: yryo3rdcinj5njk...', color: 'text-mint font-medium' },
   { text: '', color: '' },
   { text: 'Ready.', color: 'text-[#28C840] font-medium' }
 ]
 
 const guestOutput = [
-  { text: '✓ Joining workspace...', color: 'text-ink/60' },
-  { text: '✓ Syncing payment canvas...', color: 'text-ink/60' },
-  { text: '✓ Linking Circle Wallets...', color: 'text-ink/60' },
-  { text: '✓ Connected.', color: 'text-ink/60' },
+  { text: 'mode: join', color: 'text-ink/50' },
+  { text: '', color: '' },
+  { text: '  enter invite code: █', color: 'text-ink/60' },
+  { text: '', color: '' },
+  { text: '✓ Keet identity ready', color: 'text-[#28C840]' },
+  { text: '✓ Connected to workspace', color: 'text-[#28C840]' },
   { text: '', color: '' },
   { text: 'Ready.', color: 'text-[#28C840] font-medium' }
 ]
@@ -52,7 +55,9 @@ export default function HowItWorks() {
   // Phase 2: show host output then switch to guest
   useEffect(() => {
     if (phase !== 'host-output') return
-    const timers = hostOutput.map((_, i) => setTimeout(() => setVisibleLines(i + 1), 300 + i * 400))
+    const timers = hostOutput.map((_, i) =>
+      setTimeout(() => setVisibleLines(i + 1), 300 + i * 300)
+    )
     const switchTimer = setTimeout(() => {
       setTyped('')
       setVisibleLines(0)
@@ -76,7 +81,7 @@ export default function HowItWorks() {
         clearInterval(interval)
         setTimeout(() => setPhase('guest-output'), 400)
       }
-    }, 25)
+    }, 30)
     return () => clearInterval(interval)
   }, [phase])
 
@@ -84,13 +89,13 @@ export default function HowItWorks() {
   useEffect(() => {
     if (phase !== 'guest-output') return
     const timers = guestOutput.map((_, i) =>
-      setTimeout(() => setVisibleLines(i + 1), 300 + i * 400)
+      setTimeout(() => setVisibleLines(i + 1), 300 + i * 300)
     )
     const resetTimer = setTimeout(() => {
       setGuestTyped('')
       setVisibleLines(0)
       setPhase('host-type')
-    }, 10000)
+    }, 8000)
     return () => {
       timers.forEach(clearTimeout)
       clearTimeout(resetTimer)
@@ -113,8 +118,9 @@ export default function HowItWorks() {
           Run it locally. Collaborate globally.
         </h2>
         <p className='text-ink/60 text-[17px] max-w-[520px] mx-auto leading-relaxed'>
-          Your payment workspace starts from a single command. Launch a local AI agent, collaborate
-          over P2P, review payment flows together — powered by Circle Wallets &amp; App Kits.
+          Your payment workspace starts from a single command. Launch a local AI
+          agent, collaborate over P2P, review payment flows together — powered
+          by Circle Wallets.
         </p>
       </motion.div>
 

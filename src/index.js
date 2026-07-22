@@ -388,7 +388,7 @@ function decodeConnection(raw) {
 async function main() {
   console.log(`goji v0.1.0`)
   console.log(`args: ${process.argv.slice(2).join(' ')}`)
-  console.log(`mode: ${isGuest ? 'guest' : 'host'}`)
+  console.log(`mode: ${isGuest ? 'join' : 'host'}`)
   console.log(`port: ${PORT}`)
 
   let invite = INVITE

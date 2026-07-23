@@ -199,6 +199,11 @@
           "name": "info",
           "type": "json",
           "version": 1
+        },
+        {
+          "name": "proof",
+          "type": "buffer",
+          "version": 1
         }
       ]
     },

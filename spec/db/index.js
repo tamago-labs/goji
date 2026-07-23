@@ -7,9 +7,11 @@ const { version, getEncoding, setVersion } = require('./messages.js')
 const versions = { schema: version, db: 1 }
 
 // '@goji/boards' collection key
-const collection0_key = new IndexEncoder([IndexEncoder.BUFFER], { prefix: 0 })
+const collection0_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 0 })
 
-function collection0_indexify(record) {
+function collection0_indexify (record) {
   const a = record.id
   return a === undefined ? [] : [a]
 }
@@ -18,7 +20,7 @@ function collection0_indexify(record) {
 const collection0_enc = getEncoding('@goji/board/hyperdb#0')
 
 // '@goji/boards' reconstruction function
-function collection0_reconstruct(schemaVersion, keyBuf, valueBuf) {
+function collection0_reconstruct (schemaVersion, keyBuf, valueBuf) {
   const key = collection0_key.decode(keyBuf)
   setVersion(schemaVersion)
   const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
@@ -30,7 +32,7 @@ function collection0_reconstruct(schemaVersion, keyBuf, valueBuf) {
   return record
 }
 // '@goji/boards' key reconstruction function
-function collection0_reconstruct_key(keyBuf) {
+function collection0_reconstruct_key (keyBuf) {
   const key = collection0_key.decode(keyBuf)
   return {
     id: key[0]
@@ -42,11 +44,11 @@ const collection0 = {
   name: '@goji/boards',
   id: 0,
   version: 1,
-  encodeKey(record) {
+  encodeKey (record) {
     const key = [record.id]
     return collection0_key.encode(key)
   },
-  encodeKeyRange({ gt, lt, gte, lte } = {}) {
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
     return collection0_key.encodeRange({
       gt: gt ? collection0_indexify(gt) : null,
       lt: lt ? collection0_indexify(lt) : null,
@@ -54,7 +56,7 @@ const collection0 = {
       lte: lte ? collection0_indexify(lte) : null
     })
   },
-  encodeValue(schemaVersion, collectionVersion, record) {
+  encodeValue (schemaVersion, collectionVersion, record) {
     setVersion(schemaVersion)
     const state = { start: 0, end: 2, buffer: null }
     collection0_enc.preencode(state, record)
@@ -72,9 +74,11 @@ const collection0 = {
 }
 
 // '@goji/cards' collection key
-const collection1_key = new IndexEncoder([IndexEncoder.BUFFER], { prefix: 1 })
+const collection1_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 1 })
 
-function collection1_indexify(record) {
+function collection1_indexify (record) {
   const a = record.id
   return a === undefined ? [] : [a]
 }
@@ -83,7 +87,7 @@ function collection1_indexify(record) {
 const collection1_enc = getEncoding('@goji/card/hyperdb#1')
 
 // '@goji/cards' reconstruction function
-function collection1_reconstruct(schemaVersion, keyBuf, valueBuf) {
+function collection1_reconstruct (schemaVersion, keyBuf, valueBuf) {
   const key = collection1_key.decode(keyBuf)
   setVersion(schemaVersion)
   const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
@@ -95,7 +99,7 @@ function collection1_reconstruct(schemaVersion, keyBuf, valueBuf) {
   return record
 }
 // '@goji/cards' key reconstruction function
-function collection1_reconstruct_key(keyBuf) {
+function collection1_reconstruct_key (keyBuf) {
   const key = collection1_key.decode(keyBuf)
   return {
     id: key[0]
@@ -107,11 +111,11 @@ const collection1 = {
   name: '@goji/cards',
   id: 1,
   version: 1,
-  encodeKey(record) {
+  encodeKey (record) {
     const key = [record.id]
     return collection1_key.encode(key)
   },
-  encodeKeyRange({ gt, lt, gte, lte } = {}) {
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
     return collection1_key.encodeRange({
       gt: gt ? collection1_indexify(gt) : null,
       lt: lt ? collection1_indexify(lt) : null,
@@ -119,7 +123,7 @@ const collection1 = {
       lte: lte ? collection1_indexify(lte) : null
     })
   },
-  encodeValue(schemaVersion, collectionVersion, record) {
+  encodeValue (schemaVersion, collectionVersion, record) {
     setVersion(schemaVersion)
     const state = { start: 0, end: 2, buffer: null }
     collection1_enc.preencode(state, record)
@@ -137,9 +141,11 @@ const collection1 = {
 }
 
 // '@goji/connections' collection key
-const collection2_key = new IndexEncoder([IndexEncoder.BUFFER], { prefix: 2 })
+const collection2_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 2 })
 
-function collection2_indexify(record) {
+function collection2_indexify (record) {
   const a = record.id
   return a === undefined ? [] : [a]
 }
@@ -148,7 +154,7 @@ function collection2_indexify(record) {
 const collection2_enc = getEncoding('@goji/connection/hyperdb#2')
 
 // '@goji/connections' reconstruction function
-function collection2_reconstruct(schemaVersion, keyBuf, valueBuf) {
+function collection2_reconstruct (schemaVersion, keyBuf, valueBuf) {
   const key = collection2_key.decode(keyBuf)
   setVersion(schemaVersion)
   const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
@@ -160,7 +166,7 @@ function collection2_reconstruct(schemaVersion, keyBuf, valueBuf) {
   return record
 }
 // '@goji/connections' key reconstruction function
-function collection2_reconstruct_key(keyBuf) {
+function collection2_reconstruct_key (keyBuf) {
   const key = collection2_key.decode(keyBuf)
   return {
     id: key[0]
@@ -172,11 +178,11 @@ const collection2 = {
   name: '@goji/connections',
   id: 2,
   version: 1,
-  encodeKey(record) {
+  encodeKey (record) {
     const key = [record.id]
     return collection2_key.encode(key)
   },
-  encodeKeyRange({ gt, lt, gte, lte } = {}) {
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
     return collection2_key.encodeRange({
       gt: gt ? collection2_indexify(gt) : null,
       lt: lt ? collection2_indexify(lt) : null,
@@ -184,7 +190,7 @@ const collection2 = {
       lte: lte ? collection2_indexify(lte) : null
     })
   },
-  encodeValue(schemaVersion, collectionVersion, record) {
+  encodeValue (schemaVersion, collectionVersion, record) {
     setVersion(schemaVersion)
     const state = { start: 0, end: 2, buffer: null }
     collection2_enc.preencode(state, record)
@@ -202,9 +208,11 @@ const collection2 = {
 }
 
 // '@goji/chat' collection key
-const collection3_key = new IndexEncoder([IndexEncoder.STRING], { prefix: 3 })
+const collection3_key = new IndexEncoder([
+  IndexEncoder.STRING
+], { prefix: 3 })
 
-function collection3_indexify(record) {
+function collection3_indexify (record) {
   const a = record.id
   return a === undefined ? [] : [a]
 }
@@ -213,7 +221,7 @@ function collection3_indexify(record) {
 const collection3_enc = getEncoding('@goji/chat-msg/hyperdb#3')
 
 // '@goji/chat' reconstruction function
-function collection3_reconstruct(schemaVersion, keyBuf, valueBuf) {
+function collection3_reconstruct (schemaVersion, keyBuf, valueBuf) {
   const key = collection3_key.decode(keyBuf)
   setVersion(schemaVersion)
   const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
@@ -225,7 +233,7 @@ function collection3_reconstruct(schemaVersion, keyBuf, valueBuf) {
   return record
 }
 // '@goji/chat' key reconstruction function
-function collection3_reconstruct_key(keyBuf) {
+function collection3_reconstruct_key (keyBuf) {
   const key = collection3_key.decode(keyBuf)
   return {
     id: key[0]
@@ -237,11 +245,11 @@ const collection3 = {
   name: '@goji/chat',
   id: 3,
   version: 1,
-  encodeKey(record) {
+  encodeKey (record) {
     const key = [record.id]
     return collection3_key.encode(key)
   },
-  encodeKeyRange({ gt, lt, gte, lte } = {}) {
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
     return collection3_key.encodeRange({
       gt: gt ? collection3_indexify(gt) : null,
       lt: lt ? collection3_indexify(lt) : null,
@@ -249,7 +257,7 @@ const collection3 = {
       lte: lte ? collection3_indexify(lte) : null
     })
   },
-  encodeValue(schemaVersion, collectionVersion, record) {
+  encodeValue (schemaVersion, collectionVersion, record) {
     setVersion(schemaVersion)
     const state = { start: 0, end: 2, buffer: null }
     collection3_enc.preencode(state, record)
@@ -267,9 +275,11 @@ const collection3 = {
 }
 
 // '@goji/invites' collection key
-const collection4_key = new IndexEncoder([IndexEncoder.BUFFER], { prefix: 4 })
+const collection4_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 4 })
 
-function collection4_indexify(record) {
+function collection4_indexify (record) {
   const a = record.id
   return a === undefined ? [] : [a]
 }
@@ -278,7 +288,7 @@ function collection4_indexify(record) {
 const collection4_enc = getEncoding('@goji/invite/hyperdb#4')
 
 // '@goji/invites' reconstruction function
-function collection4_reconstruct(schemaVersion, keyBuf, valueBuf) {
+function collection4_reconstruct (schemaVersion, keyBuf, valueBuf) {
   const key = collection4_key.decode(keyBuf)
   setVersion(schemaVersion)
   const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
@@ -290,7 +300,7 @@ function collection4_reconstruct(schemaVersion, keyBuf, valueBuf) {
   return record
 }
 // '@goji/invites' key reconstruction function
-function collection4_reconstruct_key(keyBuf) {
+function collection4_reconstruct_key (keyBuf) {
   const key = collection4_key.decode(keyBuf)
   return {
     id: key[0]
@@ -302,11 +312,11 @@ const collection4 = {
   name: '@goji/invites',
   id: 4,
   version: 1,
-  encodeKey(record) {
+  encodeKey (record) {
     const key = [record.id]
     return collection4_key.encode(key)
   },
-  encodeKeyRange({ gt, lt, gte, lte } = {}) {
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
     return collection4_key.encodeRange({
       gt: gt ? collection4_indexify(gt) : null,
       lt: lt ? collection4_indexify(lt) : null,
@@ -314,7 +324,7 @@ const collection4 = {
       lte: lte ? collection4_indexify(lte) : null
     })
   },
-  encodeValue(schemaVersion, collectionVersion, record) {
+  encodeValue (schemaVersion, collectionVersion, record) {
     setVersion(schemaVersion)
     const state = { start: 0, end: 2, buffer: null }
     collection4_enc.preencode(state, record)
@@ -332,9 +342,11 @@ const collection4 = {
 }
 
 // '@goji/identity' collection key
-const collection5_key = new IndexEncoder([IndexEncoder.BUFFER], { prefix: 5 })
+const collection5_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 5 })
 
-function collection5_indexify(record) {
+function collection5_indexify (record) {
   const a = record.writerKey
   return a === undefined ? [] : [a]
 }
@@ -343,7 +355,7 @@ function collection5_indexify(record) {
 const collection5_enc = getEncoding('@goji/identity/hyperdb#5')
 
 // '@goji/identity' reconstruction function
-function collection5_reconstruct(schemaVersion, keyBuf, valueBuf) {
+function collection5_reconstruct (schemaVersion, keyBuf, valueBuf) {
   const key = collection5_key.decode(keyBuf)
   setVersion(schemaVersion)
   const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
@@ -355,7 +367,7 @@ function collection5_reconstruct(schemaVersion, keyBuf, valueBuf) {
   return record
 }
 // '@goji/identity' key reconstruction function
-function collection5_reconstruct_key(keyBuf) {
+function collection5_reconstruct_key (keyBuf) {
   const key = collection5_key.decode(keyBuf)
   return {
     writerKey: key[0]
@@ -367,11 +379,11 @@ const collection5 = {
   name: '@goji/identity',
   id: 5,
   version: 1,
-  encodeKey(record) {
+  encodeKey (record) {
     const key = [record.writerKey]
     return collection5_key.encode(key)
   },
-  encodeKeyRange({ gt, lt, gte, lte } = {}) {
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
     return collection5_key.encodeRange({
       gt: gt ? collection5_indexify(gt) : null,
       lt: lt ? collection5_indexify(lt) : null,
@@ -379,7 +391,7 @@ const collection5 = {
       lte: lte ? collection5_indexify(lte) : null
     })
   },
-  encodeValue(schemaVersion, collectionVersion, record) {
+  encodeValue (schemaVersion, collectionVersion, record) {
     setVersion(schemaVersion)
     const state = { start: 0, end: 2, buffer: null }
     collection5_enc.preencode(state, record)
@@ -396,34 +408,34 @@ const collection5 = {
   decodedVersion: 0
 }
 
-const collections = [collection0, collection1, collection2, collection3, collection4, collection5]
+const collections = [
+  collection0,
+  collection1,
+  collection2,
+  collection3,
+  collection4,
+  collection5
+]
 
-const indexes = []
+const indexes = [
+]
 
 module.exports = { versions, collections, indexes, resolveCollection, resolveIndex }
 
-function resolveCollection(name) {
+function resolveCollection (name) {
   switch (name) {
-    case '@goji/boards':
-      return collection0
-    case '@goji/cards':
-      return collection1
-    case '@goji/connections':
-      return collection2
-    case '@goji/chat':
-      return collection3
-    case '@goji/invites':
-      return collection4
-    case '@goji/identity':
-      return collection5
-    default:
-      return null
+    case '@goji/boards': return collection0
+    case '@goji/cards': return collection1
+    case '@goji/connections': return collection2
+    case '@goji/chat': return collection3
+    case '@goji/invites': return collection4
+    case '@goji/identity': return collection5
+    default: return null
   }
 }
 
-function resolveIndex(name) {
+function resolveIndex (name) {
   switch (name) {
-    default:
-      return null
+    default: return null
   }
 }

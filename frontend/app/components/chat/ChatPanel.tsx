@@ -199,6 +199,14 @@ export default function ChatPanel({ isOpen, onClose }: { isOpen: boolean; onClos
                         <div className={`max-w-[75%] ${isMe ? 'text-right' : ''}`}>
                           <div className={`flex items-baseline gap-2 mb-0.5 ${isMe ? 'flex-row-reverse' : ''}`}>
                             <span className='text-[11px] font-medium text-ink/70'>{msg.info.name}</span>
+                            {!isMe && 'verified' in msg.info && (
+                              <span
+                                className={`text-[9px] ${msg.info.verified ? 'text-[#28C840]' : 'text-coral'}`}
+                                title={msg.info.verified ? 'Signature verified' : 'Signature invalid'}
+                              >
+                                {msg.info.verified ? '● verified' : '○ unverified'}
+                              </span>
+                            )}
                             <span className='text-[10px] text-ink/30'>{formatTime(msg.info.at)}</span>
                           </div>
                           <div className={`inline-block px-3 py-2 rounded-2xl text-sm ${

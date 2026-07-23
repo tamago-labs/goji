@@ -12,14 +12,8 @@ const z32 = require('z32')
 const readline = require('readline')
 const GojiDispatch = require('../spec/dispatch')
 const GojiDb = require('../spec/db')
-
-let Identity, crypto
-try {
-  Identity = require('keet-identity-key')
-  crypto = require('hypercore-crypto')
-} catch {
-  // keet-identity-key not installed, fallback to basic identity
-}
+const Identity = require('keet-identity-key')
+const crypto = require('hypercore-crypto')
 
 const PORT = parseInt(process.argv.find((a, i) => process.argv[i - 1] === '--port') || '3001', 10)
 const isGuest = process.argv.includes('--guest') || process.argv.includes('--join')
@@ -253,9 +247,9 @@ class GojiRoom {
     }
   }
 
-  async addMessage(text, info) {
+  async addMessage(text, info, proof) {
     const id = Math.random().toString(16).slice(2)
-    await this.base.append(GojiDispatch.encode('@goji/add-chat', { id, text, info }))
+    await this.base.append(GojiDispatch.encode('@goji/add-chat', { id, text, info, proof: proof || null }))
   }
 
   async appendIdentity({ displayName }) {
@@ -438,6 +432,21 @@ async function main() {
   let identityName = NAME || (identityData ? identityData.name : null) || `User-${room.localBase.key.toString('hex').slice(-4)}`
   await room.appendIdentity({ displayName: identityName })
 
+  // Set up Keet identity for message signing
+  let keetIdentity = null
+  let deviceKeyPair = null
+  let deviceProof = null
+  if (identityData && identityData.mnemonic) {
+    try {
+      keetIdentity = await Identity.from({ mnemonic: identityData.mnemonic })
+      deviceKeyPair = crypto.keyPair()
+      deviceProof = await keetIdentity.bootstrap(deviceKeyPair.publicKey)
+      console.log(`[identity] Keet identity ready: ${z32.encode(keetIdentity.identityPublicKey).slice(0, 16)}...`)
+    } catch (err) {
+      console.error('[identity] Keet identity setup failed:', err)
+    }
+  }
+
   const inviteCode = await room.getInvite()
   console.log(`\n  invite: ${inviteCode}`)
   console.log(`  share: npm start -- --join ${inviteCode}\n`)
@@ -569,20 +578,39 @@ async function main() {
 
   app.get('/api/chat', async (req, res) => {
     const messages = await room.getMessages()
-    res.json(messages.map((m) => ({ id: m.id, text: m.text, info: m.info })))
+    const verifiedMessages = messages.map((m) => {
+      let verified = null
+      if (m.proof && m.info && m.info.identityPublicKey) {
+        try {
+          const expectedKey = z32.decode(m.info.identityPublicKey)
+          verified = Identity.verify(m.proof, Buffer.from(m.text), {
+            expectedIdentity: expectedKey
+          })
+        } catch {}
+      }
+      return { id: m.id, text: m.text, info: { ...m.info, verified: !!verified } }
+    })
+    res.json(verifiedMessages)
   })
 
   app.post('/api/chat', async (req, res) => {
+    let proof = null
+    if (deviceKeyPair && deviceProof && keetIdentity) {
+      proof = Identity.attestData(Buffer.from(req.body.text), deviceKeyPair, deviceProof)
+    }
+
     const msg = {
       id: Math.random().toString(16).slice(2),
       text: req.body.text,
       info: {
         name: identityName,
         key: z32.encode(room.localBase.key),
-        at: Date.now()
+        identityPublicKey: keetIdentity ? z32.encode(keetIdentity.identityPublicKey) : null,
+        at: Date.now(),
+        verified: !!proof
       }
     }
-    await room.addMessage(msg.text, msg.info)
+    await room.addMessage(msg.text, msg.info, proof)
     wsBroadcast({ type: 'chat:message', message: msg })
     res.json(msg)
   })

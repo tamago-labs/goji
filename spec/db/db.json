@@ -12,7 +12,9 @@
       "indexes": [],
       "schema": "@goji/board",
       "derived": false,
-      "key": ["id"],
+      "key": [
+        "id"
+      ],
       "trigger": null
     },
     {
@@ -25,7 +27,9 @@
       "indexes": [],
       "schema": "@goji/card",
       "derived": false,
-      "key": ["id"],
+      "key": [
+        "id"
+      ],
       "trigger": null
     },
     {
@@ -38,7 +42,9 @@
       "indexes": [],
       "schema": "@goji/connection",
       "derived": false,
-      "key": ["id"],
+      "key": [
+        "id"
+      ],
       "trigger": null
     },
     {
@@ -51,7 +57,9 @@
       "indexes": [],
       "schema": "@goji/chat-msg",
       "derived": false,
-      "key": ["id"],
+      "key": [
+        "id"
+      ],
       "trigger": null
     },
     {
@@ -64,7 +72,9 @@
       "indexes": [],
       "schema": "@goji/invite",
       "derived": false,
-      "key": ["id"],
+      "key": [
+        "id"
+      ],
       "trigger": null
     },
     {
@@ -77,7 +87,9 @@
       "indexes": [],
       "schema": "@goji/identity",
       "derived": false,
-      "key": ["writerKey"],
+      "key": [
+        "writerKey"
+      ],
       "trigger": null
     }
   ]

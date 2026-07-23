@@ -343,7 +343,7 @@ export default function StartPage() {
                               onClick={() => { setShowDeposit(true); setShowUserMenu(false) }}
                               className='flex-1 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
                             >
-                              Deposit
+                              Deposit / Withdraw
                             </button>
                             <button
                               onClick={() => disconnect()}

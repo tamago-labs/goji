@@ -8,7 +8,23 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Adapter = any
 
-const context = createUnifiedBalanceKitContext()
+// Use AppKit for class API methods like initiateRemoveFund
+let kit: any = null
+function getKit() {
+  if (!kit) {
+    try {
+      const { AppKit } = require('@circle-fin/app-kit')
+      kit = new AppKit({
+        unifiedBalance: {
+          providers: []  // Use default providers
+        }
+      })
+    } catch {
+      // Fallback if AppKit not available
+    }
+  }
+  return kit
+}
 
 export interface ChainBalance {
   chain: string
@@ -23,6 +39,7 @@ export interface UnifiedBalance {
 }
 
 export async function fetchBalances(adapter: Adapter): Promise<UnifiedBalance> {
+  const context = createUnifiedBalanceKitContext()
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const result = await getBalances(context, {
@@ -54,9 +71,14 @@ export async function depositToUnified(
   chain: string,
   amount: string
 ) {
+  const appKit = getKit()
+  if (!appKit) {
+    return { success: false, error: 'AppKit not available' }
+  }
+
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const result = await deposit(context, {
+      const result = await appKit.unifiedBalance.deposit({
         from: { adapter, chain: chain as never },
         amount,
         token: 'USDC'
@@ -76,14 +98,75 @@ export async function depositToUnified(
   return { success: false, error: 'Max retries exceeded' }
 }
 
-// TODO: Withdraw not working yet - needs OperationContext pattern
-// For now, show error message to user
 export async function withdrawFromUnified(
-  _adapter: Adapter,
-  _amount: string,
-  _toChain: string
+  adapter: Adapter,
+  amount: string,
+  toChain: string
 ) {
-  return { success: false, error: 'Withdraw feature coming soon' }
+
+
+  const appKit = getKit()
+  if (!appKit) {
+    return { success: false, error: 'AppKit not available' }
+  }
+
+  try {
+    const initiateResult = await appKit.unifiedBalance.initiateRemoveFund({
+      from: {
+        adapter,
+        chain: toChain as never
+      },
+      amount
+    })
+
+    return {
+      success: true,
+      message: 'Withdrawal initiated. On EVM chains, there is a 7-day waiting period before completion.',
+      txHash: initiateResult.txHash
+    }
+  } catch (err) {
+    console.error('[unified-balance] withdraw error:', err)
+    return { success: false, error: (err as Error).message }
+  }
+}
+
+export async function completeWithdrawal(
+  adapter: Adapter,
+  chain: string
+) {
+
+  const appKit = getKit()
+  if (!appKit) {
+    return { success: false, error: 'AppKit not available. Please refresh and try again.' }
+  }
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const result = await appKit.unifiedBalance.removeFund({
+        from: {
+          adapter,
+          chain: chain as never
+        }
+      })
+      return { success: true, txHash: result.txHash }
+    } catch (err) {
+      const message = (err as Error).message || ''
+      if (message.includes('request limit reached') && attempt < 3) {
+        await new Promise((r) => setTimeout(r, attempt * 2000))
+        continue
+      }
+      // Provide helpful error messages
+      if (message.includes('NETWORK_CONNECTION_FAILED')) {
+        return { success: false, error: 'The 7-day waiting period may not have elapsed yet, or there is a connectivity issue.' }
+      }
+      if (message.includes('waiting period')) {
+        return { success: false, error: 'The 7-day waiting period has not elapsed yet. Please try again later.' }
+      }
+      console.error('[unified-balance] complete withdrawal error:', err)
+      return { success: false, error: message }
+    }
+  }
+  return { success: false, error: 'Max retries exceeded' }
 }
 
 export async function spendFromUnified(
@@ -92,12 +175,21 @@ export async function spendFromUnified(
   toChain: string,
   recipientAddress: string
 ) {
+  const appKit = getKit()
+  if (!appKit) {
+    return { success: false, error: 'AppKit not available' }
+  }
+
   try {
-    const result = await spend(context, {
+    const result = await appKit.unifiedBalance.spend({
       amount,
       token: 'USDC',
-      from: { adapter },
-      to: { adapter, chain: toChain as never, recipientAddress }
+      from: [{ adapter }],
+      to: {
+        adapter,
+        chain: toChain as never,
+        recipientAddress
+      }
     })
     return { success: true, txHash: result.txHash }
   } catch (err) {

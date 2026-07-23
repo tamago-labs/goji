@@ -1,13 +1,18 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, useDisconnect } from 'wagmi'
+import { useAccount, useDisconnect, useWalletClient } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
+import { useInterval } from 'usehooks-ts'
+import { fetchBalances } from '../../../lib/unified-balance'
+import { ArcTestnet, BaseSepolia, EthereumSepolia } from '@circle-fin/app-kit/chains'
+import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
 import Logo from '../common/Logo'
 import FloatingChatButton from '../chat/FloatingChatButton'
+import DepositModal from './DepositModal'
 
 const DEFAULT_URL = 'http://localhost:3001'
 
@@ -72,10 +77,62 @@ export default function StartPage() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showUsernameModal, setShowUsernameModal] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [showDeposit, setShowDeposit] = useState(false)
   const [usernameInput, setUsernameInput] = useState('')
+  const [balance, setBalance] = useState({ total: '0.00', chains: [] as { chain: string; balance: string; icon: typeof NetworkArc }[] })
+  const [adapter, setAdapter] = useState<unknown>(null)
+  const balanceRef = useRef('0.00')
 
   const { address, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const { disconnect } = useDisconnect()
+
+  // Create adapter when wallet connects
+  useEffect(() => {
+    if (isConnected && walletClient && address) {
+      async function createAdapter() {
+        try {
+          const adv = await createViemAdapterFromProvider({
+            provider: walletClient as never,
+            capabilities: {
+              supportedChains: [ArcTestnet]
+            }
+          })
+          setAdapter(adv)
+        } catch (err) {
+          console.error('[balance] adapter error:', err)
+        }
+      }
+      createAdapter()
+    }
+  }, [isConnected, walletClient, address])
+
+  // Fetch balance function
+  const fetchBalance = useCallback(async () => {
+    if (!adapter) return
+    try {
+      const result = await fetchBalances(adapter)
+      setBalance({
+        total: result.totalConfirmed,
+        chains: [
+          { chain: 'Arc Testnet', balance: result.totalConfirmed, icon: NetworkArc },
+          { chain: 'Base Sepolia', balance: '0.00', icon: NetworkBase },
+          { chain: 'Ethereum Sepolia', balance: '0.00', icon: NetworkEthereum }
+        ]
+      })
+      balanceRef.current = result.totalConfirmed
+    } catch (err) {
+      console.error('[balance] fetch error:', err)
+    }
+  }, [adapter])
+
+  // Poll balance: 3s if no balance, 10s if has balance
+  useInterval(
+    fetchBalance,
+    isConnected && adapter
+      ? balanceRef.current !== '0.00' ? 10000 : 3000
+      : null
+  )
 
   const fetchHealth = useCallback(
     async (url: string) => {
@@ -213,67 +270,101 @@ export default function StartPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 4 }}
                       transition={{ duration: 0.15 }}
-                      className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
+                      className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-[320px] z-50'
                     >
-                      <div className='mb-3'>
-                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>Delegate wallet</p>
-                        {isConnected ? (
-                          <div className='space-y-1.5'>
-                            {[
-                              { chain: 'Arc Testnet', icon: NetworkArc, id: 'arc' },
-                              { chain: 'Base Sepolia', icon: NetworkBase, id: 'base' },
-                              { chain: 'Ethereum Sepolia', icon: NetworkEthereum, id: 'eth' }
-                            ].map((c) => {
-                              const Icon = c.icon
-                              return (
-                              <div
-                                key={c.id}
-                                onClick={async () => {
-                                  await navigator.clipboard.writeText(address || '')
-                                  setCopiedChain(c.id)
-                                  setTimeout(() => setCopiedChain(null), 2000)
-                                }}
-                                className='flex items-center gap-2 px-2 py-1.5 hover:bg-ink/5 rounded-lg transition-colors cursor-pointer group'
-                              >
-                                <span className='w-5 h-5 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0'>
-                                  <Icon variant='branded' size={14} />
-                                </span>
-                                <span className='text-[11px] text-ink/50 w-[90px] truncate'>{c.chain}</span>
-                                <span className='font-mono text-[11px] text-ink/60 flex-1 truncate'>
-                                  {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}
-                                </span>
-                                {copiedChain === c.id ? (
-                                  <svg className='w-3.5 h-3.5 text-mint flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
-                                  </svg>
-                                ) : (
-                                  <svg className='w-3.5 h-3.5 text-ink/20 group-hover:text-ink/50 flex-shrink-0 transition-colors' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z' />
-                                  </svg>
-                                )}
-                              </div>
-                              )
-                            })}
-                            <button
-                              onClick={() => disconnect()}
-                              className='w-full text-center text-[11px] text-ink/30 hover:text-coral mt-1 transition-colors'
-                            >
-                              Disconnect
-                            </button>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className='[&>div]:!bg-transparent [&>div]:!p-0 [&>button]:!bg-ink [&>button]:!text-lavender [&>button]:!rounded-xl [&>button]:!px-3 [&>button]:!py-2 [&>button]:!text-xs [&>button]:!font-medium [&>button]:!w-full'>
-                              <ConnectButton />
-                            </div>
-                            <p className='text-[10px] text-ink/30 mt-2 leading-relaxed'>
-                              Enable <a href='https://www.circle.com/gateway' target='_blank' rel='noopener noreferrer' className='underline hover:text-ink/70 transition-colors'>Circle's Unified Balance</a> with your EOA wallet.
-                            </p>
+                      {/* Unified Balance Header */}
+                      <div className='mb-4'>
+                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-1'>Unified Balance</p>
+                        {isConnected && (
+                          <div className='flex items-center gap-2'>
+                            <img
+                              src='https://assets.coingecko.com/coins/images/6319/standard/USDC.png?1769615602'
+                              alt='USDC'
+                              className='w-5 h-5 rounded-full'
+                            />
+                            {balance.total === '0.00' ? (
+                              <div className='h-5 w-20 bg-ink/10 rounded animate-pulse' />
+                            ) : (
+                              <span className='text-lg font-semibold text-ink'>{balance.total}</span>
+                            )}
+                            <span className='text-xs text-ink/40'>USDC</span>
                           </div>
                         )}
                       </div>
 
-                      <div className='border-t border-ink/8 pt-3'>
+                      {isConnected ? (
+                        <div>
+                          {/* Per-chain addresses */}
+                          <div className='mb-4'>
+                            <div className='space-y-1'>
+                              {[
+                                { chain: 'Arc Testnet', icon: NetworkArc, id: 'arc' },
+                                { chain: 'Base Sepolia', icon: NetworkBase, id: 'base' },
+                                { chain: 'Ethereum Sepolia', icon: NetworkEthereum, id: 'eth' }
+                              ].map((c) => {
+                                const Icon = c.icon
+                                return (
+                                  <div
+                                    key={c.id}
+                                    onClick={async () => {
+                                      await navigator.clipboard.writeText(address || '')
+                                      setCopiedChain(c.id)
+                                      setTimeout(() => setCopiedChain(null), 2000)
+                                    }}
+                                    className='flex items-center gap-2 px-2 py-1.5 hover:bg-ink/5 rounded-lg transition-colors cursor-pointer group'
+                                  >
+                                    <span className='w-5 h-5 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0'>
+                                      <Icon variant='branded' size={14} />
+                                    </span>
+                                    <span className='text-[11px] text-ink/50 w-[90px] truncate'>{c.chain}</span>
+                                    <div className='flex items-center gap-1.5 ml-auto'>
+                                      <span className='font-mono text-[11px] text-ink/60 truncate'>
+                                        {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}
+                                      </span>
+                                      {copiedChain === c.id ? (
+                                        <svg className='w-3 h-3 text-mint flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                                        </svg>
+                                      ) : (
+                                        <svg className='w-3 h-3 text-ink/15 group-hover:text-ink/40 flex-shrink-0 transition-colors' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z' />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className='flex gap-2'>
+                            <button
+                              onClick={() => { setShowDeposit(true); setShowUserMenu(false) }}
+                              className='flex-1 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+                            >
+                              Deposit
+                            </button>
+                            <button
+                              onClick={() => disconnect()}
+                              className='px-3 py-2 text-[11px] text-ink/30 hover:text-coral transition-colors'
+                            >
+                              Disconnect
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className='[&>div]:!bg-transparent [&>div]:!p-0 [&>button]:!bg-ink [&>button]:!text-lavender [&>button]:!rounded-xl [&>button]:!px-3 [&>button]:!py-2 [&>button]:!text-xs [&>button]:!font-medium [&>button]:!w-full'>
+                            <ConnectButton />
+                          </div>
+                          <p className='text-[10px] text-ink/30 mt-2 leading-relaxed'>
+                              Connect to send & receive USDC across chains.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className='border-t border-ink/8 pt-3 mt-3'>
                         <button
                           onClick={() => {
                             setUsernameInput(health.name)
@@ -575,6 +666,8 @@ className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px
           </>
         )}
       </AnimatePresence>
+
+      <DepositModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} unifiedBalance={balance.total} />
 
       <FloatingChatButton />
     </div>

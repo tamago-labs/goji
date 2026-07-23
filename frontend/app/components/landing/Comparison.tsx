@@ -4,11 +4,11 @@ import { motion } from 'framer-motion'
 
 const rows = [
   { traditional: 'Spreadsheet rows', goji: 'Visual payment canvas' },
-  { traditional: 'Wallet addresses', goji: 'Connected payment flows' },
+  { traditional: 'Copy-paste wallet addresses', goji: 'Connected payment flows' },
   { traditional: 'Separate invoices & contracts', goji: 'Documents attached to payments' },
   { traditional: 'Manual payment review', goji: 'Collaborative flow review' },
   { traditional: 'Multiple dashboards', goji: 'One shared workspace' },
-  { traditional: 'Send, then verify', goji: 'Review, then settle' }
+  { traditional: 'Send, then verify on one chain', goji: 'Review, then settle across chains' }
 ]
 
 export default function Comparison() {

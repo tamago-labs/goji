@@ -46,7 +46,7 @@ export default function SupportedChains() {
         </h2>
         <p className='text-ink/50 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
           Your team can send and receive payments across supported networks
-          from one shared payment workspace, powered by Circle App Kits.
+          from one shared payment workspace, powered by Circle Gateway.
         </p>
       </motion.div>
 
@@ -74,6 +74,16 @@ export default function SupportedChains() {
           )
         })}
       </motion.div>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className='text-center text-xs text-ink/30 mt-8'
+      >
+        Currently live on testnets: Arc Testnet, Base Sepolia, Ethereum Sepolia. Mainnet support coming soon.
+      </motion.p>
     </section>
   )
 }

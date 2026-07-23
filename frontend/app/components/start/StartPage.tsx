@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount, useDisconnect } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
 import Logo from '../common/Logo'
 import FloatingChatButton from '../chat/FloatingChatButton'
 
@@ -65,6 +66,7 @@ export default function StartPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [copiedChain, setCopiedChain] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [settingsInput, setSettingsInput] = useState(DEFAULT_URL)
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -214,23 +216,59 @@ export default function StartPage() {
                       className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
                     >
                       <div className='mb-3'>
-                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-1.5'>Wallet</p>
+                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>Delegate wallet</p>
                         {isConnected ? (
-                          <div className='flex items-center justify-between'>
-                            <div className='flex items-center gap-2'>
-                              <span className='w-2 h-2 rounded-full bg-mint' />
-                              <span className='font-mono text-xs text-ink/60'>{truncateAddress(address || '')}</span>
-                            </div>
+                          <div className='space-y-1.5'>
+                            {[
+                              { chain: 'Arc Testnet', icon: NetworkArc, id: 'arc' },
+                              { chain: 'Base Sepolia', icon: NetworkBase, id: 'base' },
+                              { chain: 'Ethereum Sepolia', icon: NetworkEthereum, id: 'eth' }
+                            ].map((c) => {
+                              const Icon = c.icon
+                              return (
+                              <div
+                                key={c.id}
+                                onClick={async () => {
+                                  await navigator.clipboard.writeText(address || '')
+                                  setCopiedChain(c.id)
+                                  setTimeout(() => setCopiedChain(null), 2000)
+                                }}
+                                className='flex items-center gap-2 px-2 py-1.5 hover:bg-ink/5 rounded-lg transition-colors cursor-pointer group'
+                              >
+                                <span className='w-5 h-5 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0'>
+                                  <Icon variant='branded' size={14} />
+                                </span>
+                                <span className='text-[11px] text-ink/50 w-[90px] truncate'>{c.chain}</span>
+                                <span className='font-mono text-[11px] text-ink/60 flex-1 truncate'>
+                                  {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}
+                                </span>
+                                {copiedChain === c.id ? (
+                                  <svg className='w-3.5 h-3.5 text-mint flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                                  </svg>
+                                ) : (
+                                  <svg className='w-3.5 h-3.5 text-ink/20 group-hover:text-ink/50 flex-shrink-0 transition-colors' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z' />
+                                  </svg>
+                                )}
+                              </div>
+                              )
+                            })}
                             <button
                               onClick={() => disconnect()}
-                              className='text-[10px] text-ink/30 hover:text-coral transition-colors'
+                              className='w-full text-center text-[11px] text-ink/30 hover:text-coral mt-1 transition-colors'
                             >
                               Disconnect
                             </button>
                           </div>
                         ) : (
-                          <div className='[&>div]:!bg-transparent [&>div]:!p-0 [&>button]:!bg-ink [&>button]:!text-lavender [&>button]:!rounded-xl [&>button]:!px-3 [&>button]:!py-2 [&>button]:!text-xs [&>button]:!font-medium [&>button]:!w-full'>
-                            <ConnectButton />
+                          <div>
+                            <div className='[&>div]:!bg-transparent [&>div]:!p-0 [&>button]:!bg-ink [&>button]:!text-lavender [&>button]:!rounded-xl [&>button]:!px-3 [&>button]:!py-2 [&>button]:!text-xs [&>button]:!font-medium [&>button]:!w-full'>
+                              <ConnectButton />
+                            </div>
+                            <p className='text-[10px] text-ink/30 mt-2 leading-relaxed'>
+                              Enable <a href='https://www.circle.com/gateway' target='_blank' rel='noopener noreferrer' className='underline hover:text-ink/70 transition-colors'>Circle's Unified Balance</a> with your EOA wallet.
+                            </p>
                           </div>
                         )}
                       </div>
@@ -276,7 +314,7 @@ export default function StartPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 4 }}
                         transition={{ duration: 0.15 }}
-                        className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
+className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
                       >
                         <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>Invite Code</p>
                         <p className='font-mono text-xs text-ink/60 break-all mb-3'>{health.peerId}</p>
@@ -326,7 +364,7 @@ export default function StartPage() {
           </div>
         )}
 
-        <h1 className='font-display text-4xl font-semibold mb-10'>Team payment flows</h1>
+        <h1 className='font-display text-4xl font-semibold mb-10'>Your payment flows</h1>
 
         <h2 className='font-display text-xl font-semibold mb-4'>Active boards</h2>
         {boards.length === 0 ? (

@@ -232,18 +232,36 @@ export default function FlowBuilder({
   )
 
   const addWallet = useCallback(
-    (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null }) => {
-      const card: FlowCard = {
-        id: genId(),
-        category: 'wallet',
-        title: wallet.name || 'Wallet',
-        x: 200 + Math.random() * 100,
-        y: 150 + Math.random() * 100,
-        fields: { address: wallet.address, balance: '', walletId: wallet.id }
+    async (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null }) => {
+      if (boardId) {
+        try {
+          await fetch(`${API}/api/cards`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: genId(),
+              category: 'wallet',
+              title: wallet.name || 'Wallet',
+              x: 200 + Math.random() * 100,
+              y: 150 + Math.random() * 100,
+              fields: { address: wallet.address, balance: '', walletId: wallet.id },
+              boardId
+            })
+          })
+        } catch {}
+      } else {
+        const card: FlowCard = {
+          id: genId(),
+          category: 'wallet',
+          title: wallet.name || 'Wallet',
+          x: 200 + Math.random() * 100,
+          y: 150 + Math.random() * 100,
+          fields: { address: wallet.address, balance: '', walletId: wallet.id }
+        }
+        setCards((prev) => [...prev, card])
       }
-      setCards((prev) => [...prev, card])
     },
-    []
+    [boardId, API]
   )
 
   const deleteCard = useCallback(

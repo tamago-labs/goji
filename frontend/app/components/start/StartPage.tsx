@@ -9,6 +9,7 @@ import FloatingChatButton from '../chat/FloatingChatButton'
 import UserMenuPopover from './UserMenuPopover'
 import UsernameModal from './UsernameModal'
 import BoardsGrid from './BoardsList'
+import OffersSection from './OffersSection'
 import ErrorBanner from './ErrorBanner'
 import DepositModal from './DepositModal'
 
@@ -31,6 +32,8 @@ interface Board {
   updatedAt: number
 }
 
+type SidebarTab = 'offers' | 'boards'
+
 export default function StartPage() {
   const [apiUrl, setApiUrl] = useState(() => {
     if (typeof window === 'undefined') return DEFAULT_URL
@@ -46,6 +49,7 @@ export default function StartPage() {
   const [showUsernameModal, setShowUsernameModal] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [activeTab, setActiveTab] = useState<SidebarTab>('offers')
 
   const { isConnected } = useAccount()
   const { disconnect } = useDisconnect()
@@ -85,7 +89,7 @@ export default function StartPage() {
         await new Promise((r) => setTimeout(r, 1000))
       }
       if (!cancelled) {
-        setError('Could not establish a connection. Make sure you are using Chrome and running: npx @tamago-labs/goji')
+        setError('Could not establish a connection.')
         setLoading(false)
       }
     }
@@ -124,12 +128,6 @@ export default function StartPage() {
         <Logo />
 
         <div className='flex items-center gap-2'>
-          {loading && (
-            <div className='flex items-center gap-2 text-xs text-ink/40'>
-              <div className='w-3.5 h-3.5 border-2 border-ink/15 border-t-ink/50 rounded-full animate-spin' />
-              <span>Finding your terminal...</span>
-            </div>
-          )}
           {health && (
             <>
               <span
@@ -223,13 +221,96 @@ export default function StartPage() {
         </div>
       </nav>
 
-      <main className='max-w-[960px] mx-auto px-6 py-20 pt-10'>
-        {error && <ErrorBanner message={error} onRetry={() => { setError(null); setLoading(true) }} />}
+      {loading || error ? (
+        <div className='max-w-[1320px] mx-auto px-6 md:px-13 py-8'>
+          {error && <ErrorBanner message={error} onRetry={() => { setError(null); setLoading(true) }} />}
+          <div className='flex items-center justify-center min-h-[50vh]'>
+            <div className='text-center max-w-md'>
+              <div className='w-10 h-10 border-2 border-ink/20 border-t-ink/60 rounded-full animate-spin mx-auto mb-6' />
+              <p className='text-ink/70 text-lg font-display font-semibold mb-2'>Connecting to your workspace...</p>
+              <p className='text-ink/40 text-[15px] mb-5'>
+                Make sure your terminal is running with:
+              </p>
+              <div className='bg-ink/5 rounded-xl px-5 py-3 inline-block mb-5'>
+                <code className='text-sm text-ink/60 font-mono'>npx @tamago-labs/goji</code>
+              </div>
+              <div>
+                <button
+                  onClick={() => {
+                    setSettingsInput(apiUrl)
+                    setShowSettings(true)
+                  }}
+                  className='text-sm text-ink/40 hover:text-ink/70 transition-colors'
+                >
+                  Change terminal URL
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-        <h1 className='font-display text-4xl font-semibold mb-10'>Your payment flows</h1>
+      {!loading && !error && (
+        <div className='max-w-[1320px] mx-auto px-6 md:px-13 py-8 flex gap-8'>
+          <div className='w-[200px] flex-shrink-0'>
+            <nav className='space-y-1'>
+              {[
+                { id: 'offers' as SidebarTab, label: 'Offers', icon: (
+                  <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
+                  </svg>
+                )},
+                { id: 'boards' as SidebarTab, label: 'Boards', icon: (
+                  <svg className='w-4 h-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7m10 10a2 2 0 01-2 2H9a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V7m6 10a2 2 0 01-2 2H9a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V7' />
+                  </svg>
+                )}
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    activeTab === item.id
+                      ? 'bg-ink text-lavender'
+                      : 'text-ink/60 hover:bg-ink/5'
+                  }`}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </div>
 
-        <BoardsGrid boards={boards} disabled={loading || !!error} />
-      </main>
+          <div className='flex-1 min-w-0'>
+            {error && <ErrorBanner message={error} onRetry={() => { setError(null); setLoading(true) }} />}
+
+            <AnimatePresence mode='wait'>
+              {activeTab === 'offers' ? (
+                <motion.div
+                  key='offers'
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <OffersSection disabled={false} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key='boards'
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <BoardsGrid boards={boards} disabled={loading || !!error} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       <FloatingChatButton />
 

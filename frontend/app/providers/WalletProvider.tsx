@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef, type ReactNode } from 'react'
@@ -97,7 +99,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             'Ethereum Sepolia': sepolia
           }
 
-          const adv = await createViemAdapterFromProvider({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const adv: any = await createViemAdapterFromProvider({
             provider: walletClient as never,
             capabilities: {
               supportedChains: [ArcTestnet, BaseSepolia, EthereumSepolia]

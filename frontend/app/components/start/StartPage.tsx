@@ -2,39 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useAccount, useDisconnect } from 'wagmi'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
-import { useWallet } from '../../providers/WalletProvider'
 import Logo from '../common/Logo'
 import FloatingChatButton from '../chat/FloatingChatButton'
+import UserMenuPopover from './UserMenuPopover'
+import UsernameModal from './UsernameModal'
+import BoardsList from './BoardsList'
+import CreateNew from './CreateNew'
+import ErrorBanner from './ErrorBanner'
 import DepositModal from './DepositModal'
 
 const DEFAULT_URL = 'http://localhost:3001'
-
-const templates = [
-  {
-    id: 'simple-payroll',
-    title: 'Simple Payroll',
-    description: 'One wallet, multiple recipients. Ideal for straightforward team payments.',
-    cards: [
-      { type: 'wallet', count: 1 },
-      { type: 'recipient', count: 4 }
-    ]
-  },
-  {
-    id: 'multisig-payroll',
-    title: 'Multisig Payroll',
-    description:
-      'Multiple wallets with a multisig gate. Requires signers to approve before payment.',
-    cards: [
-      { type: 'wallet', count: 3 },
-      { type: 'gate', count: 1 },
-      { type: 'recipient', count: 3 }
-    ]
-  }
-]
 
 interface Health {
   status: string
@@ -53,11 +32,6 @@ interface Board {
   updatedAt: number
 }
 
-function truncateAddress(addr: string) {
-  if (!addr) return ''
-  return addr.slice(0, 6) + '...' + addr.slice(-4)
-}
-
 export default function StartPage() {
   const [apiUrl, setApiUrl] = useState(() => {
     if (typeof window === 'undefined') return DEFAULT_URL
@@ -67,19 +41,15 @@ export default function StartPage() {
   const [boards, setBoards] = useState<Board[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [copiedChain, setCopiedChain] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [settingsInput, setSettingsInput] = useState(DEFAULT_URL)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showUsernameModal, setShowUsernameModal] = useState(false)
-  const [showInvite, setShowInvite] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
-  const [usernameInput, setUsernameInput] = useState('')
+  const [showInvite, setShowInvite] = useState(false)
 
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
   const { disconnect } = useDisconnect()
-  const { state: walletState } = useWallet()
 
   const fetchHealth = useCallback(
     async (url: string) => {
@@ -149,28 +119,6 @@ export default function StartPage() {
     setShowSettings(false)
   }
 
-  const copyInvite = async () => {
-    if (!health) return
-    await navigator.clipboard.writeText(health.peerId)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const saveUsername = async () => {
-    if (!usernameInput.trim()) return
-    try {
-      await fetch(`${apiUrl}/api/username`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: usernameInput.trim() })
-      })
-    } catch {}
-    if (health) {
-      setHealth({ ...health, name: usernameInput.trim() })
-    }
-    setShowUsernameModal(false)
-  }
-
   return (
     <div className='min-h-screen bg-lavender'>
       <nav className='flex items-center justify-between px-6 md:px-13 py-4 max-w-[1320px] mx-auto border-b border-ink/8'>
@@ -212,118 +160,13 @@ export default function StartPage() {
 
                 <AnimatePresence>
                   {showUserMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                      transition={{ duration: 0.15 }}
-                      className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-[320px] z-50'
-                    >
-                      {/* Unified Balance Header */}
-                      <div className='mb-4'>
-                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-1'>Unified Balance</p>
-                        {isConnected && (
-                          <div className='flex items-center gap-2'>
-                            <img
-                              src='https://assets.coingecko.com/coins/images/6319/standard/USDC.png?1769615602'
-                              alt='USDC'
-                              className='w-5 h-5 rounded-full'
-                            />
-                            {walletState.totalBalance === '0.00' ? (
-                              <div className='h-5 w-20 bg-ink/10 rounded animate-pulse' />
-                            ) : (
-                              <span className='text-lg font-semibold text-ink'>{walletState.totalBalance}</span>
-                            )}
-                            <span className='text-xs text-ink/40'>USDC</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {isConnected ? (
-                        <div>
-                          {/* Per-chain addresses */}
-                          <div className='mb-4'>
-                            <div className='space-y-1'>
-                              {[
-                                { chain: 'Arc Testnet', icon: NetworkArc, id: 'arc' },
-                                { chain: 'Base Sepolia', icon: NetworkBase, id: 'base' },
-                                { chain: 'Ethereum Sepolia', icon: NetworkEthereum, id: 'eth' }
-                              ].map((c) => {
-                                const Icon = c.icon
-                                return (
-                                  <div
-                                    key={c.id}
-                                    onClick={async () => {
-                                      await navigator.clipboard.writeText(address || '')
-                                      setCopiedChain(c.id)
-                                      setTimeout(() => setCopiedChain(null), 2000)
-                                    }}
-                                    className='flex items-center gap-2 px-2 py-1.5 hover:bg-ink/5 rounded-lg transition-colors cursor-pointer group'
-                                  >
-                                    <span className='w-5 h-5 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0'>
-                                      <Icon variant='branded' size={14} />
-                                    </span>
-                                    <span className='text-[11px] text-ink/50 w-[90px] truncate'>{c.chain}</span>
-                                    <div className='flex items-center gap-1.5 ml-auto'>
-                                      <span className='font-mono text-[11px] text-ink/60 truncate'>
-                                        {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}
-                                      </span>
-                                      {copiedChain === c.id ? (
-                                        <svg className='w-3 h-3 text-mint flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
-                                        </svg>
-                                      ) : (
-                                        <svg className='w-3 h-3 text-ink/15 group-hover:text-ink/40 flex-shrink-0 transition-colors' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z' />
-                                        </svg>
-                                      )}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className='flex gap-2'>
-                            <button
-                              onClick={() => { setShowDeposit(true); setShowUserMenu(false) }}
-                              className='flex-1 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
-                            >
-                              Deposit / Withdraw
-                            </button>
-                            <button
-                              onClick={() => disconnect()}
-                              className='px-3 py-2 text-[11px] text-ink/30 hover:text-coral transition-colors'
-                            >
-                              Disconnect
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className='[&>div]:!bg-transparent [&>div]:!p-0 [&>button]:!bg-ink [&>button]:!text-lavender [&>button]:!rounded-xl [&>button]:!px-3 [&>button]:!py-2 [&>button]:!text-xs [&>button]:!font-medium [&>button]:!w-full'>
-                            <ConnectButton />
-                          </div>
-                          <p className='text-[10px] text-ink/30 mt-2 leading-relaxed'>
-                              Connect to send & receive USDC across chains.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className='border-t border-ink/8 pt-3 mt-3'>
-                        <button
-                          onClick={() => {
-                            setUsernameInput(health.name)
-                            setShowUsernameModal(true)
-                            setShowUserMenu(false)
-                          }}
-                          className='w-full text-left text-xs text-ink/50 hover:text-ink/70 transition-colors py-1.5'
-                        >
-                          Change username
-                        </button>
-                      </div>
-                    </motion.div>
+                    <UserMenuPopover
+                      isOpen={showUserMenu}
+                      onClose={() => setShowUserMenu(false)}
+                      health={health}
+                      onOpenUsername={() => { setShowUsernameModal(true); setShowUserMenu(false) }}
+                      onOpenDeposit={() => { setShowDeposit(true); setShowUserMenu(false) }}
+                    />
                   )}
                 </AnimatePresence>
               </div>
@@ -335,15 +178,9 @@ export default function StartPage() {
                     className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors'
                     title='Invite'
                   >
-                    {copied ? (
-                      <svg className='w-4 h-4 text-mint' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
-                      </svg>
-                    ) : (
-                      <svg className='w-4 h-4 text-ink/40' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' />
-                      </svg>
-                    )}
+                    <svg className='w-4 h-4 text-ink/40' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' />
+                    </svg>
                   </button>
                   <AnimatePresence>
                     {showInvite && (
@@ -352,15 +189,17 @@ export default function StartPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 4 }}
                         transition={{ duration: 0.15 }}
-className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
+                        className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
                       >
                         <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>Invite Code</p>
                         <p className='font-mono text-xs text-ink/60 break-all mb-3'>{health.peerId}</p>
                         <button
-                          onClick={copyInvite}
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(health.peerId)
+                          }}
                           className='w-full px-3 py-2 bg-ink text-lavender text-xs font-medium rounded-lg hover:opacity-90 transition-opacity'
                         >
-                          {copied ? 'Copied!' : 'Copy Invite Code'}
+                          Copy Invite Code
                         </button>
                       </motion.div>
                     )}
@@ -385,99 +224,16 @@ className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px
         </div>
       </nav>
 
-      <main className='max-w-[960px] mx-auto px-6 py-20 pt-10'>
-        {error && (
-          <div className='bg-coral/10 border border-coral/20 rounded-2xl p-5 mb-10 flex items-center justify-between'>
-            <p className='text-sm text-ink/70'>{error}</p>
-            <button
-              onClick={() => {
-                setError(null)
-                setLoading(true)
-                setHealth(null)
-              }}
-              className='shrink-0 ml-4 text-xs text-ink/40 hover:text-ink/70 transition-colors'
-            >
-              Retry
-            </button>
-          </div>
-        )}
+      <main className='max-w-[960px] mx-auto px-6 py-20'>
+        {error && <ErrorBanner message={error} onRetry={() => { setError(null); setLoading(true) }} />}
 
         <h1 className='font-display text-4xl font-semibold mb-10'>Your payment flows</h1>
 
-        <h2 className='font-display text-xl font-semibold mb-4'>Active boards</h2>
-        {boards.length === 0 ? (
-          <div className={`bg-card rounded-2xl p-8 shadow-[0_4px_20px_rgba(43,36,64,0.06)] text-center mb-12 ${loading || error ? ' opacity-50 pointer-events-none' : ''}`}>
-            <p className='text-ink/40 text-sm'>No boards yet. Create one below.</p>
-          </div>
-        ) : (
-          <div className={`space-y-3 mb-12 ${loading || error ? ' opacity-50 pointer-events-none' : ''}`}>
-            {boards.map((board) => (
-              <Link
-                key={board.id}
-                href={`/flow/${board.id}`}
-                className='bg-card rounded-2xl p-5 shadow-[0_4px_20px_rgba(43,36,64,0.06)] hover:shadow-[0_8px_30px_rgba(43,36,64,0.1)] transition-shadow flex items-center justify-between'
-              >
-                <div>
-                  <h3 className='font-medium text-ink text-sm'>{board.name}</h3>
-                  <p className='text-xs text-ink/30 mt-1'>
-                    Created {new Date(board.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <span className='text-ink/20 text-sm'>&rarr;</span>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        <h2 className='font-display text-xl font-semibold mb-4'>Create new</h2>
-        <div
-          className={`grid grid-cols-1 sm:grid-cols-3 gap-5 ${loading || error ? 'opacity-50 pointer-events-none' : ''}`}
-        >
-          <Link
-            href='/flow/new?type=blank'
-            className='group bg-card rounded-2xl p-6 shadow-[0_4px_20px_rgba(43,36,64,0.06)] hover:shadow-[0_8px_30px_rgba(43,36,64,0.1)] transition-shadow border-2 border-dashed border-ink/15 hover:border-mint/50 flex flex-col items-center justify-center min-h-[180px]'
-          >
-            <div className='w-12 h-12 rounded-xl bg-ink/5 group-hover:bg-mint/15 flex items-center justify-center mb-3 transition-colors'>
-              <span className='text-2xl text-ink/40 group-hover:text-mint transition-colors'>+</span>
-            </div>
-            <span className='font-medium text-ink/70 group-hover:text-ink transition-colors'>
-              Blank canvas
-            </span>
-          </Link>
-
-          {templates.map((t) => (
-            <Link
-              key={t.id}
-              href={`/flow/new?type=${t.id}`}
-              className='group bg-card rounded-2xl p-6 shadow-[0_4px_20px_rgba(43,36,64,0.06)] hover:shadow-[0_8px_30px_rgba(43,36,64,0.1)] transition-shadow flex flex-col min-h-[180px]'
-            >
-              <div className='flex-1'>
-                <div className='flex gap-1.5 mb-4'>
-                  {t.cards.map((c, i) => (
-                    <span
-                      key={i}
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        c.type === 'wallet'
-                          ? 'bg-mint/20 text-[#1B7A50]'
-                          : c.type === 'gate'
-                            ? 'bg-coral/20 text-[#C24E33]'
-                            : 'bg-violet/20 text-[#5A4FB8]'
-                      }`}
-                    >
-                      {c.count} {c.type}
-                      {c.count > 1 ? 's' : ''}
-                    </span>
-                  ))}
-                </div>
-                <h3 className='font-display text-lg font-semibold mb-2 group-hover:text-mint transition-colors'>
-                  {t.title}
-                </h3>
-                <p className='text-sm text-ink/50 leading-relaxed'>{t.description}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <BoardsList boards={boards} />
+        <CreateNew disabled={loading || !!error} />
       </main>
+
+      <FloatingChatButton />
 
       <AnimatePresence>
         {showSettings && (
@@ -494,9 +250,8 @@ className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[560px] max-h-[80vh] flex flex-col'
+              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[560px] max-h-[80vh] overflow-hidden flex flex-col'
             >
-              {/* Header */}
               <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
                 <h3 className='font-display text-lg font-semibold'>Settings</h3>
                 <button
@@ -508,14 +263,12 @@ className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px
               </div>
 
               <div className='flex flex-1 min-h-0'>
-                {/* Sidebar */}
                 <div className='w-[140px] border-r border-ink/8 py-4 px-3'>
                   <button className='w-full text-left px-3 py-2 rounded-lg bg-ink/5 text-sm font-medium text-ink'>
                     Terminal
                   </button>
                 </div>
 
-                {/* Content */}
                 <div className='flex-1 flex flex-col p-6'>
                   <label className='block mb-4'>
                     <span className='text-xs text-ink/40 mb-1.5 block'>API URL</span>
@@ -556,67 +309,19 @@ className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showUsernameModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className='fixed inset-0 bg-black/30 z-50'
-              onClick={() => setShowUsernameModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] p-6 w-[380px]'
-            >
-              <div className='flex items-center justify-between mb-5'>
-                <h3 className='font-display text-lg font-semibold'>Change Username</h3>
-                <button
-                  onClick={() => setShowUsernameModal(false)}
-                  className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
-                >
-                  &times;
-                </button>
-              </div>
+      <UsernameModal
+        isOpen={showUsernameModal}
+        onClose={() => setShowUsernameModal(false)}
+        currentName={health?.name || ''}
+        apiUrl={apiUrl}
+        onNameChange={(name) => {
+          if (health) setHealth({ ...health, name })
+        }}
+      />
 
-              <label className='block mb-5'>
-                <span className='text-xs text-ink/40 mb-1.5 block'>Display name</span>
-                <input
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && saveUsername()}
-                  className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-                  placeholder='Your name'
-                  autoFocus
-                />
-              </label>
-
-              <div className='flex justify-end gap-2'>
-                <button
-                  onClick={() => setShowUsernameModal(false)}
-                  className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveUsername}
-                  className='px-4 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
-                >
-                  Save
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      <DepositModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} unifiedBalance={walletState.totalBalance} />
-
-      <FloatingChatButton />
+      {showDeposit && (
+        <DepositModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />
+      )}
     </div>
   )
 }

@@ -12,7 +12,7 @@ import BoardsGrid from './BoardsList'
 import OffersSection from './OffersSection'
 import ErrorBanner from './ErrorBanner'
 import DepositModal from './DepositModal'
-import { DollarSign, LayoutGrid } from 'lucide-react'
+import { DollarSign, LayoutGrid, Wallet, BookText, ListTodo } from 'lucide-react'
 
 const DEFAULT_URL = 'http://localhost:3001'
 
@@ -33,7 +33,7 @@ interface Board {
   updatedAt: number
 }
 
-type SidebarTab = 'offers' | 'boards'
+type SidebarTab = 'overview' | 'offers' | 'boards' | 'wallets' | 'documents'
 
 export default function StartPage() {
   const [apiUrl, setApiUrl] = useState(() => {
@@ -50,7 +50,7 @@ export default function StartPage() {
   const [showUsernameModal, setShowUsernameModal] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
-  const [activeTab, setActiveTab] = useState<SidebarTab>('offers')
+  const [activeTab, setActiveTab] = useState<SidebarTab>('overview')
 
   const { isConnected } = useAccount()
   const { disconnect } = useDisconnect()
@@ -199,7 +199,7 @@ export default function StartPage() {
           <div className='flex gap-8'>
             <div className='w-[200px] flex-shrink-0'>
               <nav className='space-y-1'>
-                {[{ id: 'offers' as SidebarTab, label: 'Your Offers', icon: <DollarSign className='w-4 h-4' /> }, { id: 'boards' as SidebarTab, label: 'Shared Boards', icon: <LayoutGrid className='w-4 h-4' /> }].map((item) => (
+                {[{ id: 'overview' as SidebarTab, label: 'Overview', icon: <ListTodo className='w-4 h-4' /> }, { id: 'offers' as SidebarTab, label: 'Offers', icon: <DollarSign className='w-4 h-4' /> }, { id: 'boards' as SidebarTab, label: 'Boards', icon: <LayoutGrid className='w-4 h-4' /> }, { id: 'wallets' as SidebarTab, label: 'Wallets', icon: <Wallet className='w-4 h-4' /> }, { id: 'documents' as SidebarTab, label: 'Documents', icon: <BookText className='w-4 h-4' /> }].map((item) => (
                   <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === item.id ? 'bg-ink text-lavender' : 'text-ink/60 hover:bg-ink/5'}`}>
                     {item.icon}
                     {item.label}
@@ -210,13 +210,38 @@ export default function StartPage() {
 
             <div className='flex-1 min-w-0'>
               <AnimatePresence mode='wait'>
-                {activeTab === 'offers' ? (
+                {activeTab === 'overview' && (
+                  <motion.div key='overview' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
+                    <div className='text-center py-12 text-ink/30'>
+                      <ListTodo className='w-10 h-10 mx-auto mb-3 opacity-30' />
+                      <p className='text-sm'>Overview coming soon</p>
+                    </div>
+                  </motion.div>
+                )}
+                {activeTab === 'offers' && (
                   <motion.div key='offers' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
                     <OffersSection disabled={false} />
                   </motion.div>
-                ) : (
+                )}
+                {activeTab === 'boards' && (
                   <motion.div key='boards' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
                     <BoardsGrid boards={boards} disabled={loading || !!error} />
+                  </motion.div>
+                )}
+                {activeTab === 'wallets' && (
+                  <motion.div key='wallets' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
+                    <div className='text-center py-12 text-ink/30'>
+                      <Wallet className='w-10 h-10 mx-auto mb-3 opacity-30' />
+                      <p className='text-sm'>Wallets coming soon</p>
+                    </div>
+                  </motion.div>
+                )}
+                {activeTab === 'documents' && (
+                  <motion.div key='documents' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
+                    <div className='text-center py-12 text-ink/30'>
+                      <BookText className='w-10 h-10 mx-auto mb-3 opacity-30' />
+                      <p className='text-sm'>Documents coming soon</p>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

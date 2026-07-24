@@ -46,10 +46,26 @@ export async function fetchBalances(adapter: Adapter): Promise<UnifiedBalance> {
         includePending: true
       })
 
+      // Parse breakdown from result
+      const chains: ChainBalance[] = []
+      if (result.breakdown) {
+        for (const dep of result.breakdown) {
+          if (dep.breakdown) {
+            for (const chainBalance of dep.breakdown) {
+              chains.push({
+                chain: chainBalance.chain || 'Unknown',
+                confirmed: chainBalance.confirmedBalance || '0.00',
+                pending: '0.00'
+              })
+            }
+          }
+        }
+      }
+
       return {
         totalConfirmed: result.totalConfirmedBalance || '0.00',
         totalPending: result.totalPendingBalance || '0.00',
-        chains: []
+        chains
       }
     } catch (err) {
       const message = (err as Error).message || ''
@@ -193,4 +209,48 @@ export async function spendFromUnified(
     console.error('[unified-balance] spend error:', err)
     return { success: false, error: (err as Error).message }
   }
+}
+
+// Fetch unified balance by address (no signing required)
+export async function fetchBalanceByAddress(address: string, chains?: string[]): Promise<UnifiedBalance> {
+  const context = createUnifiedBalanceKitContext()
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const result = await getBalances(context, {
+        sources: { address, chains: chains || ['Base_Sepolia'] as never },
+        networkType: 'testnet'
+      })
+
+      // Parse breakdown from result
+      const chainBalances: ChainBalance[] = []
+      if (result.breakdown) {
+        for (const dep of result.breakdown) {
+          if (dep.breakdown) {
+            for (const chainBalance of dep.breakdown) {
+              chainBalances.push({
+                chain: chainBalance.chain || 'Unknown',
+                confirmed: chainBalance.confirmedBalance || '0.00',
+                pending: '0.00'
+              })
+            }
+          }
+        }
+      }
+
+      return {
+        totalConfirmed: result.totalConfirmedBalance || '0.00',
+        totalPending: result.totalPendingBalance || '0.00',
+        chains: chainBalances
+      }
+    } catch (err) {
+      const message = (err as Error).message || ''
+      if (message.includes('request limit reached') && attempt < 3) {
+        await new Promise((r) => setTimeout(r, attempt * 2000))
+        continue
+      }
+      console.error('[unified-balance] fetchBalanceByAddress error:', err)
+      return { totalConfirmed: '0.00', totalPending: '0.00', chains: [] }
+    }
+  }
+  return { totalConfirmed: '0.00', totalPending: '0.00', chains: [] }
 }

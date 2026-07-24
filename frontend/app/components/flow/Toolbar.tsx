@@ -6,11 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import UserMenuPopover from '../start/UserMenuPopover'
 import UsernameModal from '../start/UsernameModal'
 import DepositModal from '../start/DepositModal'
+import AddWalletPopover from './AddWalletPopover'
 
 interface ToolbarProps {
   flowName: string
   onNameChange: (name: string) => void
   onAddCard: () => void
+  onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null }) => void
   onSettings: () => void
   zoom: number
   onZoomChange: (zoom: number) => void
@@ -22,6 +24,7 @@ export default function Toolbar({
   flowName,
   onNameChange,
   onAddCard,
+  onAddWallet,
   onSettings,
   zoom,
   onZoomChange,
@@ -33,6 +36,7 @@ export default function Toolbar({
   const [showUsernameModal, setShowUsernameModal] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
+  const [showAddWallet, setShowAddWallet] = useState(false)
   const [usernameInput, setUsernameInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -72,6 +76,25 @@ export default function Toolbar({
         >
           + Add Card
         </button>
+
+        <div className='relative'>
+          <button
+            onClick={() => setShowAddWallet(!showAddWallet)}
+            className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+          >
+            + Add Wallet
+          </button>
+          <AnimatePresence>
+            {showAddWallet && (
+              <AddWalletPopover
+                isOpen={showAddWallet}
+                onClose={() => setShowAddWallet(false)}
+                apiUrl={apiUrl}
+                onSelect={(wallet) => { onAddWallet(wallet); setShowAddWallet(false) }}
+              />
+            )}
+          </AnimatePresence>
+        </div>
 
         <div className='flex items-center gap-2 bg-ink/5 rounded-xl px-2 py-1'>
           <button

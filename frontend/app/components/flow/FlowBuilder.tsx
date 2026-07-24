@@ -231,6 +231,21 @@ export default function FlowBuilder({
     [boardId, API]
   )
 
+  const addWallet = useCallback(
+    (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null }) => {
+      const card: FlowCard = {
+        id: genId(),
+        category: 'wallet',
+        title: wallet.name || 'Wallet',
+        x: 200 + Math.random() * 100,
+        y: 150 + Math.random() * 100,
+        fields: { address: wallet.address, balance: '', walletId: wallet.id }
+      }
+      setCards((prev) => [...prev, card])
+    },
+    []
+  )
+
   const deleteCard = useCallback(
     (id: string) => {
       setCards((prev) => prev.filter((c) => c.id !== id))
@@ -334,6 +349,7 @@ export default function FlowBuilder({
           flowName={name}
           onNameChange={handleNameChange}
           onAddCard={() => setShowAddCard(!showAddCard)}
+          onAddWallet={addWallet}
           onSettings={() => setShowSettings(true)}
           zoom={zoom}
           onZoomChange={setZoom}

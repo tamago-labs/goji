@@ -142,13 +142,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (!state.adapter) return
     try {
       const result = await fetchBalances(state.adapter)
+      // Map chains from breakdown - API uses underscores like "Arc_Testnet"
+      const chainsMap: Record<string, string> = {}
+      for (const c of result.chains) {
+        chainsMap[c.chain] = c.confirmed
+      }
       dispatch({
         type: 'SET_BALANCE',
         total: result.totalConfirmed,
         chains: [
-          { chain: 'Arc Testnet', balance: result.totalConfirmed, icon: NetworkArc },
-          { chain: 'Base Sepolia', balance: '0.00', icon: NetworkBase },
-          { chain: 'Ethereum Sepolia', balance: '0.00', icon: NetworkEthereum }
+          { chain: 'Arc Testnet', balance: chainsMap['Arc_Testnet'] || '0.00', icon: NetworkArc },
+          { chain: 'Base Sepolia', balance: chainsMap['Base_Sepolia'] || '0.00', icon: NetworkBase },
+          { chain: 'Ethereum Sepolia', balance: chainsMap['Ethereum_Sepolia'] || '0.00', icon: NetworkEthereum }
         ]
       })
       totalBalanceRef.current = result.totalConfirmed

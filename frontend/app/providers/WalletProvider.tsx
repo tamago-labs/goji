@@ -5,6 +5,8 @@ import { useAccount, useWalletClient } from 'wagmi'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
 import { ArcTestnet, BaseSepolia, EthereumSepolia } from '@circle-fin/app-kit/chains'
 import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
+import { createPublicClient, createWalletClient, http } from 'viem'
+import { arcTestnet, baseSepolia, sepolia } from 'viem/chains'
 import { fetchBalances } from '../../lib/unified-balance'
 import { useInterval } from 'usehooks-ts'
 
@@ -82,10 +84,42 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (isConnected && walletClient) {
       async function createAdapter() {
         try {
+          const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
+          const RPC_MAP: Record<string, string> = {
+            'Arc Testnet': `https://arc-testnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+            'Base Sepolia': `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+            'Ethereum Sepolia': `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
+          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const CHAIN_MAP: Record<string, any> = {
+            'Arc Testnet': arcTestnet,
+            'Base Sepolia': baseSepolia,
+            'Ethereum Sepolia': sepolia
+          }
+
           const adv = await createViemAdapterFromProvider({
             provider: walletClient as never,
             capabilities: {
               supportedChains: [ArcTestnet, BaseSepolia, EthereumSepolia]
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            getPublicClient: ({ chain }: any) => {
+              const rpcUrl = RPC_MAP[chain.name]
+              if (!rpcUrl) throw new Error(`No RPC for ${chain.name}`)
+              return createPublicClient({
+                chain: CHAIN_MAP[chain.name] || arcTestnet,
+                transport: http(rpcUrl, { retryCount: 3, timeout: 10000 })
+              })
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            getWalletClient: ({ chain, account }: any) => {
+              const rpcUrl = RPC_MAP[chain.name]
+              if (!rpcUrl) throw new Error(`No RPC for ${chain.name}`)
+              return createWalletClient({
+                account,
+                chain: CHAIN_MAP[chain.name] || arcTestnet,
+                transport: http(rpcUrl, { retryCount: 3, timeout: 10000 })
+              })
             }
           })
           dispatch({ type: 'SET_ADAPTER', adapter: adv })

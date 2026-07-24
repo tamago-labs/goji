@@ -102,7 +102,6 @@ export async function withdrawFromUnified(
   toChain: string
 ) {
 
-
   const appKit = getKit()
   if (!appKit) {
     return { success: false, error: 'AppKit not available' }

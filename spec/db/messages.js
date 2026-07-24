@@ -212,8 +212,51 @@ const encoding5 = {
   }
 }
 
-// @goji/board-rename
+// @goji/wallet
 const encoding6 = {
+  preencode(state, m) {
+    c.buffer.preencode(state, m.id)
+    c.string.preencode(state, m.address)
+    state.end++ // max flag is 4 so always one byte
+
+    if (m.chainType) c.string.preencode(state, m.chainType)
+    if (m.walletType) c.string.preencode(state, m.walletType)
+    if (m.name) c.string.preencode(state, m.name)
+    c.buffer.preencode(state, m.identityKey)
+    c.int.preencode(state, m.createdAt)
+  },
+  encode(state, m) {
+    const flags = (m.chainType ? 1 : 0) | (m.walletType ? 2 : 0) | (m.name ? 4 : 0)
+
+    c.buffer.encode(state, m.id)
+    c.string.encode(state, m.address)
+    c.uint.encode(state, flags)
+
+    if (m.chainType) c.string.encode(state, m.chainType)
+    if (m.walletType) c.string.encode(state, m.walletType)
+    if (m.name) c.string.encode(state, m.name)
+    c.buffer.encode(state, m.identityKey)
+    c.int.encode(state, m.createdAt)
+  },
+  decode(state) {
+    const r0 = c.buffer.decode(state)
+    const r1 = c.string.decode(state)
+    const flags = c.uint.decode(state)
+
+    return {
+      id: r0,
+      address: r1,
+      chainType: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      walletType: (flags & 2) !== 0 ? c.string.decode(state) : null,
+      name: (flags & 4) !== 0 ? c.string.decode(state) : null,
+      identityKey: c.buffer.decode(state),
+      createdAt: c.int.decode(state)
+    }
+  }
+}
+
+// @goji/board-rename
+const encoding7 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.id)
     c.string.preencode(state, m.name)
@@ -238,7 +281,7 @@ const encoding6 = {
 }
 
 // @goji/board-delete
-const encoding7 = {
+const encoding8 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.id)
   },
@@ -255,7 +298,7 @@ const encoding7 = {
 }
 
 // @goji/card-update
-const encoding8 = {
+const encoding9 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.id)
     c.json.preencode(state, m.patch)
@@ -280,16 +323,16 @@ const encoding8 = {
 }
 
 // @goji/card-remove
-const encoding9 = encoding7
+const encoding10 = encoding8
 
 // @goji/connection-add
-const encoding10 = encoding4
+const encoding11 = encoding4
 
 // @goji/connection-remove
-const encoding11 = encoding7
+const encoding12 = encoding8
 
 // @goji/chats-remove
-const encoding12 = {
+const encoding13 = {
   preencode(state, m) {
     c.json.preencode(state, m.ids)
   },
@@ -305,8 +348,11 @@ const encoding12 = {
   }
 }
 
+// @goji/wallet-remove
+const encoding14 = encoding8
+
 // @goji/identity
-const encoding13 = {
+const encoding15 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.writerKey)
     c.string.preencode(state, m.displayName)
@@ -331,7 +377,7 @@ const encoding13 = {
 }
 
 // @goji/board/hyperdb#0
-const encoding14 = {
+const encoding16 = {
   preencode(state, m) {
     c.string.preencode(state, m.name)
     c.int.preencode(state, m.createdAt)
@@ -357,7 +403,7 @@ const encoding14 = {
 }
 
 // @goji/card/hyperdb#1
-const encoding15 = {
+const encoding17 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.boardId)
     c.string.preencode(state, m.category)
@@ -404,7 +450,7 @@ const encoding15 = {
 }
 
 // @goji/connection/hyperdb#2
-const encoding16 = {
+const encoding18 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.boardId)
     c.string.preencode(state, m.from)
@@ -443,7 +489,7 @@ const encoding16 = {
 }
 
 // @goji/chat-msg/hyperdb#3
-const encoding17 = {
+const encoding19 = {
   preencode(state, m) {
     c.string.preencode(state, m.text)
     state.end++ // max flag is 2 so always one byte
@@ -474,7 +520,7 @@ const encoding17 = {
 }
 
 // @goji/invite/hyperdb#4
-const encoding18 = {
+const encoding20 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.invite)
     c.buffer.preencode(state, m.publicKey)
@@ -500,7 +546,7 @@ const encoding18 = {
 }
 
 // @goji/identity/hyperdb#5
-const encoding19 = {
+const encoding21 = {
   preencode(state, m) {
     c.string.preencode(state, m.displayName)
     c.int.preencode(state, m.updatedAt)
@@ -517,6 +563,46 @@ const encoding19 = {
       writerKey: null,
       displayName: r1,
       updatedAt: r2
+    }
+  }
+}
+
+// @goji/wallet/hyperdb#6
+const encoding22 = {
+  preencode(state, m) {
+    c.string.preencode(state, m.address)
+    state.end++ // max flag is 4 so always one byte
+
+    if (m.chainType) c.string.preencode(state, m.chainType)
+    if (m.walletType) c.string.preencode(state, m.walletType)
+    if (m.name) c.string.preencode(state, m.name)
+    c.buffer.preencode(state, m.identityKey)
+    c.int.preencode(state, m.createdAt)
+  },
+  encode(state, m) {
+    const flags = (m.chainType ? 1 : 0) | (m.walletType ? 2 : 0) | (m.name ? 4 : 0)
+
+    c.string.encode(state, m.address)
+    c.uint.encode(state, flags)
+
+    if (m.chainType) c.string.encode(state, m.chainType)
+    if (m.walletType) c.string.encode(state, m.walletType)
+    if (m.name) c.string.encode(state, m.name)
+    c.buffer.encode(state, m.identityKey)
+    c.int.encode(state, m.createdAt)
+  },
+  decode(state) {
+    const r1 = c.string.decode(state)
+    const flags = c.uint.decode(state)
+
+    return {
+      id: null,
+      address: r1,
+      chainType: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      walletType: (flags & 2) !== 0 ? c.string.decode(state) : null,
+      name: (flags & 4) !== 0 ? c.string.decode(state) : null,
+      identityKey: c.buffer.decode(state),
+      createdAt: c.int.decode(state)
     }
   }
 }
@@ -556,34 +642,40 @@ function getEncoding(name) {
       return encoding4
     case '@goji/chat-msg':
       return encoding5
-    case '@goji/board-rename':
+    case '@goji/wallet':
       return encoding6
-    case '@goji/board-delete':
+    case '@goji/board-rename':
       return encoding7
-    case '@goji/card-update':
+    case '@goji/board-delete':
       return encoding8
-    case '@goji/card-remove':
+    case '@goji/card-update':
       return encoding9
-    case '@goji/connection-add':
+    case '@goji/card-remove':
       return encoding10
-    case '@goji/connection-remove':
+    case '@goji/connection-add':
       return encoding11
-    case '@goji/chats-remove':
+    case '@goji/connection-remove':
       return encoding12
-    case '@goji/identity':
+    case '@goji/chats-remove':
       return encoding13
-    case '@goji/board/hyperdb#0':
+    case '@goji/wallet-remove':
       return encoding14
-    case '@goji/card/hyperdb#1':
+    case '@goji/identity':
       return encoding15
-    case '@goji/connection/hyperdb#2':
+    case '@goji/board/hyperdb#0':
       return encoding16
-    case '@goji/chat-msg/hyperdb#3':
+    case '@goji/card/hyperdb#1':
       return encoding17
-    case '@goji/invite/hyperdb#4':
+    case '@goji/connection/hyperdb#2':
       return encoding18
-    case '@goji/identity/hyperdb#5':
+    case '@goji/chat-msg/hyperdb#3':
       return encoding19
+    case '@goji/invite/hyperdb#4':
+      return encoding20
+    case '@goji/identity/hyperdb#5':
+      return encoding21
+    case '@goji/wallet/hyperdb#6':
+      return encoding22
     default:
       throw new Error('Encoder not found ' + name)
   }

@@ -71,6 +71,19 @@ schema.register({
 })
 
 schema.register({
+  name: 'wallet',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'address', type: 'string', required: true },
+    { name: 'chainType', type: 'string' },
+    { name: 'walletType', type: 'string' },
+    { name: 'name', type: 'string' },
+    { name: 'identityKey', type: 'buffer', required: true },
+    { name: 'createdAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
   name: 'board-rename',
   fields: [
     { name: 'id', type: 'buffer', required: true },
@@ -121,6 +134,11 @@ schema.register({
 })
 
 schema.register({
+  name: 'wallet-remove',
+  fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
+schema.register({
   name: 'identity',
   fields: [
     { name: 'writerKey', type: 'buffer', required: true },
@@ -140,6 +158,7 @@ db.collections.register({ name: 'connections', schema: '@goji/connection', key: 
 db.collections.register({ name: 'chat', schema: '@goji/chat-msg', key: ['id'] })
 db.collections.register({ name: 'invites', schema: '@goji/invite', key: ['id'] })
 db.collections.register({ name: 'identity', schema: '@goji/identity', key: ['writerKey'] })
+db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -159,6 +178,8 @@ dispatch.register({ name: 'remove-connection', requestType: '@goji/connection-re
 dispatch.register({ name: 'add-chat', requestType: '@goji/chat-msg' })
 dispatch.register({ name: 'remove-chats', requestType: '@goji/chats-remove' })
 dispatch.register({ name: 'update-identity', requestType: '@goji/identity' })
+dispatch.register({ name: 'add-wallet', requestType: '@goji/wallet' })
+dispatch.register({ name: 'remove-wallet', requestType: '@goji/wallet-remove' })
 
 Hyperdispatch.toDisk(hyperdispatch)
 

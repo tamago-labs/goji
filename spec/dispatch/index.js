@@ -21,8 +21,10 @@ class Router {
     this._handler10 = null
     this._handler11 = null
     this._handler12 = null
+    this._handler13 = null
+    this._handler14 = null
 
-    this._missing = 13
+    this._missing = 15
   }
 
   add (name, handler) {
@@ -66,6 +68,12 @@ class Router {
       case '@goji/update-identity':
         this._handler12 = handler
         break
+      case '@goji/add-wallet':
+        this._handler13 = handler
+        break
+      case '@goji/remove-wallet':
+        this._handler14 = handler
+        break
       default:
         throw DispatchError.NONEXISTENT_ROUTE(name)
     }
@@ -86,6 +94,8 @@ class Router {
     assert(this._handler10 !== null, 'Missing handler for "@goji/add-chat"')
     assert(this._handler11 !== null, 'Missing handler for "@goji/remove-chats"')
     assert(this._handler12 !== null, 'Missing handler for "@goji/update-identity"')
+    assert(this._handler13 !== null, 'Missing handler for "@goji/add-wallet"')
+    assert(this._handler14 !== null, 'Missing handler for "@goji/remove-wallet"')
   }
 
   async dispatch (message, context) {
@@ -124,6 +134,10 @@ class Router {
         return this._handler11(op.value, context)
       case 12:
         return this._handler12(op.value, context)
+      case 13:
+        return this._handler13(op.value, context)
+      case 14:
+        return this._handler14(op.value, context)
       default:
         throw DispatchError.HANDLER_NOT_FOUND_BY_ID(op.id)
     }
@@ -235,6 +249,18 @@ const route12 = {
   enc: getEncoding('@goji/identity')
 }
 
+const route13 = {
+  name: '@goji/add-wallet',
+  id: 13,
+  enc: getEncoding('@goji/wallet')
+}
+
+const route14 = {
+  name: '@goji/remove-wallet',
+  id: 14,
+  enc: getEncoding('@goji/wallet-remove')
+}
+
 function getRouteByName (name) {
   switch (name) {
     case '@goji/add-writer':
@@ -263,6 +289,10 @@ function getRouteByName (name) {
       return route11
     case '@goji/update-identity':
       return route12
+    case '@goji/add-wallet':
+      return route13
+    case '@goji/remove-wallet':
+      return route14
     default:
       throw DispatchError.ROUTE_NOT_FOUND_BY_NAME(name)
   }
@@ -296,6 +326,10 @@ function getRouteById (id) {
       return route11
     case 12:
       return route12
+    case 13:
+      return route13
+    case 14:
+      return route14
     default:
       throw DispatchError.HANDLER_NOT_FOUND_BY_ID(id)
   }

@@ -208,6 +208,53 @@
       ]
     },
     {
+      "name": "wallet",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 2,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 1
+        },
+        {
+          "name": "address",
+          "required": true,
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "chainType",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "walletType",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "identityKey",
+          "required": true,
+          "type": "buffer",
+          "version": 1
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 1
+        }
+      ]
+    },
+    {
       "name": "board-rename",
       "namespace": "goji",
       "compact": false,
@@ -354,6 +401,20 @@
           "name": "ids",
           "required": true,
           "type": "json",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "wallet-remove",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
           "version": 1
         }
       ]

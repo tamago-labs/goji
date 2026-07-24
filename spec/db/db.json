@@ -91,6 +91,21 @@
         "writerKey"
       ],
       "trigger": null
+    },
+    {
+      "name": "wallets",
+      "namespace": "goji",
+      "id": 6,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/wallet",
+      "derived": false,
+      "key": [
+        "id"
+      ],
+      "trigger": null
     }
   ]
 }

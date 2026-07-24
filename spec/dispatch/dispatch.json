@@ -79,6 +79,18 @@
       "name": "@goji/update-identity",
       "requestType": "@goji/identity",
       "version": 1
+    },
+    {
+      "id": 13,
+      "name": "@goji/add-wallet",
+      "requestType": "@goji/wallet",
+      "version": 1
+    },
+    {
+      "id": 14,
+      "name": "@goji/remove-wallet",
+      "requestType": "@goji/wallet-remove",
+      "version": 1
     }
   ]
 }

@@ -178,6 +178,12 @@ class GojiRoom {
         updatedAt: next.updatedAt
       })
     })
+    this.router.add('@goji/add-wallet', async (data, ctx) => {
+      await ctx.view.insert('@goji/wallets', data)
+    })
+    this.router.add('@goji/remove-wallet', async (data, ctx) => {
+      await ctx.view.delete('@goji/wallets', { id: data.id })
+    })
   }
 
   get view() {
@@ -622,6 +628,52 @@ async function main() {
       GojiDispatch.encode('@goji/remove-chats', { ids: [id] })
     )
     wsBroadcast({ type: 'chat:deleted', id })
+    res.json({ ok: true })
+  })
+
+  app.get('/api/wallets', async (req, res) => {
+    const rows = await room.view.find('@goji/wallets', {}).toArray()
+    const myKey = room.localBase.key
+    const wallets = rows
+      .filter((w) => {
+        // Filter by current user's identity key
+        return b4a.equals(w.identityKey, myKey)
+      })
+      .map((w) => ({
+        id: b4a.toString(w.id, 'hex'),
+        address: w.address,
+        chainType: w.chainType || null,
+        walletType: w.walletType || null,
+        name: w.name || null,
+        createdAt: w.createdAt
+      }))
+    res.json(wallets)
+  })
+
+  app.post('/api/wallets', async (req, res) => {
+    const { address, chainType, walletType, name } = req.body
+    if (!address) return res.status(400).json({ error: 'address required' })
+    const now = Date.now()
+    const id = require('crypto').randomBytes(16).toString('hex')
+    const wallet = { id, address, chainType: chainType || null, walletType: walletType || null, name: name || null, identityKey: room.localBase.key, createdAt: now }
+    await room.base.append(GojiDispatch.encode('@goji/add-wallet', {
+      id: require('b4a').from(id, 'hex'),
+      address,
+      chainType: chainType || null,
+      walletType: walletType || null,
+      name: name || null,
+      identityKey: room.localBase.key,
+      createdAt: now
+    }))
+    wsBroadcast({ type: 'wallet:added', wallet })
+    res.json(wallet)
+  })
+
+  app.delete('/api/wallets/:id', async (req, res) => {
+    await room.base.append(
+      GojiDispatch.encode('@goji/remove-wallet', { id: require('b4a').from(req.params.id, 'hex') })
+    )
+    wsBroadcast({ type: 'wallet:deleted', id: req.params.id })
     res.json({ ok: true })
   })
 

@@ -247,6 +247,11 @@
           "version": 1
         },
         {
+          "name": "proof",
+          "type": "buffer",
+          "version": 1
+        },
+        {
           "name": "createdAt",
           "required": true,
           "type": "int",

@@ -217,16 +217,18 @@ const encoding6 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.id)
     c.string.preencode(state, m.address)
-    state.end++ // max flag is 4 so always one byte
+    state.end++ // max flag is 8 so always one byte
 
     if (m.chainType) c.string.preencode(state, m.chainType)
     if (m.walletType) c.string.preencode(state, m.walletType)
     if (m.name) c.string.preencode(state, m.name)
     c.buffer.preencode(state, m.identityKey)
+    if (m.proof) c.buffer.preencode(state, m.proof)
     c.int.preencode(state, m.createdAt)
   },
   encode(state, m) {
-    const flags = (m.chainType ? 1 : 0) | (m.walletType ? 2 : 0) | (m.name ? 4 : 0)
+    const flags =
+      (m.chainType ? 1 : 0) | (m.walletType ? 2 : 0) | (m.name ? 4 : 0) | (m.proof ? 8 : 0)
 
     c.buffer.encode(state, m.id)
     c.string.encode(state, m.address)
@@ -236,6 +238,7 @@ const encoding6 = {
     if (m.walletType) c.string.encode(state, m.walletType)
     if (m.name) c.string.encode(state, m.name)
     c.buffer.encode(state, m.identityKey)
+    if (m.proof) c.buffer.encode(state, m.proof)
     c.int.encode(state, m.createdAt)
   },
   decode(state) {
@@ -250,6 +253,7 @@ const encoding6 = {
       walletType: (flags & 2) !== 0 ? c.string.decode(state) : null,
       name: (flags & 4) !== 0 ? c.string.decode(state) : null,
       identityKey: c.buffer.decode(state),
+      proof: (flags & 8) !== 0 ? c.buffer.decode(state) : null,
       createdAt: c.int.decode(state)
     }
   }

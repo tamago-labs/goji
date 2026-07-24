@@ -635,10 +635,7 @@ async function main() {
     const rows = await room.view.find('@goji/wallets', {}).toArray()
     const myKey = room.localBase.key
     const wallets = rows
-      .filter((w) => {
-        // Filter by current user's identity key
-        return b4a.equals(w.identityKey, myKey)
-      })
+      .filter((w) => b4a.equals(w.identityKey, myKey))
       .map((w) => ({
         id: b4a.toString(w.id, 'hex'),
         address: w.address,
@@ -647,6 +644,40 @@ async function main() {
         name: w.name || null,
         createdAt: w.createdAt
       }))
+    res.json(wallets)
+  })
+
+  app.get('/api/wallets/all', async (req, res) => {
+    const rows = await room.view.find('@goji/wallets', {}).toArray()
+    const identities = await room.view.find('@goji/identity', {}).toArray()
+    const identityMap = new Map()
+    for (const i of identities) {
+      identityMap.set(b4a.toString(i.writerKey, 'hex'), i.displayName)
+    }
+    const wallets = rows.map((w) => {
+      const ownerKey = b4a.toString(w.identityKey, 'hex')
+      // Verify proof on load
+      let verified = false
+      if (w.proof && w.address) {
+        try {
+          const expectedKey = b4a.from(ownerKey, 'hex')
+          verified = Identity.verify(w.proof, Buffer.from(w.address), {
+            expectedIdentity: expectedKey
+          })
+        } catch {}
+      }
+      return {
+        id: b4a.toString(w.id, 'hex'),
+        address: w.address,
+        chainType: w.chainType || null,
+        walletType: w.walletType || null,
+        name: w.name || null,
+        owner: identityMap.get(ownerKey) || 'Unknown',
+        ownerKey,
+        verified: !!verified,
+        createdAt: w.createdAt
+      }
+    })
     res.json(wallets)
   })
 
@@ -675,6 +706,14 @@ async function main() {
     )
     wsBroadcast({ type: 'wallet:deleted', id: req.params.id })
     res.json({ ok: true })
+  })
+
+  app.get('/api/wallets/:id/balance', async (req, res) => {
+    const rows = await room.view.find('@goji/wallets', {}).toArray()
+    const wallet = rows.find((w) => b4a.toString(w.id, 'hex') === req.params.id)
+    if (!wallet) return res.status(404).json({ error: 'wallet not found' })
+    // Return mock balance for now - will connect to Circle Gateway later
+    res.json({ balance: '0.000000', token: 'USDC' })
   })
 
   app.get('/api/peers', async (req, res) => {

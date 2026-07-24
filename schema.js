@@ -79,6 +79,7 @@ schema.register({
     { name: 'walletType', type: 'string' },
     { name: 'name', type: 'string' },
     { name: 'identityKey', type: 'buffer', required: true },
+    { name: 'proof', type: 'buffer' },
     { name: 'createdAt', type: 'int', required: true }
   ]
 })

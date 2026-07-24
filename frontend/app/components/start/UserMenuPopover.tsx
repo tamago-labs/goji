@@ -123,9 +123,6 @@ export default function UserMenuPopover({
           <div className='[&>div]:!bg-transparent [&>div]:!p-0 [&>button]:!bg-ink [&>button]:!text-lavender [&>button]:!rounded-xl [&>button]:!px-3 [&>button]:!py-2 [&>button]:!text-xs [&>button]:!font-medium [&>button]:!w-full'>
             <ConnectButton />
           </div>
-          <p className='text-[10px] text-ink/30 mt-2 leading-relaxed'>
-            Connect to send & receive USDC across chains.
-          </p>
         </div>
       )}
 

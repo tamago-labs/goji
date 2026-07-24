@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowDownToLine, ArrowUpFromLine, Wallet } from 'lucide-react'
 
 interface OffersSectionProps {
   disabled: boolean
@@ -9,10 +10,10 @@ interface OffersSectionProps {
 
 type OfferTab = 'incoming' | 'outgoing' | 'deposits'
 
-const offerTabs: { id: OfferTab; label: string; count: number; color: string }[] = [
-  { id: 'incoming', label: 'Incoming', count: 3, color: 'mint' },
-  { id: 'outgoing', label: 'Outgoing', count: 2, color: 'coral' },
-  { id: 'deposits', label: 'Deposits', count: 1, color: 'violet' }
+const offerTabs: { id: OfferTab; label: string; icon: React.ReactNode; count: number }[] = [
+  { id: 'incoming', label: 'Incoming', icon: <ArrowDownToLine className='w-4 h-4' />, count: 3 },
+  { id: 'outgoing', label: 'Outgoing', icon: <ArrowUpFromLine className='w-4 h-4' />, count: 2 },
+  { id: 'deposits', label: 'Deposits', icon: <Wallet className='w-4 h-4' />, count: 1 }
 ]
 
 export default function OffersSection({ disabled }: OffersSectionProps) {
@@ -35,11 +36,7 @@ export default function OffersSection({ disabled }: OffersSectionProps) {
               }`}
             >
               {tab.label}
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                tab.color === 'mint' ? 'bg-mint/20 text-[#1B7A50]' :
-                tab.color === 'coral' ? 'bg-coral/20 text-[#C24E33]' :
-                'bg-violet/20 text-[#5A4FB8]'
-              }`}>
+              <span className='text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-ink/10 text-ink/50'>
                 {tab.count}
               </span>
             </button>

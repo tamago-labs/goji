@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ChatPanel from './ChatPanel'
+import { MessageCircle } from 'lucide-react'
 
 export default function FloatingChatButton() {
   const [isOpen, setIsOpen] = useState(false)
@@ -57,9 +58,7 @@ export default function FloatingChatButton() {
         className='fixed right-6 bottom-6 z-40 w-12 h-12 rounded-full bg-coral text-white shadow-[0_4px_20px_rgba(255,138,115,0.4)] hover:bg-coral/90 transition-colors flex items-center justify-center'
         title='Team Chat'
       >
-        <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' />
-        </svg>
+        <MessageCircle className='w-5 h-5' />
         {unread > 0 && (
           <span className='absolute -top-1 -right-1 w-5 h-5 bg-coral text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-card'>
             {unread > 9 ? '9+' : unread}

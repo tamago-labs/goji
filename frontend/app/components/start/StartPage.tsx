@@ -223,10 +223,10 @@ export default function StartPage() {
         </div>
       </nav>
 
-      <main className='max-w-[960px] mx-auto px-6 py-20'>
+      <main className='max-w-[960px] mx-auto px-6 py-20 pt-10'>
         {error && <ErrorBanner message={error} onRetry={() => { setError(null); setLoading(true) }} />}
 
-        <h1 className='font-display text-4xl font-semibold mb-10'>Your payment flows</h1>
+        <h1 className='font-display text-4xl font-semibold mb-8 mt-4'>Your payment flows</h1>
 
         <BoardsGrid boards={boards} disabled={loading || !!error} />
       </main>

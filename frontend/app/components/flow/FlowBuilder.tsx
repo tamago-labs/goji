@@ -42,6 +42,7 @@ export default function FlowBuilder({
   const [cards, setCards] = useState<FlowCard[]>(initialCards)
   const [connections, setConnections] = useState<Connection[]>(initialConnections)
   const [selected, setSelected] = useState<string | null>(null)
+  const [health, setHealth] = useState<{ name: string; peerId: string; role: string; peers: number } | null>(null)
   const [connectFrom, setConnectFrom] = useState<string | null>(null)
   const [name, setName] = useState(flowName)
   const [zoom, setZoom] = useState(1)
@@ -76,6 +77,17 @@ export default function FlowBuilder({
     }
     load()
   }, [boardId])
+
+  // Fetch health on mount
+  useEffect(() => {
+    async function fetchHealth() {
+      try {
+        const res = await fetch(`${API}/api/health`)
+        if (res.ok) setHealth(await res.json())
+      } catch {}
+    }
+    fetchHealth()
+  }, [])
 
   // WebSocket for real-time sync
   useEffect(() => {
@@ -325,6 +337,8 @@ export default function FlowBuilder({
           onSettings={() => setShowSettings(true)}
           zoom={zoom}
           onZoomChange={setZoom}
+          health={health}
+          apiUrl={API}
         />
         <AddCardPopover
           isOpen={showAddCard}

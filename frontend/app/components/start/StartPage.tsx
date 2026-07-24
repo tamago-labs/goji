@@ -8,8 +8,7 @@ import Logo from '../common/Logo'
 import FloatingChatButton from '../chat/FloatingChatButton'
 import UserMenuPopover from './UserMenuPopover'
 import UsernameModal from './UsernameModal'
-import BoardsList from './BoardsList'
-import CreateNew from './CreateNew'
+import BoardsGrid from './BoardsList'
 import ErrorBanner from './ErrorBanner'
 import DepositModal from './DepositModal'
 
@@ -229,8 +228,7 @@ export default function StartPage() {
 
         <h1 className='font-display text-4xl font-semibold mb-10'>Your payment flows</h1>
 
-        <BoardsList boards={boards} />
-        <CreateNew disabled={loading || !!error} />
+        <BoardsGrid boards={boards} disabled={loading || !!error} />
       </main>
 
       <FloatingChatButton />

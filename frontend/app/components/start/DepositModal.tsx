@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, useWalletClient, usePublicClient } from 'wagmi'
+import { useAccount, usePublicClient } from 'wagmi'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
 import { depositToUnified, withdrawFromUnified, completeWithdrawal } from '../../../lib/unified-balance'
-import { ArcTestnet, BaseSepolia, EthereumSepolia } from '@circle-fin/app-kit/chains'
-import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
+import { useWallet } from '../../providers/WalletProvider'
 import {
   getPendingWithdrawals,
   addPendingWithdrawal,
@@ -40,37 +39,14 @@ export default function DepositModal({ isOpen, onClose, unifiedBalance = '0.00' 
   const [walletBalance, setWalletBalance] = useState('0.00')
   const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([])
   const { address } = useAccount()
-  const walletClient = useWalletClient()
   const publicClient = usePublicClient()
-  const [adapter, setAdapter] = useState<unknown>(null)
-  const adapterCreatedRef = useRef(false)
+  const { state: walletState } = useWallet()
   const balanceFetchedRef = useRef<string>('')
 
   // Load pending withdrawals
   useEffect(() => {
     setPendingWithdrawals(getPendingWithdrawals())
   }, [isOpen])
-
-  // Create adapter when modal opens (only once)
-  useEffect(() => {
-    if (!isOpen || !walletClient.data || !address || adapterCreatedRef.current) return
-    adapterCreatedRef.current = true
-    async function createAdapter() {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const adv = await createViemAdapterFromProvider({
-          provider: walletClient.data as never,
-          capabilities: {
-            supportedChains: [ArcTestnet, BaseSepolia, EthereumSepolia]
-          }
-        }) as any
-        setAdapter(adv)
-      } catch (err) {
-        console.error('[modal] adapter creation error:', err)
-      }
-    }
-    createAdapter()
-  }, [isOpen, walletClient.data, address])
 
   // Fetch wallet balance when chain changes
   useEffect(() => {
@@ -103,12 +79,12 @@ export default function DepositModal({ isOpen, onClose, unifiedBalance = '0.00' 
   }, [selectedChain])
 
   const handleDeposit = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !adapter) return
+    if (!amount || parseFloat(amount) <= 0 || !walletState.adapter) return
     setLoading(true)
     setError(null)
 
     try {
-      const result = await depositToUnified(adapter, selectedChain.id, amount)
+      const result = await depositToUnified(walletState.adapter, selectedChain.id, amount)
       if (result.success) {
         setSuccess(true)
         setTimeout(() => {
@@ -127,12 +103,12 @@ export default function DepositModal({ isOpen, onClose, unifiedBalance = '0.00' 
   }
 
   const handleRequestWithdraw = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !adapter) return
+    if (!amount || parseFloat(amount) <= 0 || !walletState.adapter) return
     setLoading(true)
     setError(null)
 
     try {
-      const result = await withdrawFromUnified(adapter, amount, selectedChain.id)
+      const result = await withdrawFromUnified(walletState.adapter, amount, selectedChain.id)
       if (result.success) {
         const now = new Date()
         const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -160,12 +136,12 @@ export default function DepositModal({ isOpen, onClose, unifiedBalance = '0.00' 
   }
 
   const handleCompleteWithdrawal = async (withdrawal: PendingWithdrawal) => {
-    if (!adapter) return
+    if (!walletState.adapter) return
     setLoading(true)
     setError(null)
 
     try {
-      const result = await completeWithdrawal(adapter, withdrawal.chain)
+      const result = await completeWithdrawal(walletState.adapter, withdrawal.chain)
       if (result.success) {
         removePendingWithdrawal(withdrawal.id)
         setPendingWithdrawals(getPendingWithdrawals())

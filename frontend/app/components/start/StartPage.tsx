@@ -1,15 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, useDisconnect, useWalletClient } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
-import { useInterval } from 'usehooks-ts'
-import { fetchBalances } from '../../../lib/unified-balance'
-import { ArcTestnet, BaseSepolia, EthereumSepolia } from '@circle-fin/app-kit/chains'
-import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
+import { useWallet } from '../../providers/WalletProvider'
 import Logo from '../common/Logo'
 import FloatingChatButton from '../chat/FloatingChatButton'
 import DepositModal from './DepositModal'
@@ -79,60 +76,10 @@ export default function StartPage() {
   const [showInvite, setShowInvite] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [usernameInput, setUsernameInput] = useState('')
-  const [balance, setBalance] = useState({ total: '0.00', chains: [] as { chain: string; balance: string; icon: typeof NetworkArc }[] })
-  const [adapter, setAdapter] = useState<unknown>(null)
-  const balanceRef = useRef('0.00')
 
   const { address, isConnected } = useAccount()
-  const { data: walletClient } = useWalletClient()
   const { disconnect } = useDisconnect()
-
-  // Create adapter when wallet connects
-  useEffect(() => {
-    if (isConnected && walletClient && address) {
-      async function createAdapter() {
-        try {
-          const adv = await createViemAdapterFromProvider({
-            provider: walletClient as never,
-            capabilities: {
-              supportedChains: [ArcTestnet]
-            }
-          })
-          setAdapter(adv)
-        } catch (err) {
-          console.error('[balance] adapter error:', err)
-        }
-      }
-      createAdapter()
-    }
-  }, [isConnected, walletClient, address])
-
-  // Fetch balance function
-  const fetchBalance = useCallback(async () => {
-    if (!adapter) return
-    try {
-      const result = await fetchBalances(adapter)
-      setBalance({
-        total: result.totalConfirmed,
-        chains: [
-          { chain: 'Arc Testnet', balance: result.totalConfirmed, icon: NetworkArc },
-          { chain: 'Base Sepolia', balance: '0.00', icon: NetworkBase },
-          { chain: 'Ethereum Sepolia', balance: '0.00', icon: NetworkEthereum }
-        ]
-      })
-      balanceRef.current = result.totalConfirmed
-    } catch (err) {
-      console.error('[balance] fetch error:', err)
-    }
-  }, [adapter])
-
-  // Poll balance: 3s if no balance, 10s if has balance
-  useInterval(
-    fetchBalance,
-    isConnected && adapter
-      ? balanceRef.current !== '0.00' ? 10000 : 3000
-      : null
-  )
+  const { state: walletState } = useWallet()
 
   const fetchHealth = useCallback(
     async (url: string) => {
@@ -282,10 +229,10 @@ export default function StartPage() {
                               alt='USDC'
                               className='w-5 h-5 rounded-full'
                             />
-                            {balance.total === '0.00' ? (
+                            {walletState.totalBalance === '0.00' ? (
                               <div className='h-5 w-20 bg-ink/10 rounded animate-pulse' />
                             ) : (
-                              <span className='text-lg font-semibold text-ink'>{balance.total}</span>
+                              <span className='text-lg font-semibold text-ink'>{walletState.totalBalance}</span>
                             )}
                             <span className='text-xs text-ink/40'>USDC</span>
                           </div>
@@ -667,7 +614,7 @@ className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px
         )}
       </AnimatePresence>
 
-      <DepositModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} unifiedBalance={balance.total} />
+      <DepositModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} unifiedBalance={walletState.totalBalance} />
 
       <FloatingChatButton />
     </div>

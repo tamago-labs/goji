@@ -1,8 +1,6 @@
 import {
   createUnifiedBalanceKitContext,
   getBalances,
-  deposit,
-  spend
 } from '@circle-fin/unified-balance-kit'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

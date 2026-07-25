@@ -2,18 +2,16 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { type FlowCard, type Connection } from './types'
+import { type RouteStatus } from './FlowOverlay'
 
 interface PreviewRoutesModalProps {
   isOpen: boolean
   onClose: () => void
+  onStart: () => void
   cards: FlowCard[]
   connections: Connection[]
-}
-
-function getStatus(conn: Connection): { label: string; color: string } {
-  if (conn.txHash) return { label: 'Sent', color: 'text-[#28C840]' }
-  if (conn.payment || conn.document) return { label: 'Ready', color: 'text-ink/50' }
-  return { label: 'Draft', color: 'text-ink/30' }
+  flowStatuses: RouteStatus[]
+  flowActive: boolean
 }
 
 function getActionLabel(conn: Connection): string {
@@ -23,15 +21,32 @@ function getActionLabel(conn: Connection): string {
   return parts.join(' + ') || '—'
 }
 
-export default function PreviewRoutesModal({ isOpen, onClose, cards, connections }: PreviewRoutesModalProps) {
+export default function PreviewRoutesModal({ isOpen, onClose, onStart, cards, connections, flowStatuses, flowActive }: PreviewRoutesModalProps) {
   const cardMap = new Map(cards.map((c) => [c.id, c]))
 
-  const routes = connections.map((conn) => {
-    const from = cardMap.get(conn.from)
-    const to = cardMap.get(conn.to)
-    const status = getStatus(conn)
-    return { conn, from, to, status }
-  }).filter((r) => r.from && r.to)
+  const routes = connections
+    .filter((c) => c.payment || c.document)
+    .map((conn) => {
+      const from = cardMap.get(conn.from)
+      const to = cardMap.get(conn.to)
+      const status = flowStatuses.find((s) => s.routeId === conn.id)
+      return { conn, from, to, status }
+    })
+    .filter((r) => r.from && r.to)
+
+  const settledCount = routes.filter((r) => r.status?.status === 'settled').length
+  const totalCount = routes.length
+
+  const getStatusPill = (status: string | undefined) => {
+    switch (status) {
+      case 'settled': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Settled</span>
+      case 'signing': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700'>Signing</span>
+      case 'sending': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700'>Sending</span>
+      case 'failed': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-coral/15 text-[#C24E33]'>Failed</span>
+      case 'pending': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-ink/10 text-ink/40'>Pending</span>
+      default: return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-ink/5 text-ink/30'>Draft</span>
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -53,7 +68,14 @@ export default function PreviewRoutesModal({ isOpen, onClose, cards, connections
           >
             {/* Header */}
             <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
-              <h3 className='font-display text-lg font-semibold'>Payment Routes</h3>
+              <div className='flex items-center gap-3'>
+                <h3 className='font-display text-lg font-semibold'>
+                  {flowActive ? 'Flow Progress' : 'Preview Routes'}
+                </h3>
+                {flowActive && (
+                  <span className='text-xs text-ink/40'>{settledCount}/{totalCount} settled</span>
+                )}
+              </div>
               <button
                 onClick={onClose}
                 className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
@@ -66,7 +88,7 @@ export default function PreviewRoutesModal({ isOpen, onClose, cards, connections
             <div className='flex-1 overflow-y-auto'>
               {routes.length === 0 ? (
                 <div className='text-center py-12 text-ink/30 text-sm'>
-                  No routes defined yet. Connect wallets to recipients on the canvas.
+                  No routes defined. Connect wallets to recipients on the canvas.
                 </div>
               ) : (
                 <table className='w-full text-sm'>
@@ -103,9 +125,7 @@ export default function PreviewRoutesModal({ isOpen, onClose, cards, connections
                           {getActionLabel(route.conn)}
                         </td>
                         <td className='px-6 py-3'>
-                          <span className={`text-xs font-medium ${route.status.color}`}>
-                            {route.status.label}
-                          </span>
+                          {getStatusPill(route.status?.status)}
                         </td>
                       </tr>
                     ))}
@@ -115,14 +135,28 @@ export default function PreviewRoutesModal({ isOpen, onClose, cards, connections
             </div>
 
             {/* Footer */}
-            <div className='border-t border-ink/8 px-6 py-3 flex items-center justify-between'>
-              <span className='text-xs text-ink/30'>{routes.length} route{routes.length !== 1 ? 's' : ''}</span>
-              <button
-                onClick={onClose}
-                className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'
-              >
-                Close
-              </button>
+            <div className='border-t border-ink/8 px-6 py-4 flex items-center justify-between'>
+              <span className='text-xs text-ink/30'>
+                {totalCount} route{totalCount !== 1 ? 's' : ''}
+                {flowActive && settledCount > 0 && ` · ${settledCount} settled`}
+              </span>
+              <div className='flex items-center gap-3'>
+                <button
+                  onClick={onClose}
+                  className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'
+                >
+                  {flowActive ? 'Close' : 'Cancel'}
+                </button>
+                {!flowActive && (
+                  <button
+                    onClick={() => { onStart(); onClose() }}
+                    disabled={totalCount === 0}
+                    className='px-6 py-2.5 bg-mint text-white text-xs font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-30'
+                  >
+                    Start Flow
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         </>

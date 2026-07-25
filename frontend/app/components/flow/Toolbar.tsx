@@ -14,7 +14,6 @@ interface ToolbarProps {
   onNameChange: (name: string) => void
   onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null; verified?: boolean }) => void
   onAddRecipient: (recipient: { address: string; chain: string; type: 'verified' | 'custom'; name: string }) => void
-  onPreview: () => void
   onStart: () => void
   onStop: () => void
   flowActive: boolean
@@ -30,7 +29,6 @@ export default function Toolbar({
   onNameChange,
   onAddWallet,
   onAddRecipient,
-  onPreview,
   onStart,
   onStop,
   flowActive,
@@ -82,13 +80,6 @@ export default function Toolbar({
       <div className='flex items-center gap-3'>
         {!flowActive && (
           <>
-            <button
-              onClick={onPreview}
-              className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
-            >
-              Preview
-            </button>
-
             <div className='relative'>
               <button
                 onClick={() => setShowAddWallet(!showAddWallet)}

@@ -415,6 +415,18 @@ export default function FlowBuilder({
     setSelectedConnection(conn)
   }, [])
 
+  const loadFlowStatuses = useCallback(async () => {
+    if (!boardId) return
+    try {
+      const res = await fetch(`${API}/api/flow-status?flowId=${boardId}`)
+      if (res.ok) {
+        const statuses = await res.json()
+        setFlowStatuses(statuses)
+        if (statuses.length > 0) setFlowActive(true)
+      }
+    } catch {}
+  }, [boardId, API])
+
   const startFlow = useCallback(async () => {
     if (!boardId) return
     // Load existing statuses first (preserves settled routes)
@@ -503,8 +515,7 @@ export default function FlowBuilder({
           onNameChange={handleNameChange}
           onAddWallet={addWallet}
           onAddRecipient={addRecipient}
-          onPreview={() => setShowPreview(true)}
-          onStart={startFlow}
+          onStart={async () => { await loadFlowStatuses(); setShowPreview(true) }}
           onStop={stopFlow}
           flowActive={flowActive}
           onSettings={() => setShowSettings(true)}
@@ -639,8 +650,11 @@ export default function FlowBuilder({
       <PreviewRoutesModal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
+        onStart={startFlow}
         cards={cards}
         connections={connections}
+        flowStatuses={flowStatuses}
+        flowActive={flowActive}
       />
     </div>
   )

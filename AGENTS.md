@@ -34,20 +34,22 @@ npm run lint             # eslint
 
 ### Root (Terminal)
 
-- `src/index.js` — Main entry: Express server, WebSocket, P2P room
-- `schema.js` — Hyperschema + HyperDB collections (boards, cards, connections, chat, invites, identity)
+- `src/index.js` — Main entry: Express server, WebSocket, P2P room, flow status endpoints
+- `schema.js` — Hyperschema + HyperDB collections (boards, cards, connections, chat, invites, identity, wallets, flow-statuses)
 - `spec/` — Generated schema/dispatch/db specs
-- `scripts/clean-storage.js` — Wipe storage directories
-- Keet identity key integration for portable P2P identities
+- Keet identity key integration for portable P2P identities and wallet verification
 
 ### Frontend
 
 - `app/components/landing/` — Landing page (Nav, Hero, UseCases, CardCanvas, HowItWorks)
-- `app/components/start/` — Start page (dashboard with boards + templates)
-- `app/components/flow/` — Canvas/flow builder (Canvas, CanvasCard, CanvasLines, FlowBuilder, Toolbar, AddCardPopover)
-- `app/components/common/` — Shared components (Logo)
+- `app/components/start/` — Start page (Overview, Offers, Boards, Wallets, History tabs)
+- `app/components/flow/` — Canvas/flow builder (Canvas, CanvasCard, CanvasLines, FlowBuilder, Toolbar, FlowOverlay, ConnectionDrawer, PreviewRoutesModal)
+- `app/components/chat/` — Chat panel with Keet identity verification
+- `app/providers/` — WalletProvider (Circle Unified Balance adapter)
 - `app/providers.tsx` — RainbowKit + wagmi + React Query providers
-- `lib/wagmi.ts` — Wagmi config with Arc Testnet
+- `lib/wagmi.ts` — Wagmi config with injected wallet (no MetaMask SDK)
+- `lib/unified-balance.ts` — Circle Unified Balance API (deposit, spend, fetch)
+- `lib/payslipTemplates.ts` — 3 default payslip templates (Standard Receipt, Invoice, Service Agreement)
 
 ## API Endpoints
 
@@ -57,10 +59,28 @@ npm run lint             # eslint
 | GET/POST | /api/boards | List/create boards |
 | PUT/DELETE | /api/boards/:id | Rename/delete board |
 | GET/POST/PUT/DELETE | /api/cards | Card CRUD |
-| GET/POST/DELETE | /api/connections | Connection CRUD |
+| GET/POST/PUT/DELETE | /api/connections | Connection CRUD + payment route data |
+| GET/POST/PUT/DELETE | /api/flow-status | Flow execution status tracking |
 | GET/POST | /api/chat | Chat messages |
+| GET/POST/DELETE | /api/wallets | Wallet registration + verification |
 | PUT | /api/username | Update display name |
 | WebSocket | ws://localhost:3001 | Real-time sync |
+
+## Canvas System
+
+- **Wallet Card** — Represents a connected wallet, shows verified badge
+- **Recipient Card** — Payment target with chain selector, shows verified/custom badge
+- **Gate Card** — Multisig gate (M-of-N signatures required)
+- **Connection Lines** — Click to open ConnectionDrawer for payment/document settings
+- **Flow Overlay** — Shows route status, Sign button for your wallets
+
+## Flow Execution
+
+1. Click Start → Preview modal with all routes and real statuses
+2. Click "Start Flow" → Canvas locks, overlay panel appears
+3. Sign routes → Uses Circle Unified Balance spend
+4. Status persists via P2P → Survives page navigation
+5. Stop → Only clears pending routes, preserves settled
 
 ## Gotchas
 

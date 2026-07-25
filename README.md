@@ -10,8 +10,6 @@ Goji turns payroll, contributor payments, and one-off transfers into something y
 
 Most DAOs and small teams run payments through a patchwork of tools: a spreadsheet for who-gets-paid-what, a block explorer to confirm it landed, a Discord thread for the contract, and a multisig app for the actual signature. Nothing shows the full picture in one place, and reviewing a payout means trusting a wall of addresses and numbers rather than seeing the relationships behind them.
 
-Existing crypto payroll and accounting tools solve pieces of this — compliance, reconciliation, tax reporting — but they're still forms and dashboards. None of them let you _draw_ a payment flow and _see_ it before it moves.
-
 ## What Goji does
 
 Describe who needs to get paid — in plain language or a spreadsheet — and Goji drafts the flow for you: a wallet connected to recipients, each carrying its amount, schedule, and any attached document (a contract, an invoice, a payslip). You review it, edit anything that's wrong, and approve it. Once approved, the flow executes and settles instantly in USDC.
@@ -25,23 +23,24 @@ Because the flow is visual, every reviewer — a co-signer, a finance lead, a te
 - **Freelancers and clients** who want the contract, the payment, and the receipt to live in one place instead of scattered across email and chat.
 - **Anyone splitting a payment peer-to-peer** — a shared cost, a one-off transfer — who wants something as simple as drawing it out.
 
-## Use cases
+## How it works
 
-- **Contributor payroll** — recurring stablecoin payments to a fixed set of people, drafted automatically from a list and reviewed each cycle.
-- **Freelance & contract work** — payment and signed agreement attached to the same card, so proof of the work and proof of payment live together.
-- **DAO grants & contributor pay** — every payout visibly linked to the decision that authorized it, reviewable before a multisig signature is requested.
-- **Peer-to-peer payments** — splitting a cost or sending money to someone directly, without needing a spreadsheet or a reminder to "send it later."
+1. **Register your wallet** — Connect and register your wallet address.
+2. **Create a flow** — Build a payment pipeline on the canvas with wallets, recipients, and connection lines.
+3. **Set payment details** — Click connection lines to set amounts, attach payslips or documents.
+4. **Start & sign** — Preview all routes, start the flow, and sign to send USDC to recipients.
+5. **Track status** — See real-time settlement status on the canvas and in your history.
 
-## How it works, at a glance
+## Tech Stack
 
-1. **Describe it.** Type an instruction or drop in a list of who needs to be paid.
-2. **Review the draft.** The flow appears on the canvas automatically — wallets, recipients, amounts, documents — ready to edit.
-3. **Approve together.** Anyone who needs to sign off sees the same canvas before anything moves.
-4. **It settles.** Approved payments execute and generate a receipt or payslip attached right back to the flow.
+- **Backend:** Node.js CLI with P2P rooms (Autobase + Hyperswarm + BlindPairing), Express HTTP API + WebSocket
+- **Frontend:** Next.js 16 + React 19 + Tailwind v4 + RainbowKit (TypeScript)
+- **Blockchain:** Arc Testnet, Base Sepolia, Ethereum Sepolia via Circle Unified Balance
+- **Identity:** Keet identity key for portable P2P identities and signature verification
 
 ## Status
 
-This project is being built for the Encode x Arc "Programmable Money" hackathon, with the goal of continuing into the accompanying accelerator. What's here is an early-stage prototype — expect the shape of things to change quickly.
+v0.5 — Early prototype built for the Encode x Arc "Programmable Money" hackathon. Features include canvas-based flow builder, payment execution via Circle Unified Balance, payslip templates, and P2P sync.
 
 ## License
 

@@ -52,6 +52,6 @@ export const CATEGORY_COLORS: Record<
 
 export const CARD_TEMPLATES: CardTemplate[] = [
   { category: 'wallet', title: 'Wallet', fields: { address: '', balance: '' } },
-  { category: 'recipient', title: 'Recipient', fields: { address: '', amount: '', doc: '' } },
+  { category: 'recipient', title: 'Recipient', fields: { address: '', chain: '', type: '', name: '', amount: '', doc: '' } },
   { category: 'gate', title: 'Multisig Gate', fields: { required: '2', total: '3' } }
 ]

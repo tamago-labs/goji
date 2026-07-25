@@ -7,12 +7,14 @@ import UserMenuPopover from '../start/UserMenuPopover'
 import UsernameModal from '../start/UsernameModal'
 import DepositSpendModal from '../start/DepositSpendModal'
 import AddWalletPopover from './AddWalletPopover'
+import AddRecipientPopover from './AddRecipientPopover'
 
 interface ToolbarProps {
   flowName: string
   onNameChange: (name: string) => void
   onAddCard: () => void
   onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null; verified?: boolean }) => void
+  onAddRecipient: (recipient: { address: string; chain: string; type: 'verified' | 'custom'; name: string }) => void
   onSettings: () => void
   zoom: number
   onZoomChange: (zoom: number) => void
@@ -25,6 +27,7 @@ export default function Toolbar({
   onNameChange,
   onAddCard,
   onAddWallet,
+  onAddRecipient,
   onSettings,
   zoom,
   onZoomChange,
@@ -37,6 +40,7 @@ export default function Toolbar({
   const [showDeposit, setShowDeposit] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const [showAddWallet, setShowAddWallet] = useState(false)
+  const [showAddRecipient, setShowAddRecipient] = useState(false)
   const [usernameInput, setUsernameInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -91,6 +95,25 @@ export default function Toolbar({
                 onClose={() => setShowAddWallet(false)}
                 apiUrl={apiUrl}
                 onSelect={(wallet) => { onAddWallet(wallet); setShowAddWallet(false) }}
+              />
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className='relative'>
+          <button
+            onClick={() => setShowAddRecipient(!showAddRecipient)}
+            className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+          >
+            + Add Recipient
+          </button>
+          <AnimatePresence>
+            {showAddRecipient && (
+              <AddRecipientPopover
+                isOpen={showAddRecipient}
+                onClose={() => setShowAddRecipient(false)}
+                apiUrl={apiUrl}
+                onAdd={(recipient) => { onAddRecipient(recipient); setShowAddRecipient(false) }}
               />
             )}
           </AnimatePresence>

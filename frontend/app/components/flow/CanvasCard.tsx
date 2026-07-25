@@ -2,7 +2,14 @@
 
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
+import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
 import { CARD_WIDTH, CATEGORY_COLORS, type FlowCard } from './types'
+
+const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: string; size?: number }>> = {
+  Arc_Testnet: NetworkArc,
+  Base_Sepolia: NetworkBase,
+  Ethereum_Sepolia: NetworkEthereum
+}
 
 interface CanvasCardProps {
   card: FlowCard
@@ -107,7 +114,15 @@ export default function CanvasCard({
         {card.category === 'recipient' && (
           <>
             <div className='text-ink/40 text-xs truncate'>{card.fields.address || '0x...'}</div>
-            <div className='text-ink/70 text-xs mt-1'>${card.fields.amount || '0'} USDC</div>
+            {card.fields.chain && (() => {
+              const ChainIcon = CHAIN_ICONS[String(card.fields.chain)]
+              return (
+                <div className='flex items-center gap-1 mt-1'>
+                  {ChainIcon && <ChainIcon variant='branded' size={10} />}
+                  <span className='text-[10px] text-ink/40'>{String(card.fields.chain).replace('_', ' ')}</span>
+                </div>
+              )
+            })()}
             {card.fields.doc && (
               <div className='text-ink/30 text-[10px] mt-0.5'>{card.fields.doc}</div>
             )}

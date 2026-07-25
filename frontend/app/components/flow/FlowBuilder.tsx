@@ -264,6 +264,40 @@ export default function FlowBuilder({
     [boardId, API]
   )
 
+  const addRecipient = useCallback(
+    async (recipient: { address: string; chain: string; type: 'verified' | 'custom'; name: string }) => {
+      const title = recipient.name || (recipient.type === 'verified' ? 'Recipient' : 'Custom Recipient')
+      if (boardId) {
+        try {
+          await fetch(`${API}/api/cards`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: genId(),
+              category: 'recipient',
+              title,
+              x: 200 + Math.random() * 100,
+              y: 150 + Math.random() * 100,
+              fields: { address: recipient.address, chain: recipient.chain, type: recipient.type, name: recipient.name, amount: '', doc: '' },
+              boardId
+            })
+          })
+        } catch {}
+      } else {
+        const card: FlowCard = {
+          id: genId(),
+          category: 'recipient',
+          title,
+          x: 200 + Math.random() * 100,
+          y: 150 + Math.random() * 100,
+          fields: { address: recipient.address, chain: recipient.chain, type: recipient.type, name: recipient.name, amount: '', doc: '' }
+        }
+        setCards((prev) => [...prev, card])
+      }
+    },
+    [boardId, API]
+  )
+
   const deleteCard = useCallback(
     (id: string) => {
       setCards((prev) => prev.filter((c) => c.id !== id))
@@ -368,6 +402,7 @@ export default function FlowBuilder({
           onNameChange={handleNameChange}
           onAddCard={() => setShowAddCard(!showAddCard)}
           onAddWallet={addWallet}
+          onAddRecipient={addRecipient}
           onSettings={() => setShowSettings(true)}
           zoom={zoom}
           onZoomChange={setZoom}

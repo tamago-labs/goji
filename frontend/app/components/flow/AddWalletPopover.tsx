@@ -21,6 +21,7 @@ interface AddWalletPopoverProps {
 export default function AddWalletPopover({ isOpen, onClose, apiUrl, onSelect }: AddWalletPopoverProps) {
   const [wallets, setWallets] = useState<WalletData[]>([])
   const [search, setSearch] = useState('')
+  const [selectedWallet, setSelectedWallet] = useState<WalletData | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -43,6 +44,14 @@ export default function AddWalletPopover({ isOpen, onClose, apiUrl, onSelect }: 
     acc[owner].push(w)
     return acc
   }, {} as Record<string, WalletData[]>)
+
+  const handleAdd = () => {
+    if (selectedWallet) {
+      onSelect(selectedWallet)
+      setSelectedWallet(null)
+      onClose()
+    }
+  }
 
   if (!isOpen) return null
 
@@ -74,8 +83,10 @@ export default function AddWalletPopover({ isOpen, onClose, apiUrl, onSelect }: 
               {ownerWallets.map((w) => (
                 <div
                   key={w.id}
-                  className='flex items-center gap-2 px-2 py-1.5 hover:bg-ink/5 rounded-lg transition-colors cursor-pointer'
-                  onClick={() => { onSelect(w); onClose() }}
+                  onClick={() => setSelectedWallet(w)}
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                    selectedWallet?.id === w.id ? 'bg-mint/10 ring-1 ring-mint/30' : 'hover:bg-ink/5'
+                  }`}
                 >
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${w.verified ? 'bg-[#28C840]' : 'bg-ink/20'}`} />
                   <span className='text-xs text-ink/70 truncate'>{w.name || 'Unnamed'}</span>
@@ -84,6 +95,16 @@ export default function AddWalletPopover({ isOpen, onClose, apiUrl, onSelect }: 
             </div>
           ))
         )}
+      </div>
+
+      <div className='border-t border-ink/8 p-3'>
+        <button
+          onClick={handleAdd}
+          disabled={!selectedWallet}
+          className='w-full py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-30'
+        >
+          Add Wallet
+        </button>
       </div>
     </motion.div>
   )

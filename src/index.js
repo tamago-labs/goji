@@ -806,7 +806,6 @@ async function main() {
         payslipHtml: r.payslipHtml || null,
         updatedAt: r.updatedAt
       }))
-    console.log('[flow-status] GET flowId:', req.query.flowId, 'found:', statuses.length, 'statuses:', statuses.map((s) => s.routeId + ':' + s.status).join(', '))
     res.json(statuses)
   })
 
@@ -844,9 +843,7 @@ async function main() {
     const patch = req.body
     patch.updatedAt = Date.now()
     const existing = await room.view.get('@goji/flowStatuses', { id: b4a.from(req.params.id, 'hex') })
-    console.log('[flow-status] PUT id:', req.params.id, 'existing:', !!existing, 'patch:', patch.status)
     if (existing) {
-      console.log('[flow-status] existing status:', existing.status, '-> new:', patch.status)
       await applyUpdate(room.view, '@goji/flowStatuses', { id: b4a.from(req.params.id, 'hex') }, () => ({
         id: existing.id,
         flowId: existing.flowId,

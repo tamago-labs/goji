@@ -170,9 +170,11 @@ export default function HistorySection({ apiUrl, disabled }: HistorySectionProps
                 </button>
               </div>
               <div className='flex-1 overflow-y-auto p-6'>
-                <div
-                  className='border border-ink/10 rounded-xl overflow-hidden bg-white text-sm'
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                <iframe
+                  srcDoc={previewHtml}
+                  className='w-full border border-ink/10 rounded-xl bg-white'
+                  style={{ minHeight: 400 }}
+                  title='Document Preview'
                 />
               </div>
             </motion.div>

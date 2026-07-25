@@ -11,7 +11,7 @@ import UsernameModal from './UsernameModal'
 import BoardsGrid from './BoardsList'
 import OffersSection from './OffersSection'
 import ErrorBanner from './ErrorBanner'
-import DepositModal from './DepositModal'
+import DepositSpendModal from './DepositSpendModal'
 import WalletsTab from './WalletsTab'
 import { DollarSign, LayoutGrid, Wallet, BookText, ListTodo } from 'lucide-react'
 
@@ -282,7 +282,7 @@ export default function StartPage() {
 
       <UsernameModal isOpen={showUsernameModal} onClose={() => setShowUsernameModal(false)} currentName={health?.name || ''} apiUrl={apiUrl} onNameChange={(name) => { if (health) setHealth({ ...health, name }) }} />
 
-      {showDeposit && <DepositModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />}
+      {showDeposit && <DepositSpendModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />}
     </div>
   )
 }

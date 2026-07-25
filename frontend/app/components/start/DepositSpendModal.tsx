@@ -1,0 +1,329 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useAccount, usePublicClient } from 'wagmi'
+import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
+import { depositToUnified, spendFromUnified } from '../../../lib/unified-balance'
+import { useWallet } from '../../providers/WalletProvider'
+
+const chains = [
+  { id: 'Arc_Testnet', label: 'Arc Testnet', icon: NetworkArc, decimals: 18, chainId: 5042002, explorer: 'https://testnet.arcscan.app/tx/' },
+  { id: 'Base_Sepolia', label: 'Base Sepolia', icon: NetworkBase, decimals: 6, chainId: 84532, explorer: 'https://sepolia.basescan.org/tx/' },
+  { id: 'Ethereum_Sepolia', label: 'Ethereum Sepolia', icon: NetworkEthereum, decimals: 6, chainId: 11155111, explorer: 'https://sepolia.etherscan.io/tx/' }
+]
+
+interface DepositSpendModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+type Tab = 'deposit' | 'withdraw'
+
+export default function DepositSpendModal({ isOpen, onClose }: DepositSpendModalProps) {
+  const [activeTab, setActiveTab] = useState<Tab>('deposit')
+  const [selectedChain, setSelectedChain] = useState(chains[0])
+  const [amount, setAmount] = useState('')
+  const [recipientMode, setRecipientMode] = useState<'self' | 'other'>('self')
+  const [recipientAddress, setRecipientAddress] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [txHash, setTxHash] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [walletBalance, setWalletBalance] = useState('0.00')
+  const { address } = useAccount()
+  const publicClient = usePublicClient()
+  const { state: walletState } = useWallet()
+  const balanceFetchedRef = useRef<string>('')
+
+  useEffect(() => {
+    if (!publicClient || !address || !isOpen) return
+    const fetchKey = `${address}-${selectedChain.chainId}`
+    if (balanceFetchedRef.current === fetchKey) return
+    balanceFetchedRef.current = fetchKey
+
+    async function fetchWalletBalance() {
+      try {
+        const connectedChainId = publicClient?.chain?.id
+        if (connectedChainId !== selectedChain.chainId) {
+          setWalletBalance('0.00')
+          return
+        }
+        const balance = await publicClient!.getBalance({ address: address as `0x${string}` })
+        const decimals = selectedChain.decimals
+        const walletBalance = Number(balance) / Math.pow(10, decimals)
+        setWalletBalance(walletBalance.toFixed(6))
+      } catch {
+        setWalletBalance('0.00')
+      }
+    }
+    fetchWalletBalance()
+  }, [publicClient, address, selectedChain, isOpen])
+
+  useEffect(() => {
+    balanceFetchedRef.current = ''
+  }, [selectedChain])
+
+  const reset = () => {
+    setAmount('')
+    setError(null)
+    setSuccess(false)
+    setTxHash(null)
+    setRecipientMode('self')
+    setRecipientAddress('')
+  }
+
+  const handleDeposit = async () => {
+    if (!amount || parseFloat(amount) <= 0 || !walletState.adapter) return
+    setLoading(true)
+    setError(null)
+
+    try {
+      const result = await depositToUnified(walletState.adapter, selectedChain.id, amount)
+      if (result.success) {
+        setTxHash(result.txHash || null)
+        setSuccess(true)
+      } else {
+        setError(result.error || 'Deposit failed')
+      }
+    } catch (err) {
+      setError((err as Error).message || 'Deposit failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleWithdraw = async () => {
+    if (!amount || parseFloat(amount) <= 0 || !walletState.adapter) return
+    const to = recipientMode === 'self' ? address : recipientAddress
+    if (!to) return
+    setLoading(true)
+    setError(null)
+
+    try {
+      const result = await spendFromUnified(walletState.adapter, amount, selectedChain.id, to)
+      if (result.success) {
+        setTxHash(result.txHash || null)
+        setSuccess(true)
+      } else {
+        setError(result.error || 'Withdraw failed')
+      }
+    } catch (err) {
+      setError((err as Error).message || 'Withdraw failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'deposit', label: 'Deposit' },
+    { id: 'withdraw', label: 'Withdraw' }
+  ]
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className='fixed inset-0 bg-black/30 z-50'
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[440px] max-h-[80vh] overflow-hidden flex flex-col'
+          >
+            {/* Header */}
+            <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
+              <h3 className='font-display text-lg font-semibold'>Unified Balance</h3>
+              <button
+                onClick={onClose}
+                className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className='flex border-b border-ink/8'>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); reset() }}
+                  className={`flex-1 py-3 text-xs font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? 'text-ink border-b-2 border-ink'
+                      : 'text-ink/40 hover:text-ink/60'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Content */}
+            <div className='p-6 overflow-y-auto flex-1'>
+              {success ? (
+                <div className='text-center py-8'>
+                  <div className='w-12 h-12 rounded-full bg-mint/15 flex items-center justify-center mx-auto mb-3'>
+                    <svg className='w-6 h-6 text-mint' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                    </svg>
+                  </div>
+                  <p className='text-sm text-ink/70 mb-3'>
+                    {activeTab === 'deposit' ? 'Deposit successful!' : 'Withdraw successful!'}
+                  </p>
+                  {txHash && (
+                    <a
+                      href={`${selectedChain.explorer}${txHash}`}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='text-xs text-mint hover:underline font-mono inline-flex items-center gap-1'
+                    >
+                      Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+                    </a>
+                  )}
+                  <button
+                    onClick={() => { reset(); onClose() }}
+                    className='mt-4 w-full py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Chain */}
+                  <label className='block mb-4'>
+                    <span className='text-xs text-ink/40 mb-1.5 block'>
+                      {activeTab === 'deposit' ? 'From chain' : 'To chain'}
+                    </span>
+                    <div className='relative'>
+                      <select
+                        value={selectedChain.id}
+                        onChange={(e) => {
+                          const chain = chains.find((c) => c.id === e.target.value)
+                          if (chain) setSelectedChain(chain)
+                        }}
+                        className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 appearance-none focus:outline-none focus:border-ink/20'
+                      >
+                        {chains.map((c) => (
+                          <option key={c.id} value={c.id}>{c.label}</option>
+                        ))}
+                      </select>
+                      <svg className='absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30 pointer-events-none' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                      </svg>
+                    </div>
+                  </label>
+
+                  {/* Amount */}
+                  <label className='block mb-4'>
+                    <span className='text-xs text-ink/40 mb-1.5 block'>Amount</span>
+                    <div className='relative'>
+                      <input
+                        type='number'
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder='0.00'
+                        className='w-full text-sm text-ink font-mono bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 pr-16 focus:outline-none focus:border-ink/20'
+                      />
+                      <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink/40 font-medium'>USDC</span>
+                    </div>
+                  </label>
+
+                  {/* Available / Balance */}
+                  <div className='flex items-center gap-2 mb-4 text-xs text-ink/40'>
+                    <span>
+                      {activeTab === 'deposit'
+                        ? `Available: ${walletBalance} USDC`
+                        : `Unified Balance: ${walletState.totalBalance} USDC`
+                      }
+                    </span>
+                  </div>
+
+                  {/* Withdraw: Recipient */}
+                  {activeTab === 'withdraw' && (
+                    <div className='mb-4'>
+                      <span className='text-xs text-ink/40 mb-2 block'>Send to</span>
+                      <div className='flex gap-3 mb-3'>
+                        <label className='flex items-center gap-2 cursor-pointer'>
+                          <input
+                            type='radio'
+                            name='recipient'
+                            checked={recipientMode === 'self'}
+                            onChange={() => setRecipientMode('self')}
+                            className='w-3.5 h-3.5 accent-ink'
+                          />
+                          <span className='text-xs text-ink/70'>Myself</span>
+                        </label>
+                        <label className='flex items-center gap-2 cursor-pointer'>
+                          <input
+                            type='radio'
+                            name='recipient'
+                            checked={recipientMode === 'other'}
+                            onChange={() => setRecipientMode('other')}
+                            className='w-3.5 h-3.5 accent-ink'
+                          />
+                          <span className='text-xs text-ink/70'>Someone else</span>
+                        </label>
+                      </div>
+                      {recipientMode === 'self' ? (
+                        <div className='bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5'>
+                          <span className='text-xs text-ink/50 font-mono truncate block'>
+                            {address || 'Not connected'}
+                          </span>
+                        </div>
+                      ) : (
+                        <input
+                          type='text'
+                          value={recipientAddress}
+                          onChange={(e) => setRecipientAddress(e.target.value)}
+                          placeholder='0x...'
+                          className='w-full text-sm text-ink font-mono bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Error */}
+                  {error && (
+                    <div className='mb-4 p-3 bg-coral/10 border border-coral/20 rounded-xl text-xs text-coral'>
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Summary */}
+                  <div className='border-t border-ink/8 pt-4 mb-4'>
+                    <div className='flex items-center justify-between text-xs'>
+                      <span className='text-ink/40'>
+                        {activeTab === 'deposit' ? 'To' : 'From'}
+                      </span>
+                      <span className='text-ink/60 font-medium'>Unified Balance</span>
+                    </div>
+                  </div>
+
+                  {/* Button */}
+                  <button
+                    onClick={activeTab === 'deposit' ? handleDeposit : handleWithdraw}
+                    disabled={!amount || parseFloat(amount) <= 0 || loading || (activeTab === 'withdraw' && recipientMode === 'other' && !recipientAddress)}
+                    className='w-full py-2.5 bg-ink text-lavender text-sm font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-30'
+                  >
+                    {loading
+                      ? (activeTab === 'deposit' ? 'Depositing...' : 'Sending...')
+                      : (activeTab === 'deposit' ? 'Deposit USDC' : 'Send USDC')
+                    }
+                  </button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}

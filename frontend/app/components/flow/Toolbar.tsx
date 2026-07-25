@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import UserMenuPopover from '../start/UserMenuPopover'
 import UsernameModal from '../start/UsernameModal'
-import DepositModal from '../start/DepositModal'
+import DepositSpendModal from '../start/DepositSpendModal'
 import AddWalletPopover from './AddWalletPopover'
 
 interface ToolbarProps {
@@ -197,7 +197,7 @@ export default function Toolbar({
         }}
       />
 
-      <DepositModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />
+      <DepositSpendModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />
     </div>
   )
 }

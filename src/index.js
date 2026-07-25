@@ -806,6 +806,7 @@ async function main() {
         payslipHtml: r.payslipHtml || null,
         updatedAt: r.updatedAt
       }))
+    console.log('[flow-status] GET flowId:', req.query.flowId, 'found:', statuses.length, 'statuses:', statuses.map((s) => s.routeId + ':' + s.status).join(', '))
     res.json(statuses)
   })
 
@@ -813,15 +814,14 @@ async function main() {
     const { flowId, routeId, status, txHash, error } = req.body
     if (!flowId || !routeId || !status) return res.status(400).json({ error: 'flowId, routeId, status required' })
 
-    // Skip if route already has a settled status
-    const existing = await room.view.find('@goji/flowStatuses', {}).toArray()
-    const alreadySettled = existing.find((r) =>
+    // Skip if route already has a status (settled or pending)
+    const all = await room.view.find('@goji/flowStatuses', {}).toArray()
+    const alreadyExists = all.find((r) =>
       b4a.toString(r.flowId, 'hex') === flowId &&
-      r.routeId === routeId &&
-      r.status === 'settled'
+      r.routeId === routeId
     )
-    if (alreadySettled) {
-      return res.json({ id: b4a.toString(alreadySettled.id, 'hex'), flowId, routeId, status: 'settled', txHash: alreadySettled.txHash, error: null, updatedAt: alreadySettled.updatedAt, skipped: true })
+    if (alreadyExists) {
+      return res.json({ id: b4a.toString(alreadyExists.id, 'hex'), flowId, routeId, status: alreadyExists.status, txHash: alreadyExists.txHash, error: null, payslipHtml: alreadyExists.payslipHtml, updatedAt: alreadyExists.updatedAt, skipped: true })
     }
 
     const now = Date.now()
@@ -844,7 +844,9 @@ async function main() {
     const patch = req.body
     patch.updatedAt = Date.now()
     const existing = await room.view.get('@goji/flowStatuses', { id: b4a.from(req.params.id, 'hex') })
+    console.log('[flow-status] PUT id:', req.params.id, 'existing:', !!existing, 'patch:', patch.status)
     if (existing) {
+      console.log('[flow-status] existing status:', existing.status, '-> new:', patch.status)
       await applyUpdate(room.view, '@goji/flowStatuses', { id: b4a.from(req.params.id, 'hex') }, () => ({
         id: existing.id,
         flowId: existing.flowId,

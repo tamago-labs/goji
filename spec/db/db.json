@@ -106,6 +106,21 @@
         "id"
       ],
       "trigger": null
+    },
+    {
+      "name": "flowStatuses",
+      "namespace": "goji",
+      "id": 7,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/flow-status",
+      "derived": false,
+      "key": [
+        "id"
+      ],
+      "trigger": null
     }
   ]
 }

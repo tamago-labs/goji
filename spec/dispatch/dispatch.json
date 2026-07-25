@@ -88,12 +88,24 @@
     },
     {
       "id": 14,
+      "name": "@goji/set-flow-status",
+      "requestType": "@goji/flow-status",
+      "version": 1
+    },
+    {
+      "id": 15,
+      "name": "@goji/remove-flow-statuses",
+      "requestType": "@goji/flow-status-remove",
+      "version": 1
+    },
+    {
+      "id": 16,
       "name": "@goji/add-wallet",
       "requestType": "@goji/wallet",
       "version": 1
     },
     {
-      "id": 15,
+      "id": 17,
       "name": "@goji/remove-wallet",
       "requestType": "@goji/wallet-remove",
       "version": 1

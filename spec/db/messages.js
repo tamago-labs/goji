@@ -525,8 +525,73 @@ const encoding16 = {
   }
 }
 
-// @goji/board/hyperdb#0
+// @goji/flow-status
 const encoding17 = {
+  preencode(state, m) {
+    c.buffer.preencode(state, m.id)
+    c.buffer.preencode(state, m.flowId)
+    c.string.preencode(state, m.routeId)
+    c.string.preencode(state, m.status)
+    state.end++ // max flag is 4 so always one byte
+
+    if (m.txHash) c.string.preencode(state, m.txHash)
+    if (m.error) c.string.preencode(state, m.error)
+    if (m.payslipHtml) c.string.preencode(state, m.payslipHtml)
+    c.int.preencode(state, m.updatedAt)
+  },
+  encode(state, m) {
+    const flags = (m.txHash ? 1 : 0) | (m.error ? 2 : 0) | (m.payslipHtml ? 4 : 0)
+
+    c.buffer.encode(state, m.id)
+    c.buffer.encode(state, m.flowId)
+    c.string.encode(state, m.routeId)
+    c.string.encode(state, m.status)
+    c.uint.encode(state, flags)
+
+    if (m.txHash) c.string.encode(state, m.txHash)
+    if (m.error) c.string.encode(state, m.error)
+    if (m.payslipHtml) c.string.encode(state, m.payslipHtml)
+    c.int.encode(state, m.updatedAt)
+  },
+  decode(state) {
+    const r0 = c.buffer.decode(state)
+    const r1 = c.buffer.decode(state)
+    const r2 = c.string.decode(state)
+    const r3 = c.string.decode(state)
+    const flags = c.uint.decode(state)
+
+    return {
+      id: r0,
+      flowId: r1,
+      routeId: r2,
+      status: r3,
+      txHash: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      error: (flags & 2) !== 0 ? c.string.decode(state) : null,
+      payslipHtml: (flags & 4) !== 0 ? c.string.decode(state) : null,
+      updatedAt: c.int.decode(state)
+    }
+  }
+}
+
+// @goji/flow-status-remove
+const encoding18 = {
+  preencode(state, m) {
+    c.buffer.preencode(state, m.flowId)
+  },
+  encode(state, m) {
+    c.buffer.encode(state, m.flowId)
+  },
+  decode(state) {
+    const r0 = c.buffer.decode(state)
+
+    return {
+      flowId: r0
+    }
+  }
+}
+
+// @goji/board/hyperdb#0
+const encoding19 = {
   preencode(state, m) {
     c.string.preencode(state, m.name)
     c.int.preencode(state, m.createdAt)
@@ -552,7 +617,7 @@ const encoding17 = {
 }
 
 // @goji/card/hyperdb#1
-const encoding18 = {
+const encoding20 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.boardId)
     c.string.preencode(state, m.category)
@@ -599,7 +664,7 @@ const encoding18 = {
 }
 
 // @goji/connection/hyperdb#2
-const encoding19 = {
+const encoding21 = {
   preencode(state, m) {
     const flags =
       (m.label ? 1 : 0) |
@@ -677,7 +742,7 @@ const encoding19 = {
 }
 
 // @goji/chat-msg/hyperdb#3
-const encoding20 = {
+const encoding22 = {
   preencode(state, m) {
     c.string.preencode(state, m.text)
     state.end++ // max flag is 2 so always one byte
@@ -708,7 +773,7 @@ const encoding20 = {
 }
 
 // @goji/invite/hyperdb#4
-const encoding21 = {
+const encoding23 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.invite)
     c.buffer.preencode(state, m.publicKey)
@@ -734,7 +799,7 @@ const encoding21 = {
 }
 
 // @goji/identity/hyperdb#5
-const encoding22 = {
+const encoding24 = {
   preencode(state, m) {
     c.string.preencode(state, m.displayName)
     c.int.preencode(state, m.updatedAt)
@@ -756,7 +821,7 @@ const encoding22 = {
 }
 
 // @goji/wallet/hyperdb#6
-const encoding23 = {
+const encoding25 = {
   preencode(state, m) {
     c.string.preencode(state, m.address)
     state.end++ // max flag is 16 so always one byte
@@ -802,6 +867,51 @@ const encoding23 = {
       proof: (flags & 8) !== 0 ? c.buffer.decode(state) : null,
       createdAt: c.int.decode(state),
       identityPublicKey: (flags & 16) !== 0 ? c.buffer.decode(state) : null
+    }
+  }
+}
+
+// @goji/flow-status/hyperdb#7
+const encoding26 = {
+  preencode(state, m) {
+    c.buffer.preencode(state, m.flowId)
+    c.string.preencode(state, m.routeId)
+    c.string.preencode(state, m.status)
+    state.end++ // max flag is 4 so always one byte
+
+    if (m.txHash) c.string.preencode(state, m.txHash)
+    if (m.error) c.string.preencode(state, m.error)
+    if (m.payslipHtml) c.string.preencode(state, m.payslipHtml)
+    c.int.preencode(state, m.updatedAt)
+  },
+  encode(state, m) {
+    const flags = (m.txHash ? 1 : 0) | (m.error ? 2 : 0) | (m.payslipHtml ? 4 : 0)
+
+    c.buffer.encode(state, m.flowId)
+    c.string.encode(state, m.routeId)
+    c.string.encode(state, m.status)
+    c.uint.encode(state, flags)
+
+    if (m.txHash) c.string.encode(state, m.txHash)
+    if (m.error) c.string.encode(state, m.error)
+    if (m.payslipHtml) c.string.encode(state, m.payslipHtml)
+    c.int.encode(state, m.updatedAt)
+  },
+  decode(state) {
+    const r1 = c.buffer.decode(state)
+    const r2 = c.string.decode(state)
+    const r3 = c.string.decode(state)
+    const flags = c.uint.decode(state)
+
+    return {
+      id: null,
+      flowId: r1,
+      routeId: r2,
+      status: r3,
+      txHash: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      error: (flags & 2) !== 0 ? c.string.decode(state) : null,
+      payslipHtml: (flags & 4) !== 0 ? c.string.decode(state) : null,
+      updatedAt: c.int.decode(state)
     }
   }
 }
@@ -863,20 +973,26 @@ function getEncoding(name) {
       return encoding15
     case '@goji/identity':
       return encoding16
-    case '@goji/board/hyperdb#0':
+    case '@goji/flow-status':
       return encoding17
-    case '@goji/card/hyperdb#1':
+    case '@goji/flow-status-remove':
       return encoding18
-    case '@goji/connection/hyperdb#2':
+    case '@goji/board/hyperdb#0':
       return encoding19
-    case '@goji/chat-msg/hyperdb#3':
+    case '@goji/card/hyperdb#1':
       return encoding20
-    case '@goji/invite/hyperdb#4':
+    case '@goji/connection/hyperdb#2':
       return encoding21
-    case '@goji/identity/hyperdb#5':
+    case '@goji/chat-msg/hyperdb#3':
       return encoding22
-    case '@goji/wallet/hyperdb#6':
+    case '@goji/invite/hyperdb#4':
       return encoding23
+    case '@goji/identity/hyperdb#5':
+      return encoding24
+    case '@goji/wallet/hyperdb#6':
+      return encoding25
+    case '@goji/flow-status/hyperdb#7':
+      return encoding26
     default:
       throw new Error('Encoder not found ' + name)
   }

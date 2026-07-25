@@ -525,6 +525,71 @@ const encoding16 = {
   }
 }
 
+// @goji/flow-status
+const encoding17 = {
+  preencode(state, m) {
+    c.buffer.preencode(state, m.id)
+    c.buffer.preencode(state, m.flowId)
+    c.string.preencode(state, m.routeId)
+    c.string.preencode(state, m.status)
+    state.end++ // max flag is 4 so always one byte
+
+    if (m.txHash) c.string.preencode(state, m.txHash)
+    if (m.error) c.string.preencode(state, m.error)
+    if (m.payslipHtml) c.string.preencode(state, m.payslipHtml)
+    c.int.preencode(state, m.updatedAt)
+  },
+  encode(state, m) {
+    const flags = (m.txHash ? 1 : 0) | (m.error ? 2 : 0) | (m.payslipHtml ? 4 : 0)
+
+    c.buffer.encode(state, m.id)
+    c.buffer.encode(state, m.flowId)
+    c.string.encode(state, m.routeId)
+    c.string.encode(state, m.status)
+    c.uint.encode(state, flags)
+
+    if (m.txHash) c.string.encode(state, m.txHash)
+    if (m.error) c.string.encode(state, m.error)
+    if (m.payslipHtml) c.string.encode(state, m.payslipHtml)
+    c.int.encode(state, m.updatedAt)
+  },
+  decode(state) {
+    const r0 = c.buffer.decode(state)
+    const r1 = c.buffer.decode(state)
+    const r2 = c.string.decode(state)
+    const r3 = c.string.decode(state)
+    const flags = c.uint.decode(state)
+
+    return {
+      id: r0,
+      flowId: r1,
+      routeId: r2,
+      status: r3,
+      txHash: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      error: (flags & 2) !== 0 ? c.string.decode(state) : null,
+      payslipHtml: (flags & 4) !== 0 ? c.string.decode(state) : null,
+      updatedAt: c.int.decode(state)
+    }
+  }
+}
+
+// @goji/flow-status-remove
+const encoding18 = {
+  preencode(state, m) {
+    c.buffer.preencode(state, m.flowId)
+  },
+  encode(state, m) {
+    c.buffer.encode(state, m.flowId)
+  },
+  decode(state) {
+    const r0 = c.buffer.decode(state)
+
+    return {
+      flowId: r0
+    }
+  }
+}
+
 function setVersion(v) {
   version = v
 }
@@ -582,6 +647,10 @@ function getEncoding(name) {
       return encoding15
     case '@goji/identity':
       return encoding16
+    case '@goji/flow-status':
+      return encoding17
+    case '@goji/flow-status-remove':
+      return encoding18
     default:
       throw new Error('Encoder not found ' + name)
   }

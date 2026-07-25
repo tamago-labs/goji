@@ -171,6 +171,25 @@ schema.register({
   ]
 })
 
+schema.register({
+  name: 'flow-status',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'flowId', type: 'buffer', required: true },
+    { name: 'routeId', type: 'string', required: true },
+    { name: 'status', type: 'string', required: true },
+    { name: 'txHash', type: 'string' },
+    { name: 'error', type: 'string' },
+    { name: 'payslipHtml', type: 'string' },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'flow-status-remove',
+  fields: [{ name: 'flowId', type: 'buffer', required: true }]
+})
+
 Hyperschema.toDisk(hyperSchema)
 
 const hyperdb = HyperdbBuilder.from(SCHEMA_DIR, DB_DIR)
@@ -183,6 +202,7 @@ db.collections.register({ name: 'chat', schema: '@goji/chat-msg', key: ['id'] })
 db.collections.register({ name: 'invites', schema: '@goji/invite', key: ['id'] })
 db.collections.register({ name: 'identity', schema: '@goji/identity', key: ['writerKey'] })
 db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] })
+db.collections.register({ name: 'flowStatuses', schema: '@goji/flow-status', key: ['id'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -203,6 +223,8 @@ dispatch.register({ name: 'update-connection', requestType: '@goji/connection-up
 dispatch.register({ name: 'add-chat', requestType: '@goji/chat-msg' })
 dispatch.register({ name: 'remove-chats', requestType: '@goji/chats-remove' })
 dispatch.register({ name: 'update-identity', requestType: '@goji/identity' })
+dispatch.register({ name: 'set-flow-status', requestType: '@goji/flow-status' })
+dispatch.register({ name: 'remove-flow-statuses', requestType: '@goji/flow-status-remove' })
 dispatch.register({ name: 'add-wallet', requestType: '@goji/wallet' })
 dispatch.register({ name: 'remove-wallet', requestType: '@goji/wallet-remove' })
 

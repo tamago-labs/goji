@@ -15,6 +15,9 @@ interface ToolbarProps {
   onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null; verified?: boolean }) => void
   onAddRecipient: (recipient: { address: string; chain: string; type: 'verified' | 'custom'; name: string }) => void
   onPreview: () => void
+  onStart: () => void
+  onStop: () => void
+  flowActive: boolean
   onSettings: () => void
   zoom: number
   onZoomChange: (zoom: number) => void
@@ -28,6 +31,9 @@ export default function Toolbar({
   onAddWallet,
   onAddRecipient,
   onPreview,
+  onStart,
+  onStop,
+  flowActive,
   onSettings,
   zoom,
   onZoomChange,
@@ -74,50 +80,70 @@ export default function Toolbar({
       </div>
 
       <div className='flex items-center gap-3'>
-        <button
-          onClick={onPreview}
-          className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
-        >
-          Preview
-        </button>
+        {!flowActive && (
+          <>
+            <button
+              onClick={onPreview}
+              className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+            >
+              Preview
+            </button>
 
-        <div className='relative'>
-          <button
-            onClick={() => setShowAddWallet(!showAddWallet)}
-            className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
-          >
-            + Add Wallet
-          </button>
-          <AnimatePresence>
-            {showAddWallet && (
-              <AddWalletPopover
-                isOpen={showAddWallet}
-                onClose={() => setShowAddWallet(false)}
-                apiUrl={apiUrl}
-                onSelect={(wallet) => { onAddWallet(wallet); setShowAddWallet(false) }}
-              />
-            )}
-          </AnimatePresence>
-        </div>
+            <div className='relative'>
+              <button
+                onClick={() => setShowAddWallet(!showAddWallet)}
+                className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+              >
+                + Add Wallet
+              </button>
+              <AnimatePresence>
+                {showAddWallet && (
+                  <AddWalletPopover
+                    isOpen={showAddWallet}
+                    onClose={() => setShowAddWallet(false)}
+                    apiUrl={apiUrl}
+                    onSelect={(wallet) => { onAddWallet(wallet); setShowAddWallet(false) }}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
 
-        <div className='relative'>
+            <div className='relative'>
+              <button
+                onClick={() => setShowAddRecipient(!showAddRecipient)}
+                className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+              >
+                + Add Recipient
+              </button>
+              <AnimatePresence>
+                {showAddRecipient && (
+                  <AddRecipientPopover
+                    isOpen={showAddRecipient}
+                    onClose={() => setShowAddRecipient(false)}
+                    apiUrl={apiUrl}
+                    onAdd={(recipient) => { onAddRecipient(recipient); setShowAddRecipient(false) }}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          </>
+        )}
+
+        {flowActive ? (
           <button
-            onClick={() => setShowAddRecipient(!showAddRecipient)}
-            className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+            onClick={onStop}
+            className='px-3 py-1.5 bg-coral text-white text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
           >
-            + Add Recipient
+            Stop
           </button>
-          <AnimatePresence>
-            {showAddRecipient && (
-              <AddRecipientPopover
-                isOpen={showAddRecipient}
-                onClose={() => setShowAddRecipient(false)}
-                apiUrl={apiUrl}
-                onAdd={(recipient) => { onAddRecipient(recipient); setShowAddRecipient(false) }}
-              />
-            )}
-          </AnimatePresence>
-        </div>
+        ) : (
+          <button
+            onClick={onStart}
+            className='px-3 py-1.5 bg-mint text-white text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+          >
+            Start
+          </button>
+        )}
 
         <div className='flex items-center gap-2 bg-ink/5 rounded-xl px-2 py-1'>
           <button

@@ -190,6 +190,24 @@ class GojiRoom {
     this.router.add('@goji/remove-wallet', async (data, ctx) => {
       await ctx.view.delete('@goji/wallets', { id: data.id })
     })
+    this.router.add('@goji/set-flow-status', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/flowStatuses', { id: data.id })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/flowStatuses', { id: data.id }, () => data)
+      } else {
+        await ctx.view.insert('@goji/flowStatuses', data)
+      }
+    })
+    this.router.add('@goji/remove-flow-statuses', async (data, ctx) => {
+      const flowId = data.flowId
+      if (!flowId) return
+      const all = await ctx.view.find('@goji/flowStatuses', {}).toArray()
+      for (const r of all) {
+        if (r.id && r.flowId && b4a.equals(r.flowId, flowId)) {
+          await ctx.view.delete('@goji/flowStatuses', { id: r.id })
+        }
+      }
+    })
   }
 
   get view() {
@@ -770,6 +788,111 @@ async function main() {
     if (!wallet) return res.status(404).json({ error: 'wallet not found' })
     // Return mock balance for now - will connect to Circle Gateway later
     res.json({ balance: '0.000000', token: 'USDC' })
+  })
+
+  // Flow status endpoints
+  app.get('/api/flow-status', async (req, res) => {
+    if (!req.query.flowId) return res.status(400).json({ error: 'flowId required' })
+    const rows = await room.view.find('@goji/flowStatuses', {}).toArray()
+    const statuses = rows
+      .filter((r) => b4a.toString(r.flowId, 'hex') === req.query.flowId)
+      .map((r) => ({
+        id: b4a.toString(r.id, 'hex'),
+        flowId: b4a.toString(r.flowId, 'hex'),
+        routeId: r.routeId,
+        status: r.status,
+        txHash: r.txHash || null,
+        error: r.error || null,
+        payslipHtml: r.payslipHtml || null,
+        updatedAt: r.updatedAt
+      }))
+    res.json(statuses)
+  })
+
+  app.post('/api/flow-status', async (req, res) => {
+    const { flowId, routeId, status, txHash, error } = req.body
+    if (!flowId || !routeId || !status) return res.status(400).json({ error: 'flowId, routeId, status required' })
+
+    // Skip if route already has a settled status
+    const existing = await room.view.find('@goji/flowStatuses', {}).toArray()
+    const alreadySettled = existing.find((r) =>
+      b4a.toString(r.flowId, 'hex') === flowId &&
+      r.routeId === routeId &&
+      r.status === 'settled'
+    )
+    if (alreadySettled) {
+      return res.json({ id: b4a.toString(alreadySettled.id, 'hex'), flowId, routeId, status: 'settled', txHash: alreadySettled.txHash, error: null, updatedAt: alreadySettled.updatedAt, skipped: true })
+    }
+
+    const now = Date.now()
+    const id = require('crypto').randomBytes(16).toString('hex')
+    const flowStatus = { id: b4a.from(id, 'hex'), flowId: b4a.from(flowId, 'hex'), routeId, status, txHash: txHash || null, error: error || null, updatedAt: now }
+    await room.base.append(GojiDispatch.encode('@goji/set-flow-status', {
+      id: b4a.from(id, 'hex'),
+      flowId: b4a.from(flowId, 'hex'),
+      routeId,
+      status,
+      txHash: txHash || null,
+      error: error || null,
+      updatedAt: now
+    }))
+    wsBroadcast({ type: 'flow-status:updated', flowStatus: { id, flowId, routeId, status, txHash, error, updatedAt: now } })
+    res.json({ id, flowId, routeId, status, txHash, error, updatedAt: now })
+  })
+
+  app.put('/api/flow-status/:id', async (req, res) => {
+    const patch = req.body
+    patch.updatedAt = Date.now()
+    const existing = await room.view.get('@goji/flowStatuses', { id: b4a.from(req.params.id, 'hex') })
+    if (existing) {
+      await applyUpdate(room.view, '@goji/flowStatuses', { id: b4a.from(req.params.id, 'hex') }, () => ({
+        id: existing.id,
+        flowId: existing.flowId,
+        routeId: existing.routeId,
+        status: patch.status || existing.status,
+        txHash: patch.txHash || existing.txHash,
+        error: patch.error || existing.error,
+        payslipHtml: patch.payslipHtml || existing.payslipHtml || null,
+        updatedAt: patch.updatedAt
+      }))
+      await room.base.append(GojiDispatch.encode('@goji/set-flow-status', {
+        id: existing.id,
+        flowId: existing.flowId,
+        routeId: existing.routeId,
+        status: patch.status || existing.status,
+        txHash: patch.txHash || existing.txHash,
+        error: patch.error || existing.error,
+        payslipHtml: patch.payslipHtml || existing.payslipHtml || null,
+        updatedAt: patch.updatedAt
+      }))
+    }
+    wsBroadcast({ type: 'flow-status:updated', flowStatus: { id: req.params.id, ...patch } })
+    res.json({ ok: true })
+  })
+
+  app.delete('/api/flow-status/:flowId', async (req, res) => {
+    const flowIdBuf = b4a.from(req.params.flowId, 'hex')
+    // Only clear pending/signing statuses, keep settled/failed
+    const all = await room.view.find('@goji/flowStatuses', {}).toArray()
+    const toRemove = all.filter((r) => {
+      if (!r.id || !r.flowId) return false
+      if (!b4a.equals(r.flowId, flowIdBuf)) return false
+      return r.status === 'pending' || r.status === 'signing' || r.status === 'sending'
+    })
+    for (const r of toRemove) {
+      await room.base.append(GojiDispatch.encode('@goji/set-flow-status', {
+        id: r.id,
+        flowId: r.flowId,
+        routeId: r.routeId,
+        status: 'pending',
+        txHash: null,
+        error: null,
+        payslipHtml: r.payslipHtml || null,
+        updatedAt: Date.now()
+      }))
+    }
+    wsBroadcast({ type: 'flow-status:cleared', flowId: req.params.flowId })
+    res.json({ ok: true, cleared: toRemove.length })
   })
 
   app.get('/api/peers', async (req, res) => {

@@ -18,6 +18,7 @@ interface CanvasCardProps {
   onDelete: (id: string) => void
   onPortClick: (cardId: string, portType: 'input' | 'output') => void
   connectFrom: string | null
+  locked?: boolean
 }
 
 export default function CanvasCard({
@@ -26,11 +27,13 @@ export default function CanvasCard({
   onSelect,
   onDelete,
   onPortClick,
-  connectFrom
+  connectFrom,
+  locked = false
 }: CanvasCardProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: 'card-' + card.id,
-    data: { placementId: card.id }
+    data: { placementId: card.id },
+    disabled: locked
   })
 
   const colors = CATEGORY_COLORS[card.category]
@@ -57,6 +60,7 @@ export default function CanvasCard({
       {...attributes}
       {...listeners}
       onClick={(e) => {
+        if (locked) return
         e.stopPropagation()
         onSelect(card.id)
       }}
@@ -136,16 +140,18 @@ export default function CanvasCard({
       </div>
 
       {/* Delete */}
-      <button
-        className='absolute top-2 right-2 w-5 h-5 rounded-full bg-ink/5 hover:bg-red-500/10 text-ink/30 hover:text-red-500 flex items-center justify-center text-xs transition-colors z-10'
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation()
-          onDelete(card.id)
-        }}
+      {!locked && (
+        <button
+          className='absolute top-2 right-2 w-5 h-5 rounded-full bg-ink/5 hover:bg-red-500/10 text-ink/30 hover:text-red-500 flex items-center justify-center text-xs transition-colors z-10'
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(card.id)
+          }}
       >
         ×
-      </button>
+        </button>
+      )}
     </div>
   )
 }

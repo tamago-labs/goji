@@ -10,6 +10,7 @@ import CanvasLines from './CanvasLines'
 import Toolbar from './Toolbar'
 import ConnectionDrawer from './ConnectionDrawer'
 import PreviewRoutesModal from './PreviewRoutesModal'
+import FlowOverlay, { type RouteStatus } from './FlowOverlay'
 import FloatingChatButton from '../chat/FloatingChatButton'
 import { type FlowCard, type Connection, type CardCategory } from './types'
 
@@ -50,6 +51,9 @@ export default function FlowBuilder({
   const [showSettings, setShowSettings] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null)
+  const [flowStatuses, setFlowStatuses] = useState<RouteStatus[]>([])
+  const [flowActive, setFlowActive] = useState(false)
+  const isLocked = flowActive
   const wsRef = useRef<WebSocket | null>(null)
   const boardIdRef = useRef(boardId)
   const recentCardsRef = useRef<Set<string>>(new Set())
@@ -61,9 +65,10 @@ export default function FlowBuilder({
 
     async function load() {
       try {
-        const [cardsRes, connsRes] = await Promise.all([
+        const [cardsRes, connsRes, statusRes] = await Promise.all([
           fetch(`${API}/api/cards?boardId=${boardId}`),
-          fetch(`${API}/api/connections?boardId=${boardId}`)
+          fetch(`${API}/api/connections?boardId=${boardId}`),
+          fetch(`${API}/api/flow-status?flowId=${boardId}`)
         ])
         if (cardsRes.ok) {
           const loadedCards = await cardsRes.json()
@@ -72,6 +77,13 @@ export default function FlowBuilder({
         if (connsRes.ok) {
           const loadedConns = await connsRes.json()
           if (loadedConns.length > 0) setConnections(loadedConns)
+        }
+        if (statusRes.ok) {
+          const loadedStatuses = await statusRes.json()
+          if (loadedStatuses.length > 0) {
+            setFlowStatuses(loadedStatuses)
+            setFlowActive(true)
+          }
         }
       } catch (err) {
         console.error('[canvas] failed to load:', err)
@@ -126,6 +138,16 @@ export default function FlowBuilder({
           setConnections((prev) => prev.map((c) => c.id === msg.id ? { ...c, ...msg.patch } : c))
         } else if (msg.type === 'connection:deleted' && msg.id) {
           setConnections((prev) => prev.filter((c) => c.id !== msg.id))
+        } else if (msg.type === 'flow-status:updated' && msg.flowStatus) {
+          setFlowStatuses((prev) => {
+            const exists = prev.find((s) => s.routeId === msg.flowStatus.routeId)
+            if (exists) return prev.map((s) => s.routeId === msg.flowStatus.routeId ? { ...s, ...msg.flowStatus } : s)
+            return [...prev, msg.flowStatus]
+          })
+          setFlowActive(true)
+        } else if (msg.type === 'flow-status:cleared' && msg.flowId) {
+          setFlowStatuses([])
+          setFlowActive(false)
         }
       } catch {}
     }
@@ -393,6 +415,63 @@ export default function FlowBuilder({
     setSelectedConnection(conn)
   }, [])
 
+  const startFlow = useCallback(async () => {
+    if (!boardId) return
+    // Load existing statuses first (preserves settled routes)
+    let existingStatuses: RouteStatus[] = []
+    try {
+      const existingRes = await fetch(`${API}/api/flow-status?flowId=${boardId}`)
+      if (existingRes.ok) existingStatuses = await existingRes.json()
+    } catch {}
+
+    const existingMap = new Map(existingStatuses.map((s) => [s.routeId, s]))
+
+    // Create flow status for each connection that has payment or document
+    const routeConns = connections.filter((c) => c.payment || c.document)
+    const statuses: RouteStatus[] = []
+    for (const conn of routeConns) {
+      // Skip routes that are already settled
+      const existing = existingMap.get(conn.id)
+      if (existing && existing.status === 'settled') {
+        statuses.push(existing)
+        continue
+      }
+      try {
+        const res = await fetch(`${API}/api/flow-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            flowId: boardId,
+            routeId: conn.id,
+            status: 'pending'
+          })
+        })
+        const data = await res.json()
+        if (data.skipped) {
+          // Route was already settled server-side
+          statuses.push({ ...data, status: 'settled' })
+        } else {
+          statuses.push(data)
+        }
+      } catch {}
+    }
+    setFlowStatuses(statuses)
+    setFlowActive(true)
+  }, [boardId, connections, API])
+
+  const stopFlow = useCallback(async () => {
+    if (!boardId) return
+    try {
+      await fetch(`${API}/api/flow-status/${boardId}`, { method: 'DELETE' })
+    } catch {}
+    setFlowStatuses([])
+    setFlowActive(false)
+  }, [boardId, API])
+
+  const handleStatusUpdate = useCallback((status: RouteStatus) => {
+    setFlowStatuses((prev) => prev.map((s) => s.routeId === status.routeId ? { ...s, ...status } : s))
+  }, [])
+
   const handleNameChange = useCallback(
     (newName: string) => {
       setName(newName)
@@ -425,6 +504,9 @@ export default function FlowBuilder({
           onAddWallet={addWallet}
           onAddRecipient={addRecipient}
           onPreview={() => setShowPreview(true)}
+          onStart={startFlow}
+          onStop={stopFlow}
+          flowActive={flowActive}
           onSettings={() => setShowSettings(true)}
           zoom={zoom}
           onZoomChange={setZoom}
@@ -445,7 +527,13 @@ export default function FlowBuilder({
         </div>
       )}
 
-      <div className='flex-1 relative overflow-hidden'>
+      {isLocked && (
+        <div className='bg-blue-50 border-b border-blue-200 px-4 py-2 text-blue-700 text-xs font-medium flex items-center justify-between'>
+          <span>Flow active — canvas locked. Sign pending routes from the panel below.</span>
+        </div>
+      )}
+
+      <div className={`flex-1 relative overflow-hidden ${isLocked ? 'pointer-events-none' : ''}`}>
         <DndContext onDragEnd={handleDragEnd}>
           <Canvas zoom={zoom} onZoomChange={setZoom}>
             <div className='relative'>
@@ -464,13 +552,19 @@ export default function FlowBuilder({
                   onDelete={deleteCard}
                   onPortClick={handlePortClick}
                   connectFrom={connectFrom}
+                  locked={isLocked}
                 />
               ))}
             </div>
           </Canvas>
         </DndContext>
 
-        {cards.length === 0 && (
+        {/* Locked overlay */}
+        {isLocked && (
+          <div className='absolute inset-0 z-30' style={{ background: 'rgba(43,36,64,0.03)', cursor: 'not-allowed' }} />
+        )}
+
+        {cards.length === 0 && !isLocked && (
           <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
             <div className='text-center'>
               <div className='text-ink/20 text-lg mb-2'>
@@ -481,6 +575,18 @@ export default function FlowBuilder({
           </div>
         )}
       </div>
+
+      {/* Flow overlay panel */}
+      {isLocked && boardId && (
+        <FlowOverlay
+          boardId={boardId}
+          cards={cards}
+          connections={connections}
+          flowStatuses={flowStatuses}
+          apiUrl={API}
+          onStatusUpdate={handleStatusUpdate}
+        />
+      )}
 
       <AnimatePresence>
         {showSettings && (

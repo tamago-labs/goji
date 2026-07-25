@@ -457,7 +457,6 @@ async function main() {
   console.log(`\n  invite: ${inviteCode}`)
   console.log(`  share: npm start -- --join ${inviteCode}\n`)
 
-  await ensureDefaultBoard(room)
 
   const app = express()
   app.use(express.json())
@@ -793,20 +792,6 @@ async function main() {
     server.close()
     process.exit(0)
   })
-}
-
-async function ensureDefaultBoard(room) {
-  if (!room.isWritable()) return
-  const existing = await room.getBoards()
-  if (existing.length > 0) return
-  const now = Date.now()
-  const id = b4a.alloc(16)
-  id.writeUInt32BE(now >>> 0, 12)
-  await room.appendBoard({
-    type: 'add-board',
-    board: { id: b4a.toString(id, 'hex'), name: 'Untitled', createdAt: now, updatedAt: now }
-  })
-  console.log('[goji] seeded default board')
 }
 
 async function loadIdentity(path) {

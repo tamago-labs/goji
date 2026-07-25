@@ -7,8 +7,9 @@ const rows = [
   { traditional: 'Copy-paste wallet addresses', goji: 'Connected payment flows' },
   { traditional: 'Separate invoices & contracts', goji: 'Documents attached to payments' },
   { traditional: 'Manual payment review', goji: 'Collaborative flow review' },
-  { traditional: 'Multiple dashboards', goji: 'One shared workspace' },
-  { traditional: 'Send, then verify on one chain', goji: 'Review, then settle across chains' }
+  { traditional: 'Third-party data risk', goji: 'GDPR-clean by design' },
+  { traditional: 'Single-chain transfers', goji: 'Cross-chain USDC settlement' },
+  { traditional: 'Manual receipts', goji: 'Auto-generated payslips' }
 ]
 
 export default function Comparison() {

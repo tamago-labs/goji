@@ -17,7 +17,7 @@ export default function CTA() {
           Goji is Figma for<br />programmable payments.
         </h2>
         <p className='text-ink/50 text-lg mb-8 max-w-[440px] mx-auto'>
-          Visual, collaborative, and built for teams that move fast.
+          Built on Arc, connected to every chain. Visual, collaborative, and made for teams.
         </p>
         <Link
           href='/start'

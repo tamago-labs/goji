@@ -16,40 +16,40 @@ const cards = [
     left: '0',
     tag: 'wallet',
     tagColor: 'bg-mint/25 text-[#1B7A50]',
-    label: 'Ops Multisig',
-    value: '$18,400'
+    label: 'Team Wallet',
+    value: '✓ connected'
   },
   {
     top: '150px',
     left: '160px',
-    tag: 'contributor',
+    tag: 'recipient',
     tagColor: 'bg-violet/20 text-[#5A4FB8]',
-    label: 'alix.eth',
-    value: '$4,200 / mo'
+    label: 'Contractor',
+    value: '2,500 USDC'
   },
   {
     top: '40px',
     right: '70px',
-    tag: 'doc',
-    tagColor: 'bg-coral/20 text-[#C24E33]',
-    label: 'Contract',
-    value: 'alix-q3.pdf'
+    tag: 'payslip',
+    tagColor: 'bg-blue-100 text-blue-700',
+    label: 'Invoice #1042',
+    value: '✓ settled'
   },
   {
     top: '230px',
     right: '50px',
-    tag: 'contributor',
+    tag: 'recipient',
     tagColor: 'bg-violet/20 text-[#5A4FB8]',
-    label: 'devon.eth',
-    value: '$1,900'
+    label: 'Vendor',
+    value: '800 USDC'
   },
   {
     top: '330px',
     left: '120px',
-    tag: 'doc',
-    tagColor: 'bg-coral/20 text-[#C24E33]',
-    label: 'Payslip',
-    value: 'auto-generated'
+    tag: 'status',
+    tagColor: 'bg-ink/10 text-ink/50',
+    label: 'Routes',
+    value: '3/5 paid'
   }
 ]
 

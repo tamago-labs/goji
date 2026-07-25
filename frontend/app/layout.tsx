@@ -17,7 +17,7 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Goji — Visual Payment Flows for DAOs & Teams',
+  title: 'Goji — Visual Payment Flows for DAOs & Teams | Arc to Anywhere',
   description: 'Payroll, sketched out.'
 }
 

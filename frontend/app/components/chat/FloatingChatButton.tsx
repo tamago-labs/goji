@@ -7,7 +7,7 @@ import { MessageCircle } from 'lucide-react'
 export default function FloatingChatButton() {
   const [isOpen, setIsOpen] = useState(false)
   const [connected, setConnected] = useState(false)
-  const [unread, setUnread] = useState(0)
+  // const [unread, setUnread] = useState(0)
   const [apiUrl, setApiUrl] = useState('')
 
   // Check connection and read API URL
@@ -27,26 +27,26 @@ export default function FloatingChatButton() {
   }, [])
 
   // WebSocket for unread count
-  useEffect(() => {
-    if (!connected || !apiUrl) return
-    const wsUrl = apiUrl.replace('http', 'ws')
-    const ws = new WebSocket(wsUrl)
+  // useEffect(() => {
+  //   if (!connected || !apiUrl) return
+  //   const wsUrl = apiUrl.replace('http', 'ws')
+  //   const ws = new WebSocket(wsUrl)
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data)
-        if (msg.type === 'chat:message' && !isOpen) {
-          setUnread((prev) => prev + 1)
-        }
-      } catch {}
-    }
+  //   ws.onmessage = (event) => {
+  //     try {
+  //       const msg = JSON.parse(event.data)
+  //       if (msg.type === 'chat:message') {
+  //         setUnread((prev) => prev + 1)
+  //       }
+  //     } catch {}
+  //   }
 
-    return () => ws.close()
-  }, [connected, isOpen, apiUrl])
+  //   return () => ws.close()
+  // }, [connected, apiUrl])
 
   const handleOpen = () => {
     setIsOpen(true)
-    setUnread(0)
+    // setUnread(0)
   }
 
   if (!connected) return null
@@ -59,11 +59,11 @@ export default function FloatingChatButton() {
         title='Team Chat'
       >
         <MessageCircle className='w-5 h-5' />
-        {unread > 0 && (
+        {/*{unread > 0 && (
           <span className='absolute -top-1 -right-1 w-5 h-5 bg-coral text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-card'>
             {unread > 9 ? '9+' : unread}
           </span>
-        )}
+        )}*/}
       </button>
       <ChatPanel isOpen={isOpen} onClose={() => setIsOpen(false)} />
     </>

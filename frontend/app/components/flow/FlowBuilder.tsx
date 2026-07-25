@@ -244,7 +244,7 @@ export default function FlowBuilder({
               title: wallet.name || 'Wallet',
               x: 200 + Math.random() * 100,
               y: 150 + Math.random() * 100,
-              fields: { address: wallet.address, balance: '', walletId: wallet.id },
+              fields: { address: wallet.address, balance: '', walletId: wallet.id, verified: wallet.verified || false },
               boardId
             })
           })
@@ -256,7 +256,7 @@ export default function FlowBuilder({
           title: wallet.name || 'Wallet',
           x: 200 + Math.random() * 100,
           y: 150 + Math.random() * 100,
-          fields: { address: wallet.address, balance: '', walletId: wallet.id }
+          fields: { address: wallet.address, balance: '', walletId: wallet.id, verified: wallet.verified || false }
         }
         setCards((prev) => [...prev, card])
       }

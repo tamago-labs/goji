@@ -6,7 +6,7 @@ export interface FlowCard {
   title: string
   x: number
   y: number
-  fields: Record<string, string>
+  fields: Record<string, string | boolean>
 }
 
 export interface Connection {
@@ -26,7 +26,7 @@ export interface CanvasState {
 export interface CardTemplate {
   category: CardCategory
   title: string
-  fields: Record<string, string>
+  fields: Record<string, string | boolean>
 }
 
 export const CARD_WIDTH = 220

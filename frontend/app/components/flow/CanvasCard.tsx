@@ -97,9 +97,11 @@ export default function CanvasCard({
         {card.category === 'wallet' && (
           <>
             <div className='text-ink/40 text-xs truncate'>{card.fields.address || '0x...'}</div>
-            <div className='text-mint text-xs font-medium mt-1'>
-              {card.fields.balance || '$0'} USDC
-            </div>
+            {'verified' in card.fields && (
+              <span className={`text-[9px] mt-1 inline-block ${card.fields.verified ? 'text-[#28C840]' : 'text-coral'}`}>
+                {card.fields.verified ? '● verified' : '○ unverified'}
+              </span>
+            )}
           </>
         )}
         {card.category === 'recipient' && (

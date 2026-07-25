@@ -12,7 +12,7 @@ interface ToolbarProps {
   flowName: string
   onNameChange: (name: string) => void
   onAddCard: () => void
-  onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null }) => void
+  onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null; verified?: boolean }) => void
   onSettings: () => void
   zoom: number
   onZoomChange: (zoom: number) => void

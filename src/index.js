@@ -636,14 +636,25 @@ async function main() {
     const myKey = room.localBase.key
     const wallets = rows
       .filter((w) => b4a.equals(w.identityKey, myKey))
-      .map((w) => ({
-        id: b4a.toString(w.id, 'hex'),
-        address: w.address,
-        chainType: w.chainType || null,
-        walletType: w.walletType || null,
-        name: w.name || null,
-        createdAt: w.createdAt
-      }))
+      .map((w) => {
+        let verified = false
+        if (w.proof && w.address && w.identityPublicKey) {
+          try {
+            verified = Identity.verify(w.proof, Buffer.from(w.address), {
+              expectedIdentity: w.identityPublicKey
+            })
+          } catch {}
+        }
+        return {
+          id: b4a.toString(w.id, 'hex'),
+          address: w.address,
+          chainType: w.chainType || null,
+          walletType: w.walletType || null,
+          name: w.name || null,
+          verified: !!verified,
+          createdAt: w.createdAt
+        }
+      })
     res.json(wallets)
   })
 
@@ -656,13 +667,12 @@ async function main() {
     }
     const wallets = rows.map((w) => {
       const ownerKey = b4a.toString(w.identityKey, 'hex')
-      // Verify proof on load
+      // Verify proof using identityPublicKey (keet identity)
       let verified = false
-      if (w.proof && w.address) {
+      if (w.proof && w.address && w.identityPublicKey) {
         try {
-          const expectedKey = b4a.from(ownerKey, 'hex')
           verified = Identity.verify(w.proof, Buffer.from(w.address), {
-            expectedIdentity: expectedKey
+            expectedIdentity: w.identityPublicKey
           })
         } catch {}
       }
@@ -686,7 +696,15 @@ async function main() {
     if (!address) return res.status(400).json({ error: 'address required' })
     const now = Date.now()
     const id = require('crypto').randomBytes(16).toString('hex')
-    const wallet = { id, address, chainType: chainType || null, walletType: walletType || null, name: name || null, identityKey: room.localBase.key, createdAt: now }
+    let proof = null
+    let identityPublicKey = null
+    if (deviceKeyPair && deviceProof && keetIdentity) {
+      try {
+        proof = Identity.attestData(Buffer.from(address), deviceKeyPair, deviceProof)
+        identityPublicKey = keetIdentity.identityPublicKey
+      } catch {}
+    }
+    const wallet = { id, address, chainType: chainType || null, walletType: walletType || null, name: name || null, identityKey: room.localBase.key, identityPublicKey, proof, createdAt: now }
     await room.base.append(GojiDispatch.encode('@goji/add-wallet', {
       id: require('b4a').from(id, 'hex'),
       address,
@@ -694,6 +712,8 @@ async function main() {
       walletType: walletType || null,
       name: name || null,
       identityKey: room.localBase.key,
+      identityPublicKey,
+      proof,
       createdAt: now
     }))
     wsBroadcast({ type: 'wallet:added', wallet })

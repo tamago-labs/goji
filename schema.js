@@ -80,7 +80,8 @@ schema.register({
     { name: 'name', type: 'string' },
     { name: 'identityKey', type: 'buffer', required: true },
     { name: 'proof', type: 'buffer' },
-    { name: 'createdAt', type: 'int', required: true }
+    { name: 'createdAt', type: 'int', required: true },
+    { name: 'identityPublicKey', type: 'buffer' }
   ]
 })
 

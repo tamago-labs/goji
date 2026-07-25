@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "name": "writer",
@@ -256,6 +256,11 @@
           "required": true,
           "type": "int",
           "version": 1
+        },
+        {
+          "name": "identityPublicKey",
+          "type": "buffer",
+          "version": 2
         }
       ]
     },

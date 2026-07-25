@@ -6,9 +6,27 @@ interface CanvasLinesProps {
   cards: FlowCard[]
   connections: Connection[]
   onDeleteConnection: (id: string) => void
+  onClickConnection: (conn: Connection) => void
 }
 
-export default function CanvasLines({ cards, connections, onDeleteConnection }: CanvasLinesProps) {
+function getLabel(conn: Connection): string {
+  const hasPayment = conn.payment
+  const hasDoc = conn.document
+  const docName = conn.docName || 'document'
+
+  if (hasPayment && hasDoc) {
+    return conn.amount ? `${conn.amount} USDC + ${docName}` : docName
+  }
+  if (hasPayment) {
+    return conn.amount ? `${conn.amount} USDC` : 'Payment'
+  }
+  if (hasDoc) {
+    return docName
+  }
+  return ''
+}
+
+export default function CanvasLines({ cards, connections, onDeleteConnection, onClickConnection }: CanvasLinesProps) {
   const cardMap = new Map(cards.map((c) => [c.id, c]))
 
   return (
@@ -41,6 +59,8 @@ export default function CanvasLines({ cards, connections, onDeleteConnection }: 
         const midX = (x1 + x2) / 2
         const midY = (y1 + y2) / 2
 
+        const label = getLabel(conn)
+
         return (
           <g key={conn.id}>
             {/* Invisible wide hit area */}
@@ -50,7 +70,7 @@ export default function CanvasLines({ cards, connections, onDeleteConnection }: 
               stroke='transparent'
               strokeWidth={14}
               className='pointer-events-auto cursor-pointer'
-              onClick={() => onDeleteConnection(conn.id)}
+              onClick={() => onClickConnection(conn)}
             />
             {/* Visible path */}
             <path
@@ -63,12 +83,12 @@ export default function CanvasLines({ cards, connections, onDeleteConnection }: 
               opacity={0.6}
             />
             {/* Label */}
-            {conn.label && (
-              <g>
+            {label && (
+              <g className='pointer-events-auto cursor-pointer' onClick={() => onClickConnection(conn)}>
                 <rect
-                  x={midX - 40}
+                  x={midX - 60}
                   y={midY - 10}
-                  width={80}
+                  width={120}
                   height={20}
                   rx={10}
                   fill='white'
@@ -80,10 +100,10 @@ export default function CanvasLines({ cards, connections, onDeleteConnection }: 
                   y={midY + 4}
                   textAnchor='middle'
                   fill='#C97A3D'
-                  fontSize={10}
-                  fontFamily='monospace'
+                  fontSize={9}
+                  fontFamily='system-ui, sans-serif'
                 >
-                  {conn.label} USDC
+                  {label}
                 </text>
               </g>
             )}

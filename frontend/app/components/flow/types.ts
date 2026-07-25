@@ -16,6 +16,13 @@ export interface Connection {
   to: string
   toPort: 'input'
   label?: string
+  amount?: string
+  payment?: number
+  document?: number
+  template?: string
+  customDoc?: string
+  docName?: string
+  txHash?: string
 }
 
 export interface CanvasState {

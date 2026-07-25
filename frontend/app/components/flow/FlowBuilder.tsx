@@ -8,7 +8,8 @@ import Canvas from './Canvas'
 import CanvasCard from './CanvasCard'
 import CanvasLines from './CanvasLines'
 import Toolbar from './Toolbar'
-import AddCardPopover from './AddCardPopover'
+import ConnectionDrawer from './ConnectionDrawer'
+import PreviewRoutesModal from './PreviewRoutesModal'
 import FloatingChatButton from '../chat/FloatingChatButton'
 import { type FlowCard, type Connection, type CardCategory } from './types'
 
@@ -46,8 +47,9 @@ export default function FlowBuilder({
   const [connectFrom, setConnectFrom] = useState<string | null>(null)
   const [name, setName] = useState(flowName)
   const [zoom, setZoom] = useState(1)
-  const [showAddCard, setShowAddCard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const boardIdRef = useRef(boardId)
   const recentCardsRef = useRef<Set<string>>(new Set())
@@ -120,6 +122,8 @@ export default function FlowBuilder({
             if (prev.some((c) => c.id === msg.connection.id)) return prev
             return [...prev, msg.connection]
           })
+        } else if (msg.type === 'connection:updated' && msg.id) {
+          setConnections((prev) => prev.map((c) => c.id === msg.id ? { ...c, ...msg.patch } : c))
         } else if (msg.type === 'connection:deleted' && msg.id) {
           setConnections((prev) => prev.filter((c) => c.id !== msg.id))
         }
@@ -371,6 +375,24 @@ export default function FlowBuilder({
     [deleteConnectionApi]
   )
 
+  const updateConnection = useCallback(
+    async (id: string, patch: Partial<Connection>) => {
+      setConnections((prev) => prev.map((c) => c.id === id ? { ...c, ...patch } : c))
+      try {
+        await fetch(`${API}/api/connections/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch)
+        })
+      } catch {}
+    },
+    [API]
+  )
+
+  const onClickConnection = useCallback((conn: Connection) => {
+    setSelectedConnection(conn)
+  }, [])
+
   const handleNameChange = useCallback(
     (newName: string) => {
       setName(newName)
@@ -400,19 +422,14 @@ export default function FlowBuilder({
         <Toolbar
           flowName={name}
           onNameChange={handleNameChange}
-          onAddCard={() => setShowAddCard(!showAddCard)}
           onAddWallet={addWallet}
           onAddRecipient={addRecipient}
+          onPreview={() => setShowPreview(true)}
           onSettings={() => setShowSettings(true)}
           zoom={zoom}
           onZoomChange={setZoom}
           health={health}
           apiUrl={API}
-        />
-        <AddCardPopover
-          isOpen={showAddCard}
-          onClose={() => setShowAddCard(false)}
-          onAdd={addCard}
         />
       </div>
 
@@ -436,6 +453,7 @@ export default function FlowBuilder({
                 cards={cards}
                 connections={connections}
                 onDeleteConnection={deleteConnection}
+                onClickConnection={onClickConnection}
               />
               {cards.map((card) => (
                 <CanvasCard
@@ -503,6 +521,21 @@ export default function FlowBuilder({
       </AnimatePresence>
 
       <FloatingChatButton />
+
+      <ConnectionDrawer
+        isOpen={selectedConnection !== null}
+        connection={selectedConnection}
+        cards={cards}
+        onClose={() => setSelectedConnection(null)}
+        onSave={updateConnection}
+      />
+
+      <PreviewRoutesModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        cards={cards}
+        connections={connections}
+      />
     </div>
   )
 }

@@ -12,9 +12,9 @@ import AddRecipientPopover from './AddRecipientPopover'
 interface ToolbarProps {
   flowName: string
   onNameChange: (name: string) => void
-  onAddCard: () => void
   onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null; verified?: boolean }) => void
   onAddRecipient: (recipient: { address: string; chain: string; type: 'verified' | 'custom'; name: string }) => void
+  onPreview: () => void
   onSettings: () => void
   zoom: number
   onZoomChange: (zoom: number) => void
@@ -25,9 +25,9 @@ interface ToolbarProps {
 export default function Toolbar({
   flowName,
   onNameChange,
-  onAddCard,
   onAddWallet,
   onAddRecipient,
+  onPreview,
   onSettings,
   zoom,
   onZoomChange,
@@ -75,10 +75,10 @@ export default function Toolbar({
 
       <div className='flex items-center gap-3'>
         <button
-          onClick={onAddCard}
+          onClick={onPreview}
           className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
         >
-          + Add Card
+          Preview
         </button>
 
         <div className='relative'>

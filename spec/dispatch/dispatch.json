@@ -64,30 +64,36 @@
     },
     {
       "id": 10,
+      "name": "@goji/update-connection",
+      "requestType": "@goji/connection-update",
+      "version": 1
+    },
+    {
+      "id": 11,
       "name": "@goji/add-chat",
       "requestType": "@goji/chat-msg",
       "version": 1
     },
     {
-      "id": 11,
+      "id": 12,
       "name": "@goji/remove-chats",
       "requestType": "@goji/chats-remove",
       "version": 1
     },
     {
-      "id": 12,
+      "id": 13,
       "name": "@goji/update-identity",
       "requestType": "@goji/identity",
       "version": 1
     },
     {
-      "id": 13,
+      "id": 14,
       "name": "@goji/add-wallet",
       "requestType": "@goji/wallet",
       "version": 1
     },
     {
-      "id": 14,
+      "id": 15,
       "name": "@goji/remove-wallet",
       "requestType": "@goji/wallet-remove",
       "version": 1

@@ -143,6 +143,12 @@ class GojiRoom {
     this.router.add('@goji/remove-connection', async (data, ctx) => {
       await ctx.view.delete('@goji/connections', { id: data.id })
     })
+    this.router.add('@goji/update-connection', async (data, ctx) => {
+      await applyUpdate(ctx.view, '@goji/connections', { id: data.id }, (c) => ({
+        ...c,
+        ...data.patch
+      }))
+    })
     this.router.add('@goji/add-chat', async (data, ctx) => {
       await ctx.view.insert('@goji/chat', data)
     })
@@ -309,6 +315,10 @@ class GojiRoom {
       await this.base.append(
         GojiDispatch.encode('@goji/remove-connection', { id: hexId(action.id) })
       )
+    } else if (action.type === 'update-connection') {
+      await this.base.append(
+        GojiDispatch.encode('@goji/update-connection', { id: hexId(action.id), patch: action.patch })
+      )
     }
   }
 
@@ -357,7 +367,14 @@ function encodeConnection(conn) {
     from: conn.from,
     to: conn.to,
     label: conn.label || null,
-    updatedAt: conn.updatedAt
+    updatedAt: conn.updatedAt,
+    amount: conn.amount || null,
+    payment: conn.payment || null,
+    document: conn.document || null,
+    template: conn.template || null,
+    customDoc: conn.customDoc || null,
+    docName: conn.docName || null,
+    txHash: conn.txHash || null
   }
 }
 
@@ -381,7 +398,14 @@ function decodeConnection(raw) {
     from: raw.from,
     to: raw.to,
     label: raw.label || null,
-    updatedAt: raw.updatedAt
+    updatedAt: raw.updatedAt,
+    amount: raw.amount || null,
+    payment: raw.payment || null,
+    document: raw.document || null,
+    template: raw.template || null,
+    customDoc: raw.customDoc || null,
+    docName: raw.docName || null,
+    txHash: raw.txHash || null
   }
 }
 
@@ -566,13 +590,26 @@ async function main() {
   })
 
   app.post('/api/connections', async (req, res) => {
-    const { boardId, from, to, label } = req.body
+    const { boardId, from, to, label, amount, payment, document, template, customDoc, docName, txHash } = req.body
     const now = Date.now()
     const id = require('crypto').randomBytes(16).toString('hex')
-    const connection = { id, boardId, from, to, label: label || null, updatedAt: now }
+    const connection = {
+      id, boardId, from, to, label: label || null, updatedAt: now,
+      amount: amount || null, payment: payment || null, document: document || null,
+      template: template || null, customDoc: customDoc || null, docName: docName || null,
+      txHash: txHash || null
+    }
     await room.appendConnection({ type: 'add-connection', connection })
     wsBroadcast({ type: 'connection:added', connection })
     res.json(connection)
+  })
+
+  app.put('/api/connections/:id', async (req, res) => {
+    const patch = req.body
+    patch.updatedAt = Date.now()
+    await room.appendConnection({ type: 'update-connection', id: req.params.id, patch })
+    wsBroadcast({ type: 'connection:updated', id: req.params.id, patch })
+    res.json({ ok: true })
   })
 
   app.delete('/api/connections/:id', async (req, res) => {

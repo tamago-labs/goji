@@ -56,7 +56,14 @@ schema.register({
     { name: 'from', type: 'string', required: true },
     { name: 'to', type: 'string', required: true },
     { name: 'label', type: 'string' },
-    { name: 'updatedAt', type: 'int', required: true }
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'amount', type: 'string' },
+    { name: 'payment', type: 'int' },
+    { name: 'document', type: 'int' },
+    { name: 'template', type: 'string' },
+    { name: 'customDoc', type: 'string' },
+    { name: 'docName', type: 'string' },
+    { name: 'txHash', type: 'string' }
   ]
 })
 
@@ -121,13 +128,28 @@ schema.register({
     { name: 'from', type: 'string', required: true },
     { name: 'to', type: 'string', required: true },
     { name: 'label', type: 'string' },
-    { name: 'updatedAt', type: 'int', required: true }
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'amount', type: 'string' },
+    { name: 'payment', type: 'buffer' },
+    { name: 'document', type: 'buffer' },
+    { name: 'template', type: 'string' },
+    { name: 'customDoc', type: 'string' },
+    { name: 'docName', type: 'string' },
+    { name: 'txHash', type: 'string' }
   ]
 })
 
 schema.register({
   name: 'connection-remove',
   fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
+schema.register({
+  name: 'connection-update',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'patch', type: 'json', required: true }
+  ]
 })
 
 schema.register({
@@ -177,6 +199,7 @@ dispatch.register({ name: 'update-card', requestType: '@goji/card-update' })
 dispatch.register({ name: 'remove-card', requestType: '@goji/card-remove' })
 dispatch.register({ name: 'add-connection', requestType: '@goji/connection-add' })
 dispatch.register({ name: 'remove-connection', requestType: '@goji/connection-remove' })
+dispatch.register({ name: 'update-connection', requestType: '@goji/connection-update' })
 dispatch.register({ name: 'add-chat', requestType: '@goji/chat-msg' })
 dispatch.register({ name: 'remove-chats', requestType: '@goji/chats-remove' })
 dispatch.register({ name: 'update-identity', requestType: '@goji/identity' })

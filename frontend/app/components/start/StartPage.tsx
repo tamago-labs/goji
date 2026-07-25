@@ -10,6 +10,7 @@ import UserMenuPopover from './UserMenuPopover'
 import UsernameModal from './UsernameModal'
 import BoardsGrid from './BoardsList'
 import OffersSection from './OffersSection'
+import HistorySection from './HistorySection'
 import ErrorBanner from './ErrorBanner'
 import DepositSpendModal from './DepositSpendModal'
 import WalletsTab from './WalletsTab'
@@ -34,7 +35,7 @@ interface Board {
   updatedAt: number
 }
 
-type SidebarTab = 'overview' | 'offers' | 'boards' | 'wallets' | 'documents'
+type SidebarTab = 'overview' | 'offers' | 'boards' | 'wallets' | 'history'
 
 export default function StartPage() {
   const [apiUrl, setApiUrl] = useState(() => {
@@ -43,6 +44,7 @@ export default function StartPage() {
   })
   const [health, setHealth] = useState<Health | null>(null)
   const [boards, setBoards] = useState<Board[]>([])
+  const [flowStatuses, setFlowStatuses] = useState<{ flowId: string; status: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -66,7 +68,20 @@ export default function StartPage() {
           setError(null)
           const boardsRes = await fetch(`${url}/api/boards`)
           if (boardsRes.ok) {
-            setBoards(await boardsRes.json())
+            const boardsData = await boardsRes.json()
+            setBoards(boardsData)
+            // Fetch flow statuses for all boards
+            const allStatuses: { flowId: string; status: string }[] = []
+            for (const board of boardsData) {
+              try {
+                const statusRes = await fetch(`${url}/api/flow-status?flowId=${board.id}`)
+                if (statusRes.ok) {
+                  const statuses = await statusRes.json()
+                  allStatuses.push(...statuses.map((s: { flowId: string; status: string }) => ({ flowId: s.flowId, status: s.status })))
+                }
+              } catch {}
+            }
+            setFlowStatuses(allStatuses)
           }
           return true
         }
@@ -200,7 +215,7 @@ export default function StartPage() {
           <div className='flex gap-8'>
             <div className='w-[200px] flex-shrink-0'>
               <nav className='space-y-1'>
-                {[{ id: 'overview' as SidebarTab, label: 'Overview', icon: <ListTodo className='w-4 h-4' /> }, { id: 'offers' as SidebarTab, label: 'Offers', icon: <DollarSign className='w-4 h-4' /> }, { id: 'wallets' as SidebarTab, label: 'Wallets', icon: <Wallet className='w-4 h-4' /> }, { id: 'documents' as SidebarTab, label: 'Documents', icon: <BookText className='w-4 h-4' /> }, { id: 'boards' as SidebarTab, label: 'Boards', icon: <LayoutGrid className='w-4 h-4' /> }].map((item) => (
+                {[{ id: 'overview' as SidebarTab, label: 'Overview', icon: <ListTodo className='w-4 h-4' /> }, { id: 'offers' as SidebarTab, label: 'Offers', icon: <DollarSign className='w-4 h-4' /> }, { id: 'wallets' as SidebarTab, label: 'Wallets', icon: <Wallet className='w-4 h-4' /> }, { id: 'history' as SidebarTab, label: 'History', icon: <BookText className='w-4 h-4' /> }, { id: 'boards' as SidebarTab, label: 'Boards', icon: <LayoutGrid className='w-4 h-4' /> }].map((item) => (
                   <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === item.id ? 'bg-ink text-lavender' : 'text-ink/60 hover:bg-ink/5'}`}>
                     {item.icon}
                     {item.label}
@@ -221,12 +236,12 @@ export default function StartPage() {
                 )}
                 {activeTab === 'offers' && (
                   <motion.div key='offers' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <OffersSection disabled={false} />
+                    <OffersSection apiUrl={apiUrl} disabled={loading || !!error} />
                   </motion.div>
                 )}
                 {activeTab === 'boards' && (
                   <motion.div key='boards' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <BoardsGrid boards={boards} disabled={loading || !!error} />
+                    <BoardsGrid boards={boards} disabled={loading || !!error} flowStatuses={flowStatuses} />
                   </motion.div>
                 )}
                 {activeTab === 'wallets' && (
@@ -234,12 +249,9 @@ export default function StartPage() {
                     <WalletsTab apiUrl={apiUrl} />
                   </motion.div>
                 )}
-                {activeTab === 'documents' && (
-                  <motion.div key='documents' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <div className='text-center py-12 text-ink/30'>
-                      <BookText className='w-10 h-10 mx-auto mb-3 opacity-30' />
-                      <p className='text-sm'>Documents coming soon</p>
-                    </div>
+                {activeTab === 'history' && (
+                  <motion.div key='history' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
+                    <HistorySection apiUrl={apiUrl} disabled={loading || !!error} />
                   </motion.div>
                 )}
               </AnimatePresence>

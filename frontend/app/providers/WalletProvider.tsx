@@ -23,6 +23,7 @@ interface BalanceChain {
 
 interface WalletState {
   adapter: Adapter | null
+  address: string | null
   totalBalance: string
   chains: BalanceChain[]
   loading: boolean
@@ -30,7 +31,7 @@ interface WalletState {
 }
 
 type WalletAction =
-  | { type: 'SET_ADAPTER'; adapter: Adapter }
+  | { type: 'SET_ADAPTER'; adapter: Adapter; address: string }
   | { type: 'SET_BALANCE'; total: string; chains: BalanceChain[] }
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'SET_CONNECTED'; connected: boolean }
@@ -38,6 +39,7 @@ type WalletAction =
 
 const initialState: WalletState = {
   adapter: null,
+  address: null,
   totalBalance: '0.00',
   chains: [],
   loading: false,
@@ -47,7 +49,7 @@ const initialState: WalletState = {
 function walletReducer(state: WalletState, action: WalletAction): WalletState {
   switch (action.type) {
     case 'SET_ADAPTER':
-      return { ...state, adapter: action.adapter }
+      return { ...state, adapter: action.adapter, address: action.address }
     case 'SET_BALANCE':
       return { ...state, totalBalance: action.total, chains: action.chains, loading: false }
     case 'SET_LOADING':
@@ -125,7 +127,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
               })
             }
           })
-          dispatch({ type: 'SET_ADAPTER', adapter: adv })
+          dispatch({ type: 'SET_ADAPTER', adapter: adv, address: address || '' })
           dispatch({ type: 'SET_CONNECTED', connected: true })
         } catch (err) {
           console.error('[wallet] adapter error:', err)

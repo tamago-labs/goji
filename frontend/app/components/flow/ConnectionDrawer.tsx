@@ -6,7 +6,7 @@ import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
 import { DEFAULT_TEMPLATES, renderTemplate } from '../../../lib/payslipTemplates'
 import { type FlowCard, type Connection } from './types'
 
-const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: string; size?: number }>> = {
+const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: 'branded' | 'mono' | 'color'; size?: number }>> = {
   Arc_Testnet: NetworkArc,
   Base_Sepolia: NetworkBase,
   Ethereum_Sepolia: NetworkEthereum

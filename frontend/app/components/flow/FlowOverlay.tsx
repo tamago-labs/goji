@@ -7,7 +7,7 @@ import { renderTemplate, DEFAULT_TEMPLATES } from '../../../lib/payslipTemplates
 import { useWallet } from '../../providers/WalletProvider'
 import { type FlowCard, type Connection } from './types'
 
-const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: string; size?: number }>> = {
+const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: 'branded' | 'mono' | 'color'; size?: number }>> = {
   Arc_Testnet: NetworkArc,
   Base_Sepolia: NetworkBase,
   Ethereum_Sepolia: NetworkEthereum

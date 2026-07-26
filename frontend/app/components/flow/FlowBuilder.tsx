@@ -258,7 +258,7 @@ export default function FlowBuilder({
   )
 
   const addWallet = useCallback(
-    async (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null }) => {
+    async (wallet: { id: string; address: string; name: string | null; verified?: boolean }) => {
       if (boardId) {
         try {
           await fetch(`${API}/api/cards`, {

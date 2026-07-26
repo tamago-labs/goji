@@ -45,7 +45,7 @@ export default function StartPage() {
   })
   const [health, setHealth] = useState<Health | null>(null)
   const [boards, setBoards] = useState<Board[]>([])
-  const [flowStatuses, setFlowStatuses] = useState<{ flowId: string; status: string }[]>([])
+  const [flowStatuses, setFlowStatuses] = useState<{ flowId: string; routeId: string; status: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -72,13 +72,13 @@ export default function StartPage() {
             const boardsData = await boardsRes.json()
             setBoards(boardsData)
             // Fetch flow statuses for all boards
-            const allStatuses: { flowId: string; status: string }[] = []
+            const allStatuses: { flowId: string; routeId: string; status: string }[] = []
             for (const board of boardsData) {
               try {
                 const statusRes = await fetch(`${url}/api/flow-status?flowId=${board.id}`)
                 if (statusRes.ok) {
                   const statuses = await statusRes.json()
-                  allStatuses.push(...statuses.map((s: { flowId: string; status: string }) => ({ flowId: s.flowId, status: s.status })))
+                  allStatuses.push(...statuses.map((s: { flowId: string; routeId: string; status: string }) => ({ flowId: s.flowId, routeId: s.routeId, status: s.status })))
                 }
               } catch {}
             }

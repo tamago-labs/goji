@@ -5,7 +5,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
 import { CARD_WIDTH, CATEGORY_COLORS, type FlowCard } from './types'
 
-const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: 'branded' | 'mono' | 'color'; size?: number }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   Arc_Testnet: NetworkArc,
   Base_Sepolia: NetworkBase,
   Ethereum_Sepolia: NetworkEthereum

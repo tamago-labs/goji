@@ -216,8 +216,9 @@ export async function fetchBalanceByAddress(address: string, chains?: string[]):
   const context = createUnifiedBalanceKitContext()
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await getBalances(context, {
-        sources: { address, chains: chains || ['Base_Sepolia'] as never },
+        sources: { address, chains: chains as any } as any,
         networkType: 'testnet'
       })
 

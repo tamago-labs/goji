@@ -12,7 +12,7 @@ import AddRecipientPopover from './AddRecipientPopover'
 interface ToolbarProps {
   flowName: string
   onNameChange: (name: string) => void
-  onAddWallet: (wallet: { id: string; address: string; name: string | null; chainType: string | null; walletType: string | null; verified?: boolean }) => void
+  onAddWallet: (wallet: { id: string; address: string; name: string | null; verified?: boolean }) => void
   onAddRecipient: (recipient: { address: string; chain: string; type: 'verified' | 'custom'; name: string }) => void
   onStart: () => void
   onStop: () => void

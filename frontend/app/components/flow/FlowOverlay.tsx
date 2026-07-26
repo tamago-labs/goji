@@ -7,7 +7,8 @@ import { renderTemplate, DEFAULT_TEMPLATES } from '../../../lib/payslipTemplates
 import { useWallet } from '../../providers/WalletProvider'
 import { type FlowCard, type Connection } from './types'
 
-const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: 'branded' | 'mono' | 'color'; size?: number }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   Arc_Testnet: NetworkArc,
   Base_Sepolia: NetworkBase,
   Ethereum_Sepolia: NetworkEthereum
@@ -62,9 +63,9 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
     if (!route.conn.payment || !route.from || !route.to || !walletState.adapter) return
     if (!isMyRoute(route.from)) return
 
-    const amount = route.conn.amount
-    const chain = String(route.to.fields.chain)
-    const recipient = String(route.to.fields.address)
+    const amount = route.conn.amount || '0'
+    const chain = String(route.to.fields.chain || 'Arc_Testnet')
+    const recipient = String(route.to.fields.address || '')
 
     setSigningId(route.conn.id)
 

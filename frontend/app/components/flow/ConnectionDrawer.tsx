@@ -6,7 +6,8 @@ import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
 import { DEFAULT_TEMPLATES, renderTemplate } from '../../../lib/payslipTemplates'
 import { type FlowCard, type Connection } from './types'
 
-const CHAIN_ICONS: Record<string, React.ComponentType<{ variant?: 'branded' | 'mono' | 'color'; size?: number }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
   Arc_Testnet: NetworkArc,
   Base_Sepolia: NetworkBase,
   Ethereum_Sepolia: NetworkEthereum
@@ -62,12 +63,12 @@ export default function ConnectionDrawer({ isOpen, connection, cards, onClose, o
   const handleSave = () => {
     if (!connection) return
     onSave(connection.id, {
-      amount: amount || null,
-      payment: payment ? 1 : null,
-      document: document ? 1 : null,
-      template: document ? templateId : null,
-      customDoc: document && templateId === 'custom' ? customDoc : null,
-      docName: document ? (docName || selectedTemplate.docName) : null
+      amount: amount || undefined,
+      payment: payment ? 1 : undefined,
+      document: document ? 1 : undefined,
+      template: document ? templateId : undefined,
+      customDoc: document && templateId === 'custom' ? customDoc : undefined,
+      docName: document ? (docName || selectedTemplate.docName) : undefined
     })
     onClose()
   }

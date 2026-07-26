@@ -55,7 +55,7 @@ export default function OffersSection({ apiUrl, disabled }: OffersSectionProps) 
           const connections = await connsRes.json()
           const statuses = await statusRes.json()
           const cards = await cardsRes.json()
-          const cardMap = new Map(cards.map((c: { id: string }) => [c.id, c]))
+          const cardMap = new Map<string, { id: string; title?: string; fields?: Record<string, string | boolean> }>(cards.map((c: { id: string; title?: string; fields?: Record<string, string | boolean> }) => [c.id, c]))
 
           // 4. Find routes where user owns the "from" wallet
           for (const conn of connections) {

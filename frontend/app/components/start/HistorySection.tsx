@@ -52,7 +52,7 @@ export default function HistorySection({ apiUrl, disabled }: HistorySectionProps
           const connections = await connsRes.json()
           const statuses = await statusRes.json()
           const cards = await cardsRes.json()
-          const cardMap = new Map(cards.map((c: { id: string }) => [c.id, c]))
+          const cardMap = new Map<string, { id: string; title?: string; fields?: Record<string, string | boolean> }>(cards.map((c: { id: string; title?: string; fields?: Record<string, string | boolean> }) => [c.id, c]))
 
           // 3. Find settled routes where user is the recipient
           for (const conn of connections) {

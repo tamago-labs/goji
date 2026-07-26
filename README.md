@@ -1,6 +1,12 @@
-# Goji
+# Goji: Visual Payment Canvas for DAOs & Teams
 
-**Visual Payment Flows for DAOs & Teams**
+**Collaborative USDC flows • Payroll • Treasury • Arc-native cross-chain • P2P & non-custodial**
+
+<img width="886" height="408" alt="Screenshot 2026-07-26 085530" src="https://github.com/user-attachments/assets/c17d5a2c-1245-41dd-8625-52e4f4f13f53" />
+
+## Quick Link
+- https://goji-testnet.vercel.app/
+- https://www.youtube.com/watch?v=YfxArY9uQQo
 
 Goji turns payroll, contributor payments, and one-off transfers into something you can actually _see_ — a canvas where wallets, recipients, contracts, and payslips connect like a flow diagram, instead of a spreadsheet no one fully trusts.
 

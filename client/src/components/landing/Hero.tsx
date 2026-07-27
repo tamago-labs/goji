@@ -15,7 +15,7 @@ export default function Hero() {
           {...fadeUp(0)}
           className='inline-block bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
         >
-          For Web3 Teams &amp; DAOs
+          For Teams Moving Faster
         </motion.span>
         <motion.h1
           {...fadeUp(0.1)}
@@ -31,7 +31,7 @@ export default function Hero() {
           {...fadeUp(0.2)}
           className='text-[17px] leading-[1.6] text-ink/70 max-w-[460px] mb-[34px]'
         >
-          Move USDC from Arc to any supported chain, track every payment, and generate financial records for your accounting tools—all from a shared P2P workspace.
+          Move USDC across supported chains from your team's local-first workspace—every payment becomes an accounting-ready financial record.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5 mb-6'>
           <a

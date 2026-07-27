@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 const features = [
   {
     title: 'Arc to Anywhere',
-    desc: 'Send and receive USDC from Arc to any supported chain — all from one canvas.'
+    desc: 'Send and receive USDC from Arc to any supported chain—all from one canvas.'
   },
   {
     title: 'Live Collaboration',

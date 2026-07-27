@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-lavender: #f2f0fa;
+  --color-ink: #2b2440;
+  --color-mint: #7fd9b0;
+  --color-coral: #ff8a73;
+  --color-violet: #8b7fd6;
+  --color-card: #ffffff;
+  --font-display: "Fredoka", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-lavender);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  margin: 0;
+}
+
+@keyframes marble-orbit {
+  0%   { transform: translate(-50%, -50%) translate(0px, 0px); }
+  25%  { transform: translate(-50%, -50%) translate(5px, -3px); }
+  50%  { transform: translate(-50%, -50%) translate(0px, -6px); }
+  75%  { transform: translate(-50%, -50%) translate(-5px, -3px); }
+  100% { transform: translate(-50%, -50%) translate(-5px, -3px); }
+}

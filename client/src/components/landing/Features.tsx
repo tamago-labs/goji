@@ -7,7 +7,7 @@ const tabs = [
     label: 'Payroll Receivable Pools',
     title: 'Payroll Receivable Pools',
     description:
-      'Transform verified payroll into liquidity, enabling salary advances for employees and offering investors access to short-duration payroll-backed yield.'
+      'Transform verified payroll into liquidity, enabling salary advances for employees and offering retail access to short-duration payroll-backed RWAs.'
   },
   {
     id: 'workspace',
@@ -40,13 +40,13 @@ export default function Features() {
 
   return (
     <section id='features' className='max-w-[1320px] mx-auto px-5 md:px-13 py-16'>
-      <div className='flex justify-center mb-14'>
-        <div className='flex flex-wrap justify-center gap-1.5 bg-card rounded-xl md:rounded-full p-3 md:p-1.5 shadow-[0_2px_12px_rgba(43,36,64,0.06)] mx-4 md:mx-0'>
+      <div className='flex justify-start md:justify-center mb-14'>
+        <div className='flex flex-nowrap md:flex-wrap overflow-x-auto gap-1.5 bg-card rounded-xl md:rounded-full p-3 md:p-1.5 shadow-[0_2px_12px_rgba(43,36,64,0.06)] mx-4 md:mx-0 scrollbar-hide'>
           {tabs.map((tab, i) => (
             <button
               key={tab.id}
               onClick={() => setActive(i)}
-              className={`relative px-3 md:px-5 py-2 md:py-2.5 rounded-xl md:rounded-3xl text-xs md:text-sm font-medium transition-all ${active === i
+              className={`relative whitespace-nowrap px-3 md:px-5 py-2 md:py-2.5 rounded-xl md:rounded-3xl text-xs md:text-sm font-medium transition-all ${active === i
                 ? 'bg-ink text-lavender shadow-[0_4px_16px_rgba(43,36,64,0.15)]'
                 : 'text-ink hover:bg-ink/[0.05]'
                 }`}

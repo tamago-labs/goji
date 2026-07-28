@@ -30,3 +30,11 @@ body {
   75%  { transform: translate(-50%, -50%) translate(-5px, -3px); }
   100% { transform: translate(-50%, -50%) translate(-5px, -3px); }
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

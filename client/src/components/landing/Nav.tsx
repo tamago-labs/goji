@@ -64,11 +64,11 @@ export default function Nav() {
           </button>
           {openDropdown === 'more' && (
             <div className='absolute top-full left-0 mt-2 w-48 bg-card rounded-xl shadow-[0_8px_30px_rgba(43,36,64,0.12)] py-2 z-50'>
-              <a href='#supported-chains' className='block px-4 py-2.5 text-sm text-ink/70 hover:bg-ink/[0.05] hover:text-ink transition-colors'>
-                Supported Chains
-              </a>
               <a href='#features' className='block px-4 py-2.5 text-sm text-ink/70 hover:bg-ink/[0.05] hover:text-ink transition-colors'>
                 Features
+              </a>
+              <a href='#supported-chains' className='block px-4 py-2.5 text-sm text-ink/70 hover:bg-ink/[0.05] hover:text-ink transition-colors'>
+                Supported Chains
               </a>
               <a href='#how-it-works' className='block px-4 py-2.5 text-sm text-ink/70 hover:bg-ink/[0.05] hover:text-ink transition-colors'>
                 How It Works

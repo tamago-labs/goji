@@ -1,117 +1,74 @@
 import { motion } from 'framer-motion'
 
 const cardVariants = [
-  { initial: { opacity: 0, y: 30, rotate: -3 }, rotate: '-3deg' },
-  { initial: { opacity: 0, y: 30, rotate: 2 }, rotate: '2deg' },
-  { initial: { opacity: 0, y: 30, rotate: 4 }, rotate: '4deg' },
   { initial: { opacity: 0, y: 30, rotate: -2 }, rotate: '-2deg' },
-  { initial: { opacity: 0, y: 30, rotate: 1 }, rotate: '1deg' }
+  { initial: { opacity: 0, y: 30, rotate: 2 }, rotate: '2deg' },
+  { initial: { opacity: 0, y: 30, rotate: -1 }, rotate: '-1deg' }
 ]
 
-const cards = [
+const pools = [
   {
-    top: '10px',
-    left: '0',
-    tag: 'wallet',
-    tagColor: 'bg-mint/25 text-[#1B7A50]',
-    label: 'Team Wallet',
-    value: '✓ connected'
+    color: 'bg-mint/25 text-[#1B7A50]',
+    dot: 'bg-[#1B7A50]',
+    name: '30-Day Payroll Receivables',
+    token: 'GOJI30',
+    apy: '8-12%',
+    tvl: '$820K',
+    tvlWidth: 'w-[65%]'
   },
   {
-    top: '150px',
-    left: '160px',
-    tag: 'recipient',
-    tagColor: 'bg-violet/20 text-[#5A4FB8]',
-    label: 'Contractor',
-    value: '2,500 USDC'
+    color: 'bg-violet/20 text-[#5A4FB8]',
+    dot: 'bg-[#5A4FB8]',
+    name: '60-Day Payroll Receivables',
+    token: 'GOJI60',
+    apy: '10-14%',
+    tvl: '$1.1M',
+    tvlWidth: 'w-[85%]'
   },
   {
-    top: '40px',
-    right: '70px',
-    tag: 'payslip',
-    tagColor: 'bg-blue-100 text-blue-700',
-    label: 'Invoice #1042',
-    value: '✓ settled'
-  },
-  {
-    top: '230px',
-    right: '50px',
-    tag: 'recipient',
-    tagColor: 'bg-violet/20 text-[#5A4FB8]',
-    label: 'Vendor',
-    value: '800 USDC'
-  },
-  {
-    top: '330px',
-    left: '120px',
-    tag: 'status',
-    tagColor: 'bg-ink/10 text-ink/50',
-    label: 'Routes',
-    value: '3/5 paid'
+    color: 'bg-blue-100 text-blue-700',
+    dot: 'bg-blue-700',
+    name: '90-Day Payroll Receivables',
+    token: 'GOJI90',
+    apy: '12-16%',
+    tvl: '$480K',
+    tvlWidth: 'w-[45%]'
   }
 ]
 
 export default function CardCanvas() {
   return (
-    <div className='relative h-[420px]'>
-      <svg
-        className='absolute inset-0 w-full h-full hidden md:block'
-        viewBox='0 0 400 420'
-        fill='none'
-      >
-        <path
-          d='M 50 60 Q 140 100 130 190'
-          stroke='#8B7FD6'
-          strokeWidth='2'
-          strokeLinecap='round'
-          opacity='0.5'
-        />
-        <path
-          d='M 200 210 Q 260 190 280 100'
-          stroke='#8B7FD6'
-          strokeWidth='2'
-          strokeLinecap='round'
-          opacity='0.5'
-        />
-        <path
-          d='M 200 230 Q 240 280 300 260'
-          stroke='#8B7FD6'
-          strokeWidth='2'
-          strokeLinecap='round'
-          opacity='0.5'
-        />
-        <path
-          d='M 190 250 Q 100 200 140 340'
-          stroke='#8B7FD6'
-          strokeWidth='2'
-          strokeLinecap='round'
-          opacity='0.5'
-        />
-      </svg>
-
-      {cards.map((card, i) => (
+    <div className='relative h-[380px] flex flex-col items-center justify-center gap-5'>
+      {pools.map((pool, i) => (
         <motion.div
           key={i}
           initial={cardVariants[i].initial}
           animate={{ opacity: 1, y: 0, rotate: parseFloat(cardVariants[i].rotate) }}
-          transition={{ duration: 0.5, delay: 0.6 + i * 0.12, ease: 'easeOut' }}
-          className='absolute w-[150px] bg-card rounded-2xl p-4 text-[13px] shadow-[0_10px_30px_rgba(43,36,64,0.08)]'
-          style={{
-            top: card.top,
-            left: card.left,
-            right: card.right,
-            rotate: cardVariants[i].rotate
-          }}
+          transition={{ duration: 0.5, delay: 0.4 + i * 0.15, ease: 'easeOut' }}
+          className={`w-[340px] bg-card rounded-2xl p-4 shadow-[0_10px_30px_rgba(43,36,64,0.08)] ${
+            i === 1 ? 'ml-8' : i === 2 ? '-ml-4' : ''
+          }`}
+          style={{ rotate: cardVariants[i].rotate }}
         >
-          <span
-            className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-[10px] mb-2 ${card.tagColor}`}
-          >
-            {card.tag}
-          </span>
-          <div>
-            {card.label}
-            <br />
-            <b>{card.value}</b>
+          <div className='flex items-center gap-2 mb-3'>
+            <span className={`w-2 h-2 rounded-full ${pool.dot}`} />
+            <span className='text-[13px] font-semibold text-ink'>{pool.name}</span>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-[8px] ${pool.color}`}>
+              {pool.token}
+            </span>
+          </div>
+          <div className='flex items-center justify-between mb-2'>
+            <div>
+              <span className='text-[11px] text-ink/50'>APY</span>
+              <div className='text-[15px] font-semibold text-ink'>{pool.apy}</div>
+            </div>
+            <div className='text-right'>
+              <span className='text-[11px] text-ink/50'>TVL</span>
+              <div className='text-[15px] font-semibold text-ink'>{pool.tvl}</div>
+            </div>
+          </div>
+          <div className='h-1.5 bg-ink/5 rounded-full overflow-hidden'>
+            <div className={`h-full bg-gradient-to-r from-mint to-violet rounded-full ${pool.tvlWidth}`} />
           </div>
         </motion.div>
       ))}

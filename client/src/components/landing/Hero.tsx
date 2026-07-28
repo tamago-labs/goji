@@ -13,25 +13,29 @@ export default function Hero() {
       <div>
         <motion.span
           {...fadeUp(0)}
-          className='inline-block bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
+          className='inline-flex items-center gap-2 bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
         >
-          For Teams Moving Faster
+          <span className='relative flex h-2 w-2'>
+            <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75' />
+            <span className='relative inline-flex rounded-full h-2 w-2 bg-white' />
+          </span>
+          Live on Arc Testnet
         </motion.span>
         <motion.h1
           {...fadeUp(0.1)}
           className='font-display text-[50px] font-semibold leading-[1.12] mb-[22px]'
         >
-          Arc-Native Treasury
+          Payroll on Arc
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            &amp; Accounting
+            That Unlocks Liquidity
           </span>
         </motion.h1>
         <motion.p
           {...fadeUp(0.2)}
           className='text-[17px] leading-[1.6] text-ink/70 max-w-[460px] mb-[34px]'
         >
-          Move USDC across supported chains from your team's local-first workspace—every payment becomes an accounting-ready financial record.
+          A P2P payroll platform where employers pay teams in USDC, employees access salary advances, and verified payroll powers on-chain receivable pools.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5 mb-6'>
           <a

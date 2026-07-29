@@ -4,106 +4,60 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const hostCmd = 'npx @tamago-labs/goji'
-const guestCmd = 'npx @tamago-labs/goji --join'
+const roles = ['Employer', 'Employee', 'Financial Partner']
 
 const hostOutput = [
-  { text: 'mode: host', color: 'text-ink/50' },
+  { text: '  enter invite code: yryo3rdcinj5njk...', color: 'text-ink/60' },
   { text: '', color: '' },
-  { text: '✓ Keet identity ready', color: 'text-[#28C840]' },
-  { text: '✓ P2P workspace hosted', color: 'text-[#28C840]' },
-  { text: '', color: '' },
-  { text: '  invite: yryo3rdcinj5njk...', color: 'text-mint font-medium' },
-  { text: '', color: '' },
-  { text: 'Ready.', color: 'text-[#28C840] font-medium' }
-]
-
-const guestOutput = [
-  { text: 'mode: join', color: 'text-ink/50' },
-  { text: '', color: '' },
-  { text: '  enter invite code: █', color: 'text-ink/60' },
-  { text: '', color: '' },
-  { text: '✓ Keet identity ready', color: 'text-[#28C840]' },
-  { text: '✓ Connected to workspace', color: 'text-[#28C840]' },
-  { text: '', color: '' },
-  { text: 'Ready.', color: 'text-[#28C840] font-medium' }
+  { text: '✓ Keet identity ready • P2P workspace connected', color: 'text-[#28C840]' }
 ]
 
 export default function HowItWorks() {
-  const [phase, setPhase] = useState<'host-type' | 'host-output' | 'guest-type' | 'guest-output'>(
-    'host-type'
-  )
-  const [typed, setTyped] = useState('')
+  const [phase, setPhase] = useState<'host-type' | 'selecting' | 'host-output'>('host-type')
+  const [selectedRole, setSelectedRole] = useState(0)
   const [visibleLines, setVisibleLines] = useState(0)
-  const [guestTyped, setGuestTyped] = useState('')
 
-  // Phase 1: type host command
+  // Phase 1: show command immediately then start selection
   useEffect(() => {
     if (phase !== 'host-type') return
-    let i = 0
+    const timer = setTimeout(() => setPhase('selecting'), 500)
+    return () => clearTimeout(timer)
+  }, [phase])
+
+  // Phase 2: cycle through roles
+  useEffect(() => {
+    if (phase !== 'selecting') return
+    let step = 0
     const interval = setInterval(() => {
-      if (i < hostCmd.length) {
-        setTyped(hostCmd.slice(0, i + 1))
-        i++
+      step++
+      if (step < roles.length) {
+        setSelectedRole(step)
       } else {
         clearInterval(interval)
-        setTimeout(() => setPhase('host-output'), 400)
+        setTimeout(() => setPhase('host-output'), 600)
       }
-    }, 45)
+    }, 800)
     return () => clearInterval(interval)
   }, [phase])
 
-  // Phase 2: show host output then switch to guest
+  // Phase 3: show output then reset
   useEffect(() => {
     if (phase !== 'host-output') return
     const timers = hostOutput.map((_, i) =>
       setTimeout(() => setVisibleLines(i + 1), 300 + i * 300)
     )
-    const switchTimer = setTimeout(() => {
-      setTyped('')
-      setVisibleLines(0)
-      setPhase('guest-type')
-    }, 5000)
-    return () => {
-      timers.forEach(clearTimeout)
-      clearTimeout(switchTimer)
-    }
-  }, [phase])
-
-  // Phase 3: type guest command
-  useEffect(() => {
-    if (phase !== 'guest-type') return
-    let i = 0
-    const interval = setInterval(() => {
-      if (i < guestCmd.length) {
-        setGuestTyped(guestCmd.slice(0, i + 1))
-        i++
-      } else {
-        clearInterval(interval)
-        setTimeout(() => setPhase('guest-output'), 400)
-      }
-    }, 30)
-    return () => clearInterval(interval)
-  }, [phase])
-
-  // Phase 4: show guest output then reset
-  useEffect(() => {
-    if (phase !== 'guest-output') return
-    const timers = guestOutput.map((_, i) =>
-      setTimeout(() => setVisibleLines(i + 1), 300 + i * 300)
-    )
     const resetTimer = setTimeout(() => {
-      setGuestTyped('')
+      setSelectedRole(0)
       setVisibleLines(0)
       setPhase('host-type')
-    }, 8000)
+    }, 10000)
     return () => {
       timers.forEach(clearTimeout)
       clearTimeout(resetTimer)
     }
   }, [phase])
 
-  const showHost = phase === 'host-type' || phase === 'host-output'
-  const showGuest = phase === 'guest-type' || phase === 'guest-output'
+  const showMenu = phase === 'host-type' || phase === 'selecting'
 
   return (
     <section id='how-it-works' className='max-w-[1320px] mx-auto px-6 md:px-13 py-20'>
@@ -115,11 +69,10 @@ export default function HowItWorks() {
         className='text-center mb-12'
       >
         <h2 className='font-display text-3xl md:text-4xl font-semibold mb-4'>
-          Run it locally. Collaborate globally.
+          On-chain Payroll, Built P2P
         </h2>
         <p className='text-ink/60 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
-          Launch a workspace from your terminal. Invite teammates over P2P,
-          review every payment flow together, and settle with confidence.
+          No central server. No shared cloud database. Employers, employees, and financial partners collaborate through a private P2P workspace.
         </p>
       </motion.div>
 
@@ -138,51 +91,47 @@ export default function HowItWorks() {
           </div>
           <div className='p-5 font-mono text-[13px] leading-[1.9] min-h-[240px]'>
             <AnimatePresence mode='wait'>
-              {showHost && (
-                <motion.div
-                  key='host'
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div>
-                    <span className='text-coral'>$ </span>
-                    <span className='text-ink'>{typed}</span>
-                    {phase === 'host-type' && (
-                      <span className='inline-block w-[7px] h-[14px] bg-ink/70 animate-pulse ml-0.5 align-middle' />
-                    )}
-                  </div>
-                  {hostOutput.slice(0, visibleLines).map((line, i) => (
-                    <div key={i} className={line.color}>
-                      {line.text}
+              <motion.div
+                key='host'
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {showMenu && (
+                  <>
+                    <div>
+                      <span className='text-coral'>$ </span>
+                      <span className='text-ink'>{hostCmd}</span>
                     </div>
-                  ))}
-                </motion.div>
-              )}
-
-              {showGuest && (
-                <motion.div
-                  key='guest'
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div>
-                    <span className='text-coral'>$ </span>
-                    <span className='text-ink'>{guestTyped}</span>
-                    {phase === 'guest-type' && (
-                      <span className='inline-block w-[7px] h-[14px] bg-ink/70 animate-pulse ml-0.5 align-middle' />
-                    )}
-                  </div>
-                  {guestOutput.slice(0, visibleLines).map((line, i) => (
-                    <div key={i} className={line.color}>
-                      {line.text}
+                    <div className='text-ink/60'>? Choose workspace</div>
+                    {roles.map((role, i) => (
+                      <div key={role}>
+                        {i === selectedRole ? (
+                          <span className='text-coral font-medium'>❯ {role}</span>
+                        ) : (
+                          <span className='text-ink/50'>  {role}</span>
+                        )}
+                      </div>
+                    ))}
+                  </>
+                )}
+                {phase === 'host-output' && (
+                  <>
+                    <div>
+                      <span className='text-coral'>$ </span>
+                      <span className='text-ink'>{hostCmd}</span>
                     </div>
-                  ))}
-                </motion.div>
-              )}
+                    <div className='text-ink/60'>? Choose workspace</div>
+                    <div className='text-coral font-medium'>❯ {roles[selectedRole]}</div>
+                    {hostOutput.slice(0, visibleLines).map((line, i) => (
+                      <div key={i} className={line.color}>
+                        {line.text}
+                      </div>
+                    ))}
+                  </>
+                )}
+              </motion.div>
             </AnimatePresence>
           </div>
         </div>

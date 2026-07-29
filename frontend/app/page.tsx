@@ -2,9 +2,9 @@ import Nav from './components/landing/Nav'
 import Hero from './components/landing/Hero'
 import UseCases from './components/landing/UseCases'
 import HowItWorks from './components/landing/HowItWorks'
+import PayrollReceivables from './components/landing/PayrollReceivables'
 import Comparison from './components/landing/Comparison'
 import SupportedChains from './components/landing/SupportedChains'
-import Features from './components/landing/Features'
 import CTA from './components/landing/CTA'
 import Footer from './components/landing/Footer'
 
@@ -15,9 +15,9 @@ export default function Home() {
       <Hero />
       <UseCases />
       <HowItWorks />
-      <Comparison />
+      <PayrollReceivables />
+      {/* <Comparison /> */}
       <SupportedChains />
-      <Features />
       <CTA />
       <Footer />
     </div>

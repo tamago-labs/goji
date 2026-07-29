@@ -14,42 +14,42 @@ const cards = [
   {
     top: '10px',
     left: '0',
-    tag: 'wallet',
-    tagColor: 'bg-mint/25 text-[#1B7A50]',
-    label: 'Team Wallet',
-    value: '✓ connected'
+    tag: 'payroll',
+    tagColor: 'bg-coral/20 text-coral',
+    label: 'Payroll Run',
+    value: 'Jan 2026'
   },
   {
     top: '150px',
     left: '160px',
-    tag: 'recipient',
-    tagColor: 'bg-violet/20 text-[#5A4FB8]',
-    label: 'Contractor',
-    value: '2,500 USDC'
+    tag: 'payslip',
+    tagColor: 'bg-blue-100 text-blue-700',
+    label: 'Payslip #2847',
+    value: '3,200 USDC'
   },
   {
     top: '40px',
     right: '70px',
-    tag: 'payslip',
-    tagColor: 'bg-blue-100 text-blue-700',
-    label: 'Invoice #1042',
-    value: '✓ settled'
+    tag: 'proof',
+    tagColor: 'bg-mint/25 text-[#1B7A50]',
+    label: 'Merkle Root',
+    value: '✓ Arc anchored'
   },
   {
     top: '230px',
     right: '50px',
-    tag: 'recipient',
+    tag: 'settlement',
     tagColor: 'bg-violet/20 text-[#5A4FB8]',
-    label: 'Vendor',
-    value: '800 USDC'
+    label: 'Settlement',
+    value: '45,000 USDC'
   },
   {
     top: '330px',
     left: '120px',
     tag: 'status',
     tagColor: 'bg-ink/10 text-ink/50',
-    label: 'Routes',
-    value: '3/5 paid'
+    label: 'Batch',
+    value: '12/12 paid'
   }
 ]
 
@@ -57,7 +57,7 @@ export default function CardCanvas() {
   return (
     <div className='relative h-[420px]'>
       <svg
-        className='absolute inset-0 w-full h-full hidden md:block'
+        className='absolute inset-0 w-full h-full hidden lg:block'
         viewBox='0 0 400 420'
         fill='none'
       >

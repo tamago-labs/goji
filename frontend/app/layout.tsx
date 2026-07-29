@@ -17,8 +17,8 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Goji — Visual Payment Flows for DAOs & Teams | Arc to Anywhere',
-  description: 'Payroll, sketched out.'
+  title: 'Goji — Verifiable Payroll Origination Layer Built on Arc',
+  description: 'Goji is a private payroll platform built on Arc. Manage payroll in a P2P workspace, verify with on-chain cryptographic proof, and unlock payroll receivable financing.'
 }
 
 export default function RootLayout({

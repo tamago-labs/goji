@@ -45,8 +45,7 @@ export default function SupportedChains() {
           Send &amp; receive USDC anywhere
         </h2>
         <p className='text-ink/50 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
-          Your team can send and receive payments across supported networks
-          from one shared payment workspace, powered by Circle Gateway.
+          Settle on Arc and route across any supported chain — all from one workspace, powered by Circle Gateway.
         </p>
       </motion.div>
 

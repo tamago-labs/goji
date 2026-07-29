@@ -18,37 +18,37 @@ export default function Hero() {
           {...fadeUp(0)}
           className='inline-block bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
         >
-          for DAOs &amp; small web3 teams
+          Built on Arc — Connecting Private Payroll to Capital
         </motion.span>
         <motion.h1
           {...fadeUp(0.1)}
           className='font-display text-[50px] font-semibold leading-[1.12] mb-[22px]'
         >
-          Payments,
+          Private Payroll.
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            made together
+            Public Proof.
           </span>
         </motion.h1>
         <motion.p
           {...fadeUp(0.2)}
           className='text-[17px] leading-[1.6] text-ink/70 max-w-[420px] mb-[34px]'
         >
-         Goji keeps every USDC payment and its contracts, payslips, and approvals together in a shared P2P workspace across supported chains.
+         Run payroll in a private P2P workspace, anchor cryptographic proof on Arc, and connect employers with financial partners through verifiable assets.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5'>
           <Link
             href='/start'
             className='bg-ink text-lavender px-[26px] py-[15px] rounded-3xl text-[15px] font-medium hover:opacity-90 transition-opacity'
           >
-            Create a flow
+            Get started now
           </Link>
-          <a
-            href='#'
+          <Link
+            href='/start'
             className='text-ink text-[15px] font-medium py-[15px] px-2.5 hover:opacity-70 transition-opacity'
           >
-            See an example →
-          </a>
+            See how it works →
+          </Link>
         </motion.div>
       </div>
 

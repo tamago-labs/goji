@@ -534,7 +534,7 @@ async function main() {
   const identityPath = require('path').join(STORAGE, 'identity.json')
   const identityData = await setupIdentity(STORAGE)
   let identityName = NAME || (identityData ? identityData.name : null) || `User-${room.localBase.key.toString('hex').slice(-4)}`
-  await room.appendIdentity({ displayName: identityName })
+  await room.appendIdentity({ displayName: identityName, role: isGuest ? 'pending' : 'employer' })
 
   // Set up Keet identity for message signing
   let keetIdentity = null
@@ -566,13 +566,32 @@ async function main() {
     next()
   })
 
-  app.get('/api/health', (req, res) => {
-    const hostRole = isGuest ? 'guest' : 'employer'
+  app.get('/api/health', async (req, res) => {
+    // Look up actual role from identity in view
+    let identity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    
+    // Debug: log what we find
+    if (isGuest) {
+      console.log(`[health] guest identity lookup: role=${identity?.role || 'not found'}`)
+    }
+    
+    // If role is still pending, wait and retry (role may be syncing from host)
+    if (identity && identity.role === 'pending' && isGuest) {
+      // Try up to 3 times with increasing delay
+      for (let i = 0; i < 3; i++) {
+        await new Promise(r => setTimeout(r, 300))
+        identity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+        console.log(`[health] retry ${i + 1}: role=${identity?.role || 'not found'}`)
+        if (identity && identity.role !== 'pending') break
+      }
+    }
+    
+    const role = identity?.role || (isGuest ? 'pending' : 'employer')
     res.json({
       status: 'ok',
       name: identityName,
       peerId: z32.encode(room.localBase.key),
-      role: hostRole,
+      role,
       writable: room.isWritable(),
       peers,
       port: PORT,
@@ -974,11 +993,23 @@ async function main() {
   })
 
   app.get('/api/members', async (req, res) => {
+    // Only employer can list members
+    const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    if (!callerIdentity || callerIdentity.role !== 'employer') {
+      return res.status(403).json({ error: 'Only employer can list members' })
+    }
+
     const identities = await room.getIdentities()
     res.json(identities)
   })
 
   app.post('/api/members/assign', async (req, res) => {
+    // Only employer can assign roles
+    const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    if (!callerIdentity || callerIdentity.role !== 'employer') {
+      return res.status(403).json({ error: 'Only employer can assign roles' })
+    }
+
     const { writerKey, role } = req.body
     if (!writerKey || !role) {
       return res.status(400).json({ error: 'writerKey and role required' })
@@ -994,7 +1025,7 @@ async function main() {
       return res.status(404).json({ error: 'Member not found' })
     }
 
-    console.log(`[role] assigned ${role} to ${writerKey.slice(0, 16)}...`)
+    console.log(`[role] assigned ${role} to ${assigned.displayName} (${writerKey.slice(0, 8)}...)`)
     wsBroadcast({ type: 'role:assigned', writerKey, role })
     res.json({ ok: true, writerKey, role })
   })

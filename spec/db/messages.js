@@ -505,22 +505,37 @@ const encoding16 = {
   preencode(state, m) {
     c.buffer.preencode(state, m.writerKey)
     c.string.preencode(state, m.displayName)
+    state.end++ // max flag is 4 so always one byte
+
+    if (m.role) c.string.preencode(state, m.role)
+    if (m.assignedBy) c.buffer.preencode(state, m.assignedBy)
+    if (m.assignedAt) c.int.preencode(state, m.assignedAt)
     c.int.preencode(state, m.updatedAt)
   },
   encode(state, m) {
+    const flags = (m.role ? 1 : 0) | (m.assignedBy ? 2 : 0) | (m.assignedAt ? 4 : 0)
+
     c.buffer.encode(state, m.writerKey)
     c.string.encode(state, m.displayName)
+    c.uint.encode(state, flags)
+
+    if (m.role) c.string.encode(state, m.role)
+    if (m.assignedBy) c.buffer.encode(state, m.assignedBy)
+    if (m.assignedAt) c.int.encode(state, m.assignedAt)
     c.int.encode(state, m.updatedAt)
   },
   decode(state) {
     const r0 = c.buffer.decode(state)
     const r1 = c.string.decode(state)
-    const r2 = c.int.decode(state)
+    const flags = c.uint.decode(state)
 
     return {
       writerKey: r0,
       displayName: r1,
-      updatedAt: r2
+      role: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      assignedBy: (flags & 2) !== 0 ? c.buffer.decode(state) : null,
+      assignedAt: (flags & 4) !== 0 ? c.int.decode(state) : 0,
+      updatedAt: c.int.decode(state)
     }
   }
 }
@@ -802,20 +817,35 @@ const encoding23 = {
 const encoding24 = {
   preencode(state, m) {
     c.string.preencode(state, m.displayName)
+    state.end++ // max flag is 4 so always one byte
+
+    if (m.role) c.string.preencode(state, m.role)
+    if (m.assignedBy) c.buffer.preencode(state, m.assignedBy)
+    if (m.assignedAt) c.int.preencode(state, m.assignedAt)
     c.int.preencode(state, m.updatedAt)
   },
   encode(state, m) {
+    const flags = (m.role ? 1 : 0) | (m.assignedBy ? 2 : 0) | (m.assignedAt ? 4 : 0)
+
     c.string.encode(state, m.displayName)
+    c.uint.encode(state, flags)
+
+    if (m.role) c.string.encode(state, m.role)
+    if (m.assignedBy) c.buffer.encode(state, m.assignedBy)
+    if (m.assignedAt) c.int.encode(state, m.assignedAt)
     c.int.encode(state, m.updatedAt)
   },
   decode(state) {
     const r1 = c.string.decode(state)
-    const r2 = c.int.decode(state)
+    const flags = c.uint.decode(state)
 
     return {
       writerKey: null,
       displayName: r1,
-      updatedAt: r2
+      role: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      assignedBy: (flags & 2) !== 0 ? c.buffer.decode(state) : null,
+      assignedAt: (flags & 4) !== 0 ? c.int.decode(state) : 0,
+      updatedAt: c.int.decode(state)
     }
   }
 }

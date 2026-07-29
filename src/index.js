@@ -169,6 +169,9 @@ class GojiRoom {
       const next = {
         writerKey,
         displayName: data.displayName,
+        role: data.role || 'pending',
+        assignedBy: data.assignedBy || null,
+        assignedAt: data.assignedAt || null,
         updatedAt: data.updatedAt || Date.now()
       }
       const existing = await ctx.view.get('@goji/identity', { writerKey })
@@ -181,6 +184,31 @@ class GojiRoom {
       this.identities.set(b4a.toString(writerKey, 'hex'), {
         key: b4a.toString(writerKey, 'hex'),
         name: data.displayName,
+        role: data.role || 'pending',
+        updatedAt: next.updatedAt
+      })
+    })
+    this.router.add('@goji/assign-role', async (data, ctx) => {
+      const writerKey = b4a.isBuffer(data.writerKey) ? data.writerKey : b4a.from(data.writerKey)
+      const next = {
+        writerKey,
+        displayName: data.displayName,
+        role: data.role || 'pending',
+        assignedBy: data.assignedBy || null,
+        assignedAt: data.assignedAt || null,
+        updatedAt: data.updatedAt || Date.now()
+      }
+      const existing = await ctx.view.get('@goji/identity', { writerKey })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/identity', { writerKey }, () => next)
+      } else {
+        await ctx.view.insert('@goji/identity', next)
+      }
+      // Cache for peers endpoint
+      this.identities.set(b4a.toString(writerKey, 'hex'), {
+        key: b4a.toString(writerKey, 'hex'),
+        name: data.displayName,
+        role: data.role || 'pending',
         updatedAt: next.updatedAt
       })
     })
@@ -255,6 +283,9 @@ class GojiRoom {
     return rows.map((r) => ({
       writerKey: b4a.toString(r.writerKey, 'hex'),
       displayName: r.displayName,
+      role: r.role || 'pending',
+      assignedBy: r.assignedBy ? b4a.toString(r.assignedBy, 'hex') : null,
+      assignedAt: r.assignedAt || null,
       updatedAt: r.updatedAt
     }))
   }
@@ -282,14 +313,38 @@ class GojiRoom {
     await this.base.append(GojiDispatch.encode('@goji/add-chat', { id, text, info, proof: proof || null }))
   }
 
-  async appendIdentity({ displayName }) {
+  async appendIdentity({ displayName, role, assignedBy, assignedAt }) {
     await this.base.append(
       GojiDispatch.encode('@goji/update-identity', {
         writerKey: this.localBase.key,
         displayName,
+        role: role || 'pending',
+        assignedBy: assignedBy || null,
+        assignedAt: assignedAt || null,
         updatedAt: Date.now()
       })
     )
+  }
+
+  async assignRole(writerKeyHex, role, assignedByKey) {
+    const writerKey = b4a.from(writerKeyHex, 'hex')
+    const existing = await this.view.get('@goji/identity', { writerKey })
+    if (!existing) return null
+
+    const validRoles = ['employer', 'employee', 'finance', 'pending']
+    if (!validRoles.includes(role)) return null
+
+    const next = {
+      writerKey,
+      displayName: existing.displayName,
+      role,
+      assignedBy: assignedByKey || this.localBase.key,
+      assignedAt: Date.now(),
+      updatedAt: Date.now()
+    }
+    await applyUpdate(this.view, '@goji/identity', { writerKey }, () => next)
+    await this.base.append(GojiDispatch.encode('@goji/assign-role', next))
+    return next
   }
 
   async appendBoard(action) {
@@ -456,7 +511,8 @@ async function main() {
   swarm.on('connection', (conn) => {
     store.replicate(conn)
     peers++
-    console.log(`[peer] connected (total: ${peers})`)
+    const peerKey = conn.remotePublicKey?.toString('hex')?.slice(0, 16) || 'unknown'
+    console.log(`[peer] connected (total: ${peers}) — ${peerKey}...`)
     conn.once('close', () => {
       peers--
       console.log(`[peer] disconnected (total: ${peers})`)
@@ -510,19 +566,20 @@ async function main() {
     next()
   })
 
-  app.get('/api/health', (req, res) =>
+  app.get('/api/health', (req, res) => {
+    const hostRole = isGuest ? 'guest' : 'employer'
     res.json({
       status: 'ok',
       name: identityName,
       peerId: z32.encode(room.localBase.key),
-      role: isGuest ? 'guest' : 'host',
+      role: hostRole,
       writable: room.isWritable(),
       peers,
       port: PORT,
       storage: STORAGE,
       timestamp: Date.now()
     })
-  )
+  })
 
   app.get('/api/username', (req, res) => res.json({ name: identityName }))
 
@@ -903,10 +960,43 @@ async function main() {
       const key = b4a.toString(r.writerKey, 'hex')
       if (!seen.has(key)) {
         seen.add(key)
-        peers.push({ key, name: r.displayName, updatedAt: r.updatedAt })
+        peers.push({
+          key,
+          name: r.displayName,
+          role: r.role || 'pending',
+          assignedBy: r.assignedBy ? b4a.toString(r.assignedBy, 'hex') : null,
+          assignedAt: r.assignedAt || null,
+          updatedAt: r.updatedAt
+        })
       }
     }
     res.json(peers)
+  })
+
+  app.get('/api/members', async (req, res) => {
+    const identities = await room.getIdentities()
+    res.json(identities)
+  })
+
+  app.post('/api/members/assign', async (req, res) => {
+    const { writerKey, role } = req.body
+    if (!writerKey || !role) {
+      return res.status(400).json({ error: 'writerKey and role required' })
+    }
+
+    const validRoles = ['employer', 'employee', 'finance', 'pending']
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` })
+    }
+
+    const assigned = await room.assignRole(writerKey, role, room.localBase.key)
+    if (!assigned) {
+      return res.status(404).json({ error: 'Member not found' })
+    }
+
+    console.log(`[role] assigned ${role} to ${writerKey.slice(0, 16)}...`)
+    wsBroadcast({ type: 'role:assigned', writerKey, role })
+    res.json({ ok: true, writerKey, role })
   })
 
   app.put('/api/username', async (req, res) => {

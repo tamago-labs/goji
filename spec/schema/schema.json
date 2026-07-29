@@ -523,7 +523,7 @@
       "name": "identity",
       "namespace": "goji",
       "compact": false,
-      "flagsPosition": -1,
+      "flagsPosition": 2,
       "fields": [
         {
           "name": "writerKey",
@@ -535,6 +535,21 @@
           "name": "displayName",
           "required": true,
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "assignedBy",
+          "type": "buffer",
+          "version": 1
+        },
+        {
+          "name": "assignedAt",
+          "type": "int",
           "version": 1
         },
         {

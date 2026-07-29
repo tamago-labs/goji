@@ -167,6 +167,9 @@ schema.register({
   fields: [
     { name: 'writerKey', type: 'buffer', required: true },
     { name: 'displayName', type: 'string', required: true },
+    { name: 'role', type: 'string', default: 'pending' },
+    { name: 'assignedBy', type: 'buffer' },
+    { name: 'assignedAt', type: 'int' },
     { name: 'updatedAt', type: 'int', required: true }
   ]
 })
@@ -223,6 +226,7 @@ dispatch.register({ name: 'update-connection', requestType: '@goji/connection-up
 dispatch.register({ name: 'add-chat', requestType: '@goji/chat-msg' })
 dispatch.register({ name: 'remove-chats', requestType: '@goji/chats-remove' })
 dispatch.register({ name: 'update-identity', requestType: '@goji/identity' })
+dispatch.register({ name: 'assign-role', requestType: '@goji/identity' })
 dispatch.register({ name: 'set-flow-status', requestType: '@goji/flow-status' })
 dispatch.register({ name: 'remove-flow-statuses', requestType: '@goji/flow-status-remove' })
 dispatch.register({ name: 'add-wallet', requestType: '@goji/wallet' })

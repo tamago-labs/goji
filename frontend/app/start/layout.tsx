@@ -8,7 +8,6 @@ import Logo from '../components/common/Logo'
 import FloatingChatButton from '../components/chat/FloatingChatButton'
 import UserMenuPopover from '../components/start/UserMenuPopover'
 import UsernameModal from '../components/start/UsernameModal'
-import ErrorBanner from '../components/start/ErrorBanner'
 import DepositSpendModal from '../components/start/DepositSpendModal'
 import { StartProvider, useStart } from '../components/start/StartProvider'
 import { ListTodo, DollarSign, LayoutGrid, Building2, BookText, Settings } from 'lucide-react'
@@ -97,18 +96,79 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* Loading State */}
-      {loading && (
+      {(loading || error) && (
         <div className='max-w-[1320px] mx-auto px-6 md:px-13 py-8'>
           <div className='flex items-center justify-center min-h-[50vh]'>
-            <div className='text-center max-w-md'>
-              <div className='w-10 h-10 border-2 border-ink/20 border-t-ink/60 rounded-full animate-spin mx-auto mb-6' />
-              <p className='text-ink/70 text-lg font-display font-semibold mb-2'>Connecting to your workspace...</p>
-              <p className='text-ink/40 text-[15px] mb-5'>Make sure your terminal is running with:</p>
-              <div className='bg-ink/5 rounded-xl px-5 py-3 inline-block mb-5'>
-                <code className='text-sm text-ink/60 font-mono'>npx @tamago-labs/goji</code>
+            <div className='bg-card rounded-2xl shadow-[0_16px_60px_rgba(43,36,64,0.08)] p-8 max-w-[400px] w-full text-center'>
+              <div className='w-12 h-12 bg-ink/5 rounded-full flex items-center justify-center mx-auto mb-5'>
+                <div className='w-6 h-6 border-2 border-ink/20 border-t-ink/60 rounded-full animate-spin' />
               </div>
-              <div>
-                <button onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }} className='text-sm text-ink/40 hover:text-ink/70 transition-colors'>Change terminal URL</button>
+              <h2 className='font-display text-lg font-semibold text-ink mb-2'>Connecting to workspace</h2>
+              <p className='text-ink/40 text-sm mb-6'>Looking for your terminal...</p>
+              
+              {!error ? (
+                <div className='space-y-3'>
+                  <div className='bg-ink/[0.03] rounded-xl px-4 py-3'>
+                    <code className='text-sm text-ink/60 font-mono'>npx @tamago-labs/goji</code>
+                  </div>
+                  <button
+                    onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }}
+                    className='text-sm text-ink/40 hover:text-ink/70 transition-colors'
+                  >
+                    Change terminal URL
+                  </button>
+                </div>
+              ) : (
+                <div className='space-y-4'>
+                  <div className='bg-coral/10 rounded-xl px-4 py-3'>
+                    <p className='text-coral text-sm font-medium mb-1'>Connection failed</p>
+                    <p className='text-coral/70 text-xs'>Could not reach terminal at {apiUrl}</p>
+                  </div>
+                  <button
+                    onClick={() => { setError(null); setLoading(true) }}
+                    className='w-full px-4 py-2.5 bg-ink text-lavender text-sm font-medium rounded-xl hover:opacity-90 transition-opacity'
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }}
+                    className='text-sm text-ink/40 hover:text-ink/70 transition-colors'
+                  >
+                    Change terminal URL
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Role State */}
+      {!loading && !error && health && health.role === 'pending' && (
+        <div className='max-w-[1320px] mx-auto px-6 md:px-13 py-8'>
+          <div className='flex items-center justify-center min-h-[50vh]'>
+            <div className='bg-card rounded-2xl shadow-[0_16px_60px_rgba(43,36,64,0.08)] p-8 max-w-[480px] w-full'>
+              <div className='text-center mb-6'>
+                <div className='w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4'>
+                  <svg className='w-6 h-6 text-amber-500' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
+                  </svg>
+                </div>
+                <h2 className='font-display text-xl font-semibold text-ink mb-2'>Waiting for role assignment</h2>
+                <p className='text-ink/40 text-sm'>Your employer needs to assign you a role</p>
+              </div>
+
+              <div className='bg-ink/[0.03] rounded-xl p-5 mb-6'>
+                <p className='text-ink/50 text-sm font-medium mb-3'>Ask your employer to:</p>
+                <ol className='text-ink/60 text-sm space-y-2.5 list-decimal list-inside'>
+                  <li>Go to <span className='font-medium'>Organization → Members</span></li>
+                  <li>Find your name in the list</li>
+                  <li>Click your role and select a role</li>
+                </ol>
+              </div>
+
+              <div className='text-center'>
+                <p className='text-ink/30 text-xs'>Your peer ID: {health.peerId.slice(0, 16)}...</p>
               </div>
             </div>
           </div>
@@ -116,9 +176,8 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Content */}
-      {!loading && (
+      {!loading && !error && health && health.role !== 'pending' && (
         <div className='max-w-[1320px] mx-auto px-6 md:px-13 py-8'>
-          {error && <div className='mb-4'><ErrorBanner message={error} onRetry={() => { setError(null); setLoading(true) }} /></div>}
           <div className='flex gap-8'>
             {/* Sidebar */}
             <div className='w-[200px] flex-shrink-0'>

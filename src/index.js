@@ -534,7 +534,11 @@ async function main() {
   const identityPath = require('path').join(STORAGE, 'identity.json')
   const identityData = await setupIdentity(STORAGE)
   let identityName = NAME || (identityData ? identityData.name : null) || `User-${room.localBase.key.toString('hex').slice(-4)}`
-  await room.appendIdentity({ displayName: identityName, role: isGuest ? 'pending' : 'employer' })
+
+  // Check if identity already exists in view (guest may have been assigned a role)
+  const existingIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+  const role = isGuest ? (existingIdentity?.role || 'pending') : 'employer'
+  await room.appendIdentity({ displayName: identityName, role })
 
   // Set up Keet identity for message signing
   let keetIdentity = null
@@ -789,6 +793,12 @@ async function main() {
   })
 
   app.get('/api/wallets/all', async (req, res) => {
+    // Only employer can list all wallets
+    const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    if (!callerIdentity || callerIdentity.role !== 'employer') {
+      return res.status(403).json({ error: 'Only employer can list all wallets' })
+    }
+
     const rows = await room.view.find('@goji/wallets', {}).toArray()
     const identities = await room.view.find('@goji/identity', {}).toArray()
     const identityMap = new Map()

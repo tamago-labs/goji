@@ -1,143 +1,52 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useAccount, useDisconnect } from 'wagmi'
-import Logo from '../common/Logo'
-import FloatingChatButton from '../chat/FloatingChatButton'
-import UserMenuPopover from './UserMenuPopover'
-import UsernameModal from './UsernameModal'
-import BoardsGrid from './BoardsList'
-import OffersSection from './OffersSection'
-import HistorySection from './HistorySection'
-import Overview from './Overview'
-import ErrorBanner from './ErrorBanner'
-import DepositSpendModal from './DepositSpendModal'
-import WalletsTab from './WalletsTab'
-import { DollarSign, LayoutGrid, Wallet, BookText, ListTodo } from 'lucide-react'
+import Logo from '../components/common/Logo'
+import FloatingChatButton from '../components/chat/FloatingChatButton'
+import UserMenuPopover from '../components/start/UserMenuPopover'
+import UsernameModal from '../components/start/UsernameModal'
+import ErrorBanner from '../components/start/ErrorBanner'
+import DepositSpendModal from '../components/start/DepositSpendModal'
+import { StartProvider, useStart } from '../components/start/StartProvider'
+import { ListTodo, DollarSign, LayoutGrid, Building2, BookText, Settings } from 'lucide-react'
 
-const DEFAULT_URL = 'http://localhost:3001'
+const NAV_ITEMS = [
+  { href: '/start/overview', label: 'Overview', icon: ListTodo },
+  { href: '/start/offers', label: 'Offers', icon: DollarSign },
+  { href: '/start/boards', label: 'Boards', icon: LayoutGrid },
+  { href: '/start/organization', label: 'Organization', icon: Building2 },
+  { href: '/start/history', label: 'History', icon: BookText },
+]
 
-interface Health {
-  status: string
-  name: string
-  peerId: string
-  role: string
-  writable: boolean
-  peers: number
-  port: number
-}
+function StartLayoutInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const { health, setHealth, loading, error, setError, setLoading, apiUrl, setApiUrl } = useStart()
 
-interface Board {
-  id: string
-  name: string
-  createdAt: number
-  updatedAt: number
-}
-
-type SidebarTab = 'overview' | 'offers' | 'boards' | 'wallets' | 'history'
-
-export default function StartPage() {
-  const [apiUrl, setApiUrl] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_URL
-    return localStorage.getItem('goji-api-url') || DEFAULT_URL
-  })
-  const [health, setHealth] = useState<Health | null>(null)
-  const [boards, setBoards] = useState<Board[]>([])
-  const [flowStatuses, setFlowStatuses] = useState<{ flowId: string; routeId: string; status: string }[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [settingsInput, setSettingsInput] = useState(DEFAULT_URL)
+  const [settingsInput, setSettingsInput] = useState(apiUrl)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showUsernameModal, setShowUsernameModal] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
-  const [activeTab, setActiveTab] = useState<SidebarTab>('overview')
-
-  const { isConnected } = useAccount()
-  const { disconnect } = useDisconnect()
-
-  const fetchHealth = useCallback(
-    async (url: string) => {
-      try {
-        const res = await fetch(`${url}/api/health`)
-        if (res.ok) {
-          const data = await res.json()
-          setHealth(data)
-          setError(null)
-          const boardsRes = await fetch(`${url}/api/boards`)
-          if (boardsRes.ok) {
-            const boardsData = await boardsRes.json()
-            setBoards(boardsData)
-            // Fetch flow statuses for all boards
-            const allStatuses: { flowId: string; routeId: string; status: string }[] = []
-            for (const board of boardsData) {
-              try {
-                const statusRes = await fetch(`${url}/api/flow-status?flowId=${board.id}`)
-                if (statusRes.ok) {
-                  const statuses = await statusRes.json()
-                  allStatuses.push(...statuses.map((s: { flowId: string; routeId: string; status: string }) => ({ flowId: s.flowId, routeId: s.routeId, status: s.status })))
-                }
-              } catch {}
-            }
-            setFlowStatuses(allStatuses)
-          }
-          return true
-        }
-      } catch {}
-      return false
-    },
-    []
-  )
-
-  useEffect(() => {
-    let cancelled = false
-    async function connect() {
-      setLoading(true)
-      for (let i = 0; i < 10; i++) {
-        if (cancelled) return
-        const ok = await fetchHealth(apiUrl)
-        if (ok && !cancelled) {
-          setLoading(false)
-          return
-        }
-        await new Promise((r) => setTimeout(r, 1000))
-      }
-      if (!cancelled) {
-        setError('Could not establish a connection. Check that your terminal is running on the correct port and accessible from Chrome browser.')
-        setLoading(false)
-      }
-    }
-    connect()
-    return () => { cancelled = true }
-  }, [apiUrl, fetchHealth])
 
   const saveSettings = () => {
     const url = settingsInput.replace(/\/+$/, '')
-    localStorage.setItem('goji-api-url', url)
     setApiUrl(url)
-    setHealth(null)
-    setBoards([])
-    setLoading(true)
-    setError(null)
     setShowSettings(false)
   }
 
   const resetSettings = () => {
-    setSettingsInput(DEFAULT_URL)
-    localStorage.setItem('goji-api-url', DEFAULT_URL)
-    setApiUrl(DEFAULT_URL)
-    setHealth(null)
-    setBoards([])
-    setLoading(true)
-    setError(null)
+    setSettingsInput('http://localhost:3001')
+    setApiUrl('http://localhost:3001')
     setShowSettings(false)
   }
 
   return (
     <div className='min-h-screen bg-lavender'>
+      {/* Top Nav */}
       <nav className='flex items-center justify-between px-6 md:px-13 py-4 max-w-[1320px] mx-auto border-b border-ink/8'>
         <Logo />
         <div className='flex items-center gap-2'>
@@ -161,7 +70,7 @@ export default function StartPage() {
                   )}
                 </AnimatePresence>
               </div>
-              {health.role === 'host' && (
+              {health.role === 'employer' && (
                 <div className='relative'>
                   <button onClick={() => setShowInvite(!showInvite)} className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors' title='Invite'>
                     <svg className='w-4 h-4 text-ink/40' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
@@ -182,11 +91,8 @@ export default function StartPage() {
             </>
           )}
           <button onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }} className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors'>
-            <svg className='w-4 h-4 text-ink/40' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' />
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 12a3 3 0 11-6 0 3 3 0 016 0z' />
-            </svg>
-        </button>
+            <Settings className='w-4 h-4 text-ink/40' />
+          </button>
         </div>
       </nav>
 
@@ -209,50 +115,33 @@ export default function StartPage() {
         </div>
       )}
 
-      {/* Error + Content */}
+      {/* Content */}
       {!loading && (
         <div className='max-w-[1320px] mx-auto px-6 md:px-13 py-8'>
           {error && <div className='mb-4'><ErrorBanner message={error} onRetry={() => { setError(null); setLoading(true) }} /></div>}
           <div className='flex gap-8'>
+            {/* Sidebar */}
             <div className='w-[200px] flex-shrink-0'>
               <nav className='space-y-1'>
-                {[{ id: 'overview' as SidebarTab, label: 'Overview', icon: <ListTodo className='w-4 h-4' /> }, { id: 'offers' as SidebarTab, label: 'Offers', icon: <DollarSign className='w-4 h-4' /> }, { id: 'boards' as SidebarTab, label: 'Boards', icon: <LayoutGrid className='w-4 h-4' /> }, { id: 'wallets' as SidebarTab, label: 'Wallets', icon: <Wallet className='w-4 h-4' /> }, { id: 'history' as SidebarTab, label: 'History', icon: <BookText className='w-4 h-4' /> }].map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeTab === item.id ? 'bg-ink text-lavender' : 'text-ink/60 hover:bg-ink/5'}`}>
-                    {item.icon}
-                    {item.label}
-                  </button>
-                ))}
+                {NAV_ITEMS.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive ? 'bg-ink text-lavender' : 'text-ink/60 hover:bg-ink/5'}`}
+                    >
+                      <item.icon className='w-4 h-4' />
+                      {item.label}
+                    </Link>
+                  )
+                })}
               </nav>
             </div>
 
+            {/* Page Content */}
             <div className='flex-1 min-w-0'>
-              <AnimatePresence mode='wait'>
-                {activeTab === 'overview' && (
-                  <motion.div key='overview' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <Overview apiUrl={apiUrl} disabled={loading || !!error} />
-                  </motion.div>
-                )}
-                {activeTab === 'offers' && (
-                  <motion.div key='offers' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <OffersSection apiUrl={apiUrl} disabled={loading || !!error} />
-                  </motion.div>
-                )}
-                {activeTab === 'boards' && (
-                  <motion.div key='boards' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <BoardsGrid boards={boards} disabled={loading || !!error} flowStatuses={flowStatuses} />
-                  </motion.div>
-                )}
-                {activeTab === 'wallets' && (
-                  <motion.div key='wallets' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <WalletsTab apiUrl={apiUrl} />
-                  </motion.div>
-                )}
-                {activeTab === 'history' && (
-                  <motion.div key='history' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <HistorySection apiUrl={apiUrl} disabled={loading || !!error} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {children}
             </div>
           </div>
         </div>
@@ -260,6 +149,7 @@ export default function StartPage() {
 
       <FloatingChatButton />
 
+      {/* Settings Modal */}
       <AnimatePresence>
         {showSettings && (
           <>
@@ -291,8 +181,15 @@ export default function StartPage() {
       </AnimatePresence>
 
       <UsernameModal isOpen={showUsernameModal} onClose={() => setShowUsernameModal(false)} currentName={health?.name || ''} apiUrl={apiUrl} onNameChange={(name) => { if (health) setHealth({ ...health, name }) }} />
-
       {showDeposit && <DepositSpendModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />}
     </div>
+  )
+}
+
+export default function StartLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <StartProvider>
+      <StartLayoutInner>{children}</StartLayoutInner>
+    </StartProvider>
   )
 }

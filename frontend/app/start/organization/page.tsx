@@ -3,10 +3,10 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function StartRedirect() {
+export default function OrganizationPage() {
   const router = useRouter()
   useEffect(() => {
-    router.replace('/start/overview')
+    router.replace('/start/organization/wallets')
   }, [router])
   return (
     <div className='flex items-center justify-center min-h-[50vh]'>

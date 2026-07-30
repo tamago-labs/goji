@@ -69,10 +69,10 @@ export default function HowItWorks() {
         className='text-center mb-12'
       >
         <h2 className='font-display text-3xl md:text-4xl font-semibold mb-4'>
-          On-chain Payroll, Built P2P
+          Private Payments, Built P2P
         </h2>
         <p className='text-ink/60 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
-          No central server. No shared cloud database. Employers, employees, and financial partners collaborate through a private P2P workspace.
+          Set up payroll, contractor, and invoice workflows directly with counterparties — no intermediary, no cloud, just a permissioned P2P network.
         </p>
       </motion.div>
 

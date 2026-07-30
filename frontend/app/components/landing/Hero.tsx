@@ -18,13 +18,13 @@ export default function Hero() {
           {...fadeUp(0)}
           className='inline-block bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
         >
-          Built on Arc — Connecting Private Payroll to Capital
+          Built on Arc — Connecting Payments to Capital
         </motion.span>
         <motion.h1
           {...fadeUp(0.1)}
           className='font-display text-[50px] font-semibold leading-[1.12] mb-[22px]'
         >
-          Private Payroll.
+          Private Payments.
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
             Public Proof.
@@ -34,7 +34,7 @@ export default function Hero() {
           {...fadeUp(0.2)}
           className='text-[17px] leading-[1.6] text-ink/70 max-w-[420px] mb-[34px]'
         >
-         Run payroll in a private P2P workspace, anchor cryptographic proof on Arc, and connect employers with financial partners through verifiable assets.
+         Run payroll, contractor payments, and invoices peer-to-peer. Every settlement creates verifiable proof on Arc, enabling businesses to originate receivables and other real-world assets for financial partners.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5'>
           <Link

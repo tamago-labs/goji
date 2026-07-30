@@ -5,32 +5,32 @@ import { Check } from 'lucide-react'
 
 const useCases = [
   {
-    title: 'HR & Payroll, Simplified.',
-    subtitle: 'Manage payroll, contracts, and approvals from one private workspace.',
+    title: 'Payments, Simplified.',
+    subtitle: 'Manage payroll, contractor payments, invoices, and approvals from one private workspace.',
     bullets: [
-      'Import and manage employee records',
-      'Calculate salaries, taxes, and deductions',
-      'Generate payslips with attached documents',
-      'Review and approve together in real-time'
+      'Import and manage payee records — employees, contractors, vendors',
+      'Calculate payments, taxes, and deductions',
+      'Generate payslips and invoices with attached documents',
+      'Real-time, collaborative approvals'
     ]
   },
   {
     title: 'Team Collaboration, AI-Assisted',
     subtitle: 'Work together without exposing data to the cloud. AI empowers every step.',
     bullets: [
-      'P2P syncs payslips & docs direct',
+      'P2P syncs payment records & documents directly',
       'Private AI assistants with Qwen, Google Gemma',
       'Local RAG powers answers from private docs',
       'Zero cloud exposure'
     ]
   },
   {
-    title: 'Payroll Meets Capital',
-    subtitle: 'Every payroll becomes a verifiable financial asset that trusted partners can evaluate.',
+    title: 'Payments Meet Capital',
+    subtitle: 'Every payment becomes a verifiable financial asset that trusted partners can evaluate.',
     bullets: [
-      'Merkle proof for every payroll run',
+      'Merkle proof for every payment — payroll, contractor, invoice',
       'Cryptographic signatures and audit trail',
-      'Permissioned verification of payroll records',
+      'Permissioned verification of payment records',
       'Connect employers with financing and credit partners'
     ]
   }

@@ -42,10 +42,10 @@ export default function SupportedChains() {
         className='text-center mb-10'
       >
         <h2 className='font-display text-3xl md:text-4xl font-semibold mb-3'>
-          Send &amp; receive USDC anywhere
+          Settle Anywhere with USDC
         </h2>
         <p className='text-ink/50 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
-          Settle on Arc and route across any supported chain — all from one workspace, powered by Circle Gateway.
+          Route USDC payments across supported networks from one shared workspace, powered by Circle Gateway.
         </p>
       </motion.div>
 

@@ -4,10 +4,10 @@ import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 
 const permissions = [
-  { action: 'Manage employees', employer: true, employee: false, partner: false },
-  { action: 'Employment contracts', employer: true, employee: 'View own', partner: 'Permissioned' },
-  { action: 'Payroll calculations', employer: true, employee: 'View own', partner: false },
-  { action: 'Payslips & documents', employer: true, employee: 'View own', partner: 'Permissioned' },
+  { action: 'Manage payees', employer: true, employee: false, partner: false },
+  { action: 'Payment agreements', employer: 'View own', employee: 'Permissioned', partner: false },
+  { action: 'Payment calculations', employer: true, employee: 'View own', partner: false },
+  { action: 'Payslips, invoices & documents', employer: true, employee: 'View own', partner: 'Permissioned' },
   { action: 'Verify cryptographic proof', employer: true, employee: true, partner: true },
   { action: 'Arc settlement', employer: 'Execute', employee: 'Receive', partner: 'Verify' },
   { action: 'Receivable financing', employer: 'Connect', employee: false, partner: 'Finance' }
@@ -34,10 +34,10 @@ export default function PayrollReceivables() {
         className='text-center mb-12'
       >
         <h2 className='font-display text-3xl md:text-4xl font-semibold mb-4'>
-          The Payroll Lifecycle
+          The Payment Lifecycle
         </h2>
         <p className='text-ink/60 text-[17px] max-w-[520px] mx-auto leading-relaxed'>
-          Every participant works in the same private payroll network with permissions tailored to their role.
+          Every participant works in the same private payment network with permissions tailored to their role.
         </p>
       </motion.div>
 
@@ -50,8 +50,8 @@ export default function PayrollReceivables() {
       >
         <div className='grid grid-cols-4 border-b border-ink/8'>
           <div className='px-6 py-4 text-sm font-medium text-ink/40'>Permission Matrix</div>
-          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Employer</div>
-          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Employee</div>
+          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Company</div>
+          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Payee</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Financial Partner</div>
         </div>
         {permissions.map((row, i) => (

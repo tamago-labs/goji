@@ -53,8 +53,8 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
         <div className='flex items-center gap-2'>
           {health && (
             <>
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'employer' ? 'bg-mint/15 text-[#1B7A50]' : health.role === 'payee' ? 'bg-blue-100 text-blue-700' : health.role === 'partner' ? 'bg-violet/15 text-[#5A4FB8]' : 'bg-ink/10 text-ink/50'}`}>
-                {health.role === 'employer' ? 'COMPANY' : health.role === 'payee' ? 'PAYEE' : health.role === 'partner' ? 'PARTNER' : 'PENDING'}
+              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'employer' ? 'bg-mint/15 text-[#1B7A50]' : health.role === 'payee' ? 'bg-blue-100 text-blue-700' : health.role === 'payer' ? 'bg-amber-100 text-amber-700' : health.role === 'partner' ? 'bg-violet/15 text-[#5A4FB8]' : 'bg-ink/10 text-ink/50'}`}>
+                {health.role === 'employer' ? 'COMPANY' : health.role === 'payee' ? 'PAYEE' : health.role === 'payer' ? 'PAYER' : health.role === 'partner' ? 'PARTNER' : 'PENDING'}
               </span>
               <span className='text-[11px] text-ink/30'>{health.peers} peer{health.peers !== 1 ? 's' : ''}</span>
               <span className='w-px h-3 bg-ink/10' />

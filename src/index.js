@@ -331,7 +331,7 @@ class GojiRoom {
     const existing = await this.view.get('@goji/identity', { writerKey })
     if (!existing) return null
 
-    const validRoles = ['employer', 'payee', 'partner', 'pending']
+    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
     if (!validRoles.includes(role)) return null
 
     const next = {
@@ -1025,7 +1025,7 @@ async function main() {
       return res.status(400).json({ error: 'writerKey and role required' })
     }
 
-    const validRoles = ['employer', 'payee', 'partner', 'pending']
+    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` })
     }

@@ -17,11 +17,12 @@ interface MembersTabProps {
   currentWriterKey?: string
 }
 
-const ROLES = ['employer', 'payee', 'partner', 'pending'] as const
+const ROLES = ['employer', 'payee', 'payer', 'partner', 'pending'] as const
 
 const ROLE_COLORS: Record<string, string> = {
   employer: 'bg-mint/15 text-[#1B7A50]',
   payee: 'bg-blue-100 text-blue-700',
+  payer: 'bg-amber-100 text-amber-700',
   partner: 'bg-violet/15 text-[#5A4FB8]',
   pending: 'bg-ink/10 text-ink/50'
 }
@@ -29,6 +30,7 @@ const ROLE_COLORS: Record<string, string> = {
 const ROLE_LABELS: Record<string, string> = {
   employer: 'COMPANY',
   payee: 'PAYEE',
+  payer: 'PAYER',
   partner: 'PARTNER',
   pending: 'PENDING'
 }

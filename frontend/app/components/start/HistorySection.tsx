@@ -93,7 +93,7 @@ export default function HistorySection({ apiUrl, disabled }: HistorySectionProps
 
   return (
     <div>
-      <h2 className='font-display text-xl font-semibold mb-4'>History</h2>
+      <h2 className='font-display text-xl font-semibold mb-4'>Documents</h2>
       <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden'>
         <div className='min-h-[180px]'>
           {loading ? (

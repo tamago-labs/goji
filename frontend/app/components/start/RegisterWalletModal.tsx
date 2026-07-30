@@ -83,7 +83,7 @@ export default function RegisterWalletModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-                  placeholder='e.g., alix.eth'
+                  placeholder='e.g., my wallet'
                 />
               </label>
 

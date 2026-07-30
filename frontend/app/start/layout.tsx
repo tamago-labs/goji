@@ -13,13 +13,13 @@ import { StartProvider, useStart } from '../components/start/StartProvider'
 import { ListTodo, DollarSign, LayoutGrid, Building2, BookText, Settings, Wallet, Shield } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { href: '/start/overview', label: 'Overview', icon: ListTodo },
-  { href: '/start/offers', label: 'Offers', icon: DollarSign },
-  { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid },
-  { href: '/start/wallets', label: 'Wallets', icon: Wallet },
-  { href: '/start/proof', label: 'Proof Explorer', icon: Shield },
-  { href: '/start/organization', label: 'Organization', icon: Building2 },
-  { href: '/start/documents', label: 'Documents', icon: BookText },
+  { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['employer', 'payee', 'partner'] },
+  { href: '/start/offers', label: 'Offers', icon: DollarSign, roles: ['employer'] },
+  { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['employer'] },
+  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['employer', 'payee', 'partner'] },
+  { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['employer', 'payee', 'partner'] },
+  { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['employer'] },
+  { href: '/start/documents', label: 'Documents', icon: BookText, roles: ['employer', 'payee', 'partner'] },
 ]
 
 function StartLayoutInner({ children }: { children: React.ReactNode }) {
@@ -181,7 +181,7 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Sidebar */}
             <div className='w-[200px] flex-shrink-0'>
               <nav className='space-y-1'>
-                {NAV_ITEMS.map((item) => {
+                {NAV_ITEMS.filter(item => item.roles.includes(health?.role || '')).map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                   return (
                     <Link

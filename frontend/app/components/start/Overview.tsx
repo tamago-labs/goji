@@ -106,7 +106,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
       done: false,
       title: 'View Documents',
       desc: 'Access your payslips, invoices, and payment records.',
-      action: <Link href='/start/history' className='text-[10px] text-mint'>View →</Link>
+      action: <Link href='/start/documents' className='text-[10px] text-mint'>View →</Link>
     }
   ]
 
@@ -283,7 +283,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                     <div className='text-xs text-ink/40'>Add your wallet to receive payments</div>
                   </div>
                 </Link>
-                <Link href='/start/history' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                <Link href='/start/documents' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
                   <FileText className='w-5 h-5 text-ink/40' />
                   <div>
                     <div className='text-sm font-medium text-ink'>View Documents</div>

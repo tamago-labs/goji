@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 export default function OrganizationPage() {
   const router = useRouter()
   useEffect(() => {
-    router.replace('/start/organization/wallets')
+    router.replace('/start/organization/members')
   }, [router])
   return (
     <div className='flex items-center justify-center min-h-[50vh]'>

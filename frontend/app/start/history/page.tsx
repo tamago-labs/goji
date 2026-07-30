@@ -1,9 +1,16 @@
 'use client'
 
-import HistorySection from '../../components/start/HistorySection'
-import { useStart } from '../../components/start/StartProvider'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function HistoryPage() {
-  const { apiUrl, loading, error } = useStart()
-  return <HistorySection apiUrl={apiUrl} disabled={loading || !!error} />
+  const router = useRouter()
+  useEffect(() => {
+    router.replace('/start/documents')
+  }, [router])
+  return (
+    <div className='flex items-center justify-center min-h-[50vh]'>
+      <div className='w-10 h-10 border-2 border-ink/20 border-t-ink/60 rounded-full animate-spin' />
+    </div>
+  )
 }

@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Check } from 'lucide-react'
+import { Check, Wallet, FileText, Shield } from 'lucide-react'
 
 interface OverviewProps {
   apiUrl: string
-  disabled: boolean
+  role?: string
 }
 
 interface Stats {
@@ -23,10 +23,14 @@ interface RecentBoard {
   settledCount: number
 }
 
-export default function Overview({ apiUrl, disabled }: OverviewProps) {
+export default function Overview({ apiUrl, role }: OverviewProps) {
   const [stats, setStats] = useState<Stats>({ walletCount: 0, boardCount: 0, settledCount: 0 })
   const [recentBoards, setRecentBoards] = useState<RecentBoard[]>([])
   const [loading, setLoading] = useState(true)
+
+  const isCompany = role === 'employer'
+  const isPayee = role === 'payee'
+  const isPartner = role === 'partner'
 
   useEffect(() => {
     async function load() {
@@ -68,7 +72,8 @@ export default function Overview({ apiUrl, disabled }: OverviewProps) {
     load()
   }, [apiUrl])
 
-  const steps = [
+  // Company steps
+  const companySteps = [
     {
       done: stats.walletCount > 0,
       title: 'Register Wallet',
@@ -89,6 +94,39 @@ export default function Overview({ apiUrl, disabled }: OverviewProps) {
     }
   ]
 
+  // Payee steps
+  const payeeSteps = [
+    {
+      done: stats.walletCount > 0,
+      title: 'Register Wallet',
+      desc: 'Add your wallet address to receive payments.',
+      action: stats.walletCount === 0 ? <span className='text-[10px] text-mint'>Register →</span> : null
+    },
+    {
+      done: false,
+      title: 'View Documents',
+      desc: 'Access your payslips, invoices, and payment records.',
+      action: <Link href='/start/history' className='text-[10px] text-mint'>View →</Link>
+    }
+  ]
+
+  // Partner steps
+  const partnerSteps = [
+    {
+      done: false,
+      title: 'Explore Proofs',
+      desc: 'View and verify cryptographic proofs from payment settlements.',
+      action: <Link href='/start/proof' className='text-[10px] text-mint'>Explore →</Link>
+    },
+    {
+      done: false,
+      title: 'Review Assets',
+      desc: 'Evaluate verified payment records for financing opportunities.',
+      action: null
+    }
+  ]
+
+  const steps = isCompany ? companySteps : isPayee ? payeeSteps : partnerSteps
   const completed = steps.filter((s) => s.done).length
 
   return (
@@ -102,7 +140,9 @@ export default function Overview({ apiUrl, disabled }: OverviewProps) {
           {/* Progress */}
           <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 mb-5'>
             <div className='flex items-center justify-between mb-3'>
-              <span className='text-sm font-medium text-ink'>Getting Started</span>
+              <span className='text-sm font-medium text-ink'>
+                {isCompany ? 'Getting Started' : isPayee ? 'Your Setup' : 'Quick Start'}
+              </span>
               <span className='text-xs text-ink/40'>{completed}/{steps.length} done</span>
             </div>
             <div className='w-full h-1.5 bg-ink/10 rounded-full overflow-hidden mb-5'>
@@ -144,22 +184,58 @@ export default function Overview({ apiUrl, disabled }: OverviewProps) {
 
           {/* Stats */}
           <div className='grid grid-cols-3 gap-4 mb-5'>
-            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
-              <div className='text-2xl font-semibold text-ink mb-1'>{stats.walletCount}</div>
-              <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Wallets</div>
-            </div>
-            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
-              <div className='text-2xl font-semibold text-ink mb-1'>{stats.boardCount}</div>
-              <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Flows</div>
-            </div>
-            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
-              <div className='text-2xl font-semibold text-ink mb-1'>{stats.settledCount}</div>
-              <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Payments</div>
-            </div>
+            {isCompany && (
+              <>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.walletCount}</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Wallets</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.boardCount}</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Flows</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.settledCount}</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Payments</div>
+                </div>
+              </>
+            )}
+            {isPayee && (
+              <>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.walletCount}</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Wallets</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.settledCount}</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Payments</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>—</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Documents</div>
+                </div>
+              </>
+            )}
+            {isPartner && (
+              <>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>—</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Verified</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>—</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Assets</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>—</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Financing</div>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Recent Flows */}
-          {recentBoards.length > 0 && (
+          {/* Recent Flows - Company only */}
+          {isCompany && recentBoards.length > 0 && (
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden'>
               <div className='px-6 py-3 border-b border-ink/8'>
                 <span className='text-xs text-ink/40 uppercase tracking-wider'>Recent Flows</span>
@@ -191,6 +267,45 @@ export default function Overview({ apiUrl, disabled }: OverviewProps) {
                     </div>
                   </Link>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions - Payee */}
+          {isPayee && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
+              <h3 className='text-sm font-medium text-ink mb-4'>Quick Actions</h3>
+              <div className='space-y-3'>
+                <Link href='/start/wallets' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                  <Wallet className='w-5 h-5 text-ink/40' />
+                  <div>
+                    <div className='text-sm font-medium text-ink'>Register Wallet</div>
+                    <div className='text-xs text-ink/40'>Add your wallet to receive payments</div>
+                  </div>
+                </Link>
+                <Link href='/start/history' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                  <FileText className='w-5 h-5 text-ink/40' />
+                  <div>
+                    <div className='text-sm font-medium text-ink'>View Documents</div>
+                    <div className='text-xs text-ink/40'>Access payslips, invoices, and records</div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions - Partner */}
+          {isPartner && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
+              <h3 className='text-sm font-medium text-ink mb-4'>Quick Actions</h3>
+              <div className='space-y-3'>
+                <Link href='/start/proof' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                  <Shield className='w-5 h-5 text-ink/40' />
+                  <div>
+                    <div className='text-sm font-medium text-ink'>Proof Explorer</div>
+                    <div className='text-xs text-ink/40'>View and verify cryptographic proofs</div>
+                  </div>
+                </Link>
               </div>
             </div>
           )}

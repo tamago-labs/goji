@@ -10,14 +10,16 @@ import UserMenuPopover from '../components/start/UserMenuPopover'
 import UsernameModal from '../components/start/UsernameModal'
 import DepositSpendModal from '../components/start/DepositSpendModal'
 import { StartProvider, useStart } from '../components/start/StartProvider'
-import { ListTodo, DollarSign, LayoutGrid, Building2, BookText, Settings } from 'lucide-react'
+import { ListTodo, DollarSign, LayoutGrid, Building2, BookText, Settings, Wallet, Shield } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/start/overview', label: 'Overview', icon: ListTodo },
   { href: '/start/offers', label: 'Offers', icon: DollarSign },
-  { href: '/start/boards', label: 'Boards', icon: LayoutGrid },
+  { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid },
+  { href: '/start/wallets', label: 'Wallets', icon: Wallet },
+  { href: '/start/proof', label: 'Proof Explorer', icon: Shield },
   { href: '/start/organization', label: 'Organization', icon: Building2 },
-  { href: '/start/history', label: 'History', icon: BookText },
+  { href: '/start/documents', label: 'Documents', icon: BookText },
 ]
 
 function StartLayoutInner({ children }: { children: React.ReactNode }) {
@@ -108,9 +110,6 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
               
               {!error ? (
                 <div className='space-y-3'>
-                  <div className='bg-ink/[0.03] rounded-xl px-4 py-3'>
-                    <code className='text-sm text-ink/60 font-mono'>npx @tamago-labs/goji</code>
-                  </div>
                   <button
                     onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }}
                     className='text-sm text-ink/40 hover:text-ink/70 transition-colors'

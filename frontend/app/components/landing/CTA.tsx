@@ -14,13 +14,13 @@ export default function CTA() {
         className='text-center'
       >
         <h2 className='font-display text-4xl md:text-5xl font-semibold mb-6'>
-          Turn Invoices<br />
+          From Every Payment<br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            into Capital
+            to RWA Assets
           </span>
         </h2>
         <p className='text-ink/50 text-lg mb-8 max-w-[560px] mx-auto'>
-          Every invoice you settle on Goji becomes verified proof — ready to unlock financing from day one.
+          Settle invoices, payroll, and contractor payments. Each creates verifiable proof for RWA origination.
         </p>
         <Link
           href='/start'

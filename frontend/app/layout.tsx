@@ -17,7 +17,7 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Goji — Payment Origination Layer Built on Arc',
+  title: 'Goji — The Origination Layer Built on Arc',
   description: 'Goji is a private payment origination layer built on Arc. Run payroll, contractor payments, and invoices peer-to-peer. Every settlement creates verifiable proof for RWA origination.'
 }
 

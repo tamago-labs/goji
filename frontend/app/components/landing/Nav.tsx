@@ -7,7 +7,7 @@ export default function Nav() {
       <div className='hidden md:flex gap-8'>
         {[
           { label: 'Product', href: '#use-cases' },
-          { label: 'How it works', href: '#how-it-works' },
+          { label: 'How to run', href: '#how-it-works' },
           { label: 'Supported chains', href: '#supported-chains' },
           { label: 'GitHub', href: 'https://github.com/tamago-labs/goji' }
         ].map((item) => (

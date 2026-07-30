@@ -6,12 +6,12 @@ import { Check } from 'lucide-react'
 const useCases = [
   {
     title: 'Payments, Simplified.',
-    subtitle: 'Manage payroll, contractor payments, invoices, and approvals from one private workspace.',
+    subtitle: 'Manage payroll, contractors, and invoices from one single visual workspace.',
     bullets: [
-      'Import and manage payee records — employees, contractors, vendors',
-      'Calculate payments, taxes, and deductions',
-      'Generate payslips and invoices with attached documents',
-      'Real-time, collaborative approvals'
+      'Import payee records — employees, contractors, vendors',
+      'Draw payment flows on a visual canvas',
+      'Click connections to set taxes, deductions & terms',
+      'Real-time collaborative approvals'
     ]
   },
   {

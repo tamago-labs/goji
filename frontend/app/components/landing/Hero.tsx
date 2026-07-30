@@ -34,7 +34,7 @@ export default function Hero() {
           {...fadeUp(0.2)}
           className='text-[17px] leading-[1.6] text-ink/70 max-w-[420px] mb-[34px]'
         >
-         Run payroll, contractor payments, and invoices peer-to-peer. Every settlement creates verifiable proof on Arc, enabling businesses to originate receivables and other real-world assets for financial partners.
+         Run invoices, payroll, and contractor payments peer-to-peer. Every settlement creates verifiable proof on Arc, enabling businesses to originate receivables and other real-world assets for financial partners.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5'>
           <Link

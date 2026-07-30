@@ -14,13 +14,13 @@ export default function CTA() {
         className='text-center'
       >
         <h2 className='font-display text-4xl md:text-5xl font-semibold mb-6'>
-          Connect Payments<br />
+          Turn Invoices<br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            to Capital
+            into Capital
           </span>
         </h2>
         <p className='text-ink/50 text-lg mb-8 max-w-[560px] mx-auto'>
-          Originate payment workflows privately, anchor cryptographic proof on Arc, and connect verified payment assets with financial partners.
+          Every invoice you settle on Goji becomes verified proof — ready to unlock financing from day one.
         </p>
         <Link
           href='/start'

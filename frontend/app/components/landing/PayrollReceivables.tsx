@@ -4,18 +4,23 @@ import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 
 const permissions = [
-  { action: 'Manage payees', employer: true, employee: false, partner: false },
+  { action: 'Manage participants', employer: true, employee: false, partner: false },
   { action: 'Payment agreements', employer: 'View own', employee: 'Permissioned', partner: false },
-  { action: 'Payment calculations', employer: true, employee: 'View own', partner: false },
   { action: 'Payslips, invoices & documents', employer: true, employee: 'View own', partner: 'Permissioned' },
+  { action: 'Invoice / receivable submission', employer: 'Create', employee: 'Submit / Confirm', partner: 'Review' },
   { action: 'Verify cryptographic proof', employer: true, employee: true, partner: true },
-  { action: 'Arc settlement', employer: 'Execute', employee: 'Receive', partner: 'Verify' },
-  { action: 'Receivable financing', employer: 'Connect', employee: false, partner: 'Finance' }
+  { action: 'On-chain privacy (APS)', employer: true, employee: true, partner: true, comingSoon: true },
+  { action: 'Receivable financing (invoice factoring)', employer: 'Connect', employee: false, partner: 'Finance' }
 ]
 
-function Cell({ value }: { value: boolean | string }) {
+function Cell({ value, comingSoon }: { value: boolean | string; comingSoon?: boolean }) {
   if (value === true) {
-    return <Check className='w-4 h-4 text-[#28C840] mx-auto' />
+    return (
+      <span className='flex flex-col items-center'>
+        <Check className='w-4 h-4 text-[#28C840]' />
+        {comingSoon && <span className='text-[9px] text-ink/30 mt-0.5'>coming soon</span>}
+      </span>
+    )
   }
   if (value === false) {
     return <span className='text-ink/20 mx-auto'>—</span>
@@ -34,10 +39,10 @@ export default function PayrollReceivables() {
         className='text-center mb-12'
       >
         <h2 className='font-display text-3xl md:text-4xl font-semibold mb-4'>
-          The Payment Lifecycle
+          The Origination Lifecycle
         </h2>
         <p className='text-ink/60 text-[17px] max-w-[520px] mx-auto leading-relaxed'>
-          Every participant works in the same private payment network with permissions tailored to their role.
+          Every participant works in the same private payment network. Each settlement creates verifiable proof for RWA origination.
         </p>
       </motion.div>
 
@@ -51,7 +56,7 @@ export default function PayrollReceivables() {
         <div className='grid grid-cols-4 border-b border-ink/8'>
           <div className='px-6 py-4 text-sm font-medium text-ink/40'>Permission Matrix</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Company</div>
-          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Payee</div>
+          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Payee / Payer</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Financial Partner</div>
         </div>
         {permissions.map((row, i) => (
@@ -62,9 +67,9 @@ export default function PayrollReceivables() {
             }`}
           >
             <div className='px-6 py-4 text-sm text-ink/60'>{row.action}</div>
-            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.employer} /></div>
-            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.employee} /></div>
-            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.partner} /></div>
+            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.employer} comingSoon={row.comingSoon} /></div>
+            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.employee} comingSoon={row.comingSoon} /></div>
+            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.partner} comingSoon={row.comingSoon} /></div>
           </div>
         ))}
       </motion.div>

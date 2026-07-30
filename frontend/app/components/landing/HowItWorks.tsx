@@ -72,7 +72,7 @@ export default function HowItWorks() {
           Private Payments, Built P2P
         </h2>
         <p className='text-ink/60 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
-          Set up payroll, contractor, and invoice workflows directly with counterparties — no intermediary, no cloud, just a permissioned P2P network.
+          Set up payroll, contractor, and invoice workflows directly with counterparties — no intermediary, no cloud, just P2P.
         </p>
       </motion.div>
 

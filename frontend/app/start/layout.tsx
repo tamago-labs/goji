@@ -10,17 +10,17 @@ import UserMenuPopover from '../components/start/UserMenuPopover'
 import UsernameModal from '../components/start/UsernameModal'
 import DepositSpendModal from '../components/start/DepositSpendModal'
 import { StartProvider, useStart } from '../components/start/StartProvider'
-import { ListTodo, DollarSign, LayoutGrid, Building2, BookText, Settings, Wallet, Shield, FileText } from 'lucide-react'
+import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileText, Settings } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['employer', 'payee', 'payer', 'partner'] },
   { href: '/start/offers', label: 'Offers', icon: DollarSign, roles: ['employer'] },
   { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['employer'] },
   { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['employer', 'payee', 'payer', 'partner'] },
+  { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['employer', 'payee', 'payer', 'partner'] },
   { href: '/start/invoices', label: 'Invoices', icon: FileText, roles: ['employer', 'payee', 'payer', 'partner'] },
   { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['employer', 'payee', 'payer', 'partner'] },
   { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['employer'] },
-  { href: '/start/payments', label: 'Payments', icon: BookText, roles: ['employer', 'payee', 'payer', 'partner'] },
 ]
 
 function StartLayoutInner({ children }: { children: React.ReactNode }) {

@@ -5,5 +5,5 @@ import { useStart } from '../../../components/start/StartProvider'
 
 export default function MembersPage() {
   const { apiUrl, health } = useStart()
-  return <MembersTab apiUrl={apiUrl} currentWriterKey={health?.peerId} />
+  return <MembersTab apiUrl={apiUrl} currentWriterKey={health?.peerIdHex} />
 }

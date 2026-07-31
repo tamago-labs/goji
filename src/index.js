@@ -595,6 +595,7 @@ async function main() {
       status: 'ok',
       name: identityName,
       peerId: z32.encode(room.localBase.key),
+      peerIdHex: b4a.toString(room.localBase.key, 'hex'),
       role,
       writable: room.isWritable(),
       peers,

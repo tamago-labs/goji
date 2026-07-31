@@ -23,9 +23,18 @@ interface RecentBoard {
   settledCount: number
 }
 
+interface OutgoingRoute {
+  boardId: string
+  boardName: string
+  recipientName: string
+  amount: string
+  status: string
+}
+
 export default function Overview({ apiUrl, role }: OverviewProps) {
   const [stats, setStats] = useState<Stats>({ walletCount: 0, boardCount: 0, settledCount: 0 })
   const [recentBoards, setRecentBoards] = useState<RecentBoard[]>([])
+  const [outgoingRoutes, setOutgoingRoutes] = useState<OutgoingRoute[]>([])
   const [loading, setLoading] = useState(true)
 
   const isCompany = role === 'employer'
@@ -38,35 +47,67 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
       try {
         const walletsRes = await fetch(`${apiUrl}/api/wallets`)
         const wallets = walletsRes.ok ? await walletsRes.json() : []
+        const myAddresses = new Set(wallets.map((w: { address: string }) => w.address.toLowerCase()))
 
         const boardsRes = await fetch(`${apiUrl}/api/boards`)
         const boards = boardsRes.ok ? await boardsRes.json() : []
 
         let settledCount = 0
         const recent: RecentBoard[] = []
+        const outgoing: OutgoingRoute[] = []
 
-        for (const board of boards.slice(0, 5)) {
-          const statusRes = await fetch(`${apiUrl}/api/flow-status?flowId=${board.id}`)
-          const connsRes = await fetch(`${apiUrl}/api/connections?boardId=${board.id}`)
-          if (statusRes.ok && connsRes.ok) {
+        for (const board of boards) {
+          const [statusRes, connsRes, cardsRes] = await Promise.all([
+            fetch(`${apiUrl}/api/flow-status?flowId=${board.id}`),
+            fetch(`${apiUrl}/api/connections?boardId=${board.id}`),
+            fetch(`${apiUrl}/api/cards?boardId=${board.id}`)
+          ])
+
+          if (statusRes.ok && connsRes.ok && cardsRes.ok) {
             const statuses = await statusRes.json()
             const connections = await connsRes.json()
+            const cards = await cardsRes.json()
+            const cardMap = new Map<string, { id: string; title?: string; fields?: Record<string, string | boolean> }>(
+              cards.map((c: { id: string; title?: string; fields?: Record<string, string | boolean> }) => [c.id, c])
+            )
+
             const routeConns = connections.filter((c: { payment?: number; document?: number }) => c.payment || c.document)
             const routeMap = new Map<string, string>()
             for (const s of statuses) routeMap.set(s.routeId, s.status)
             const settled = Array.from(routeMap.values()).filter((s) => s === 'settled').length
             settledCount += settled
-            recent.push({
-              id: board.id,
-              name: board.name,
-              routeCount: routeConns.length,
-              settledCount: settled
-            })
+
+            if (recent.length < 5) {
+              recent.push({
+                id: board.id,
+                name: board.name,
+                routeCount: routeConns.length,
+                settledCount: settled
+              })
+            }
+
+            // Fetch outgoing routes (user is sender)
+            for (const conn of routeConns) {
+              const fromCard = cardMap.get(conn.from)
+              const toCard = cardMap.get(conn.to)
+              if (!fromCard || !toCard) continue
+              if (!myAddresses.has(String(fromCard.fields?.address || '').toLowerCase())) continue
+
+              const status = statuses.find((s: { routeId: string }) => s.routeId === conn.id)
+              outgoing.push({
+                boardId: board.id,
+                boardName: board.name,
+                recipientName: toCard.title || 'Wallet',
+                amount: conn.amount || '0',
+                status: status?.status || 'pending'
+              })
+            }
           }
         }
 
         setStats({ walletCount: wallets.length, boardCount: boards.length, settledCount })
         setRecentBoards(recent)
+        setOutgoingRoutes(outgoing)
       } catch {}
       setLoading(false)
     }
@@ -266,6 +307,60 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
               </>
             )}
           </div>
+
+          {/* Outgoing Payments - Company and Payer */}
+          {(isCompany || isPayer) && outgoingRoutes.length > 0 && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden mb-5'>
+              <div className='px-6 py-3 border-b border-ink/8 flex items-center justify-between'>
+                <span className='text-xs text-ink/40 uppercase tracking-wider'>Outgoing Payments</span>
+                <span className='text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-ink/10 text-ink/50'>
+                  {outgoingRoutes.filter((r) => r.status === 'pending').length} pending
+                </span>
+              </div>
+              <table className='w-full text-sm'>
+                <thead>
+                  <tr className='border-b border-ink/5 text-left'>
+                    <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Flow</th>
+                    <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>To</th>
+                    <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
+                    <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outgoingRoutes.slice(0, 5).map((route, i) => (
+                    <Link
+                      key={i}
+                      href={`/flow/${route.boardId}`}
+                      className='table-row hover:bg-ink/3 transition-colors border-b border-ink/5 last:border-0'
+                    >
+                      <td className='px-6 py-3 text-ink/70'>{route.boardName}</td>
+                      <td className='px-6 py-3 text-ink/60 truncate max-w-[120px]'>{route.recipientName}</td>
+                      <td className='px-6 py-3 font-mono text-ink/60'>{route.amount} USDC</td>
+                      <td className='px-6 py-3'>
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          route.status === 'settled'
+                            ? 'bg-mint/15 text-[#1B7A50]'
+                            : route.status === 'failed'
+                              ? 'bg-coral/15 text-coral'
+                              : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {route.status === 'settled' ? 'Settled' : route.status === 'failed' ? 'Failed' : 'Pending'}
+                        </span>
+                      </td>
+                    </Link>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Empty outgoing for company/payee */}
+          {(isCompany || isPayer) && outgoingRoutes.length === 0 && !loading && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 mb-5 text-center'>
+              <p className='text-ink/40 text-sm'>No outgoing payments yet</p>
+              <p className='text-ink/30 text-xs mt-1'>Create a flow to send your first payment.</p>
+            </div>
+          )}
 
           {/* Recent Flows - Company only */}
           {isCompany && recentBoards.length > 0 && (

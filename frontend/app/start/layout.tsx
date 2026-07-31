@@ -14,7 +14,6 @@ import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileText, 
 
 const NAV_ITEMS = [
   { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['employer', 'payee', 'payer', 'partner'] },
-  { href: '/start/offers', label: 'Offers', icon: DollarSign, roles: ['employer'] },
   { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['employer'] },
   { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['employer', 'payee', 'payer', 'partner'] },
   { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['employer', 'payee', 'payer', 'partner'] },

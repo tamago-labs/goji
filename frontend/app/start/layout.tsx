@@ -10,15 +10,27 @@ import UserMenuPopover from '../components/start/UserMenuPopover'
 import UsernameModal from '../components/start/UsernameModal'
 import DepositSpendModal from '../components/start/DepositSpendModal'
 import { StartProvider, useStart } from '../components/start/StartProvider'
-import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileText, Settings } from 'lucide-react'
+import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileText, Settings, Bot, TrendingUp, Package, Search } from 'lucide-react'
 
 const NAV_ITEMS = [
+  // All roles
   { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['employer', 'payee', 'payer', 'partner'] },
+  // Partner only
+  { href: '/start/available-receivables', label: 'Available Receivables', icon: Package, roles: ['partner'] },
+  { href: '/start/due-diligence', label: 'Due Diligence', icon: Search, roles: ['partner'] },
+  { href: '/start/funding', label: 'Funding', icon: DollarSign, roles: ['partner'] },
+  // Company only
   { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['employer'] },
+  // Company & Payer
   { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['employer', 'payee', 'payer', 'partner'] },
-  { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['employer', 'payee', 'payer', 'partner'] },
-  { href: '/start/invoices', label: 'Invoices', icon: FileText, roles: ['employer', 'payee', 'payer', 'partner'] },
+  { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['employer', 'payee', 'payer'] },
+  { href: '/start/invoices', label: 'Invoices', icon: FileText, roles: ['employer', 'payee', 'payer'] },
+  // All roles
   { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['employer', 'payee', 'payer', 'partner'] },
+  // Company only
+  { href: '/start/ai-assistant', label: 'AI Assistant', icon: Bot, roles: ['employer'] },
+  { href: '/start/receivables', label: 'Receivables', icon: TrendingUp, roles: ['employer'] },
+  // Admin
   { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['employer'] },
 ]
 

@@ -5,7 +5,7 @@ import { Check } from 'lucide-react'
 
 const useCases = [
   {
-    title: 'Payments, Simplified.',
+    title: 'P2P Payment Workspace',
     subtitle: 'Manage payroll, contractors, and invoices from one single visual workspace.',
     bullets: [
       'Manage employees, contractors, and vendors',

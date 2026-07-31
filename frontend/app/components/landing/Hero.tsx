@@ -18,7 +18,7 @@ export default function Hero() {
           {...fadeUp(0)}
           className='inline-block bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
         >
-          Built on Arc — Connecting Payments to Capital
+          P2P Workspace — From Payments to Capital
         </motion.span>
         <motion.h1
           {...fadeUp(0.1)}

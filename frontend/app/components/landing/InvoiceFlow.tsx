@@ -59,8 +59,8 @@ export default function InvoiceFlow() {
             )}
 
             <div className='text-center'>
-              <div className='w-12 h-12 rounded-full bg-ink/5 flex items-center justify-center mx-auto mb-4 relative z-10'>
-                <span className='text-sm font-semibold text-ink/60'>{step.num}</span>
+              <div className='w-12 h-12 rounded-full bg-coral/10 flex items-center justify-center mx-auto mb-4 relative z-10'>
+                <span className='text-sm font-semibold text-coral'>{step.num}</span>
               </div>
               <h3 className='font-display text-lg font-semibold text-ink mb-2'>{step.title}</h3>
               <p className='text-sm text-ink/50 leading-relaxed'>{step.desc}</p>

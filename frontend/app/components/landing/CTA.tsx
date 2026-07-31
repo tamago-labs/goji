@@ -16,7 +16,7 @@ export default function CTA() {
         <h2 className='font-display text-4xl md:text-5xl font-semibold mb-6'>
           From Every Payment<br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            to RWA Assets
+            to Real-World Assets
           </span>
         </h2>
         <p className='text-ink/50 text-lg mb-8 max-w-[560px] mx-auto'>

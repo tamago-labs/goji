@@ -30,6 +30,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
 
   const isCompany = role === 'employer'
   const isPayee = role === 'payee'
+  const isPayer = role === 'payer'
   const isPartner = role === 'partner'
 
   useEffect(() => {
@@ -106,7 +107,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
       done: false,
       title: 'View Documents',
       desc: 'Access your payslips, invoices, and payment records.',
-      action: <Link href='/start/documents' className='text-[10px] text-mint'>View →</Link>
+      action: <Link href='/start/payments' className='text-[10px] text-mint'>View →</Link>
     }
   ]
 
@@ -126,7 +127,23 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
     }
   ]
 
-  const steps = isCompany ? companySteps : isPayee ? payeeSteps : partnerSteps
+  // Payer steps
+  const payerSteps = [
+    {
+      done: stats.walletCount > 0,
+      title: 'Register Wallet',
+      desc: 'Add your wallet address to send payments.',
+      action: stats.walletCount === 0 ? <span className='text-[10px] text-mint'>Register →</span> : null
+    },
+    {
+      done: false,
+      title: 'View Invoices',
+      desc: 'Review and pay invoices from contractors and vendors.',
+      action: <Link href='/start/invoices' className='text-[10px] text-mint'>View →</Link>
+    }
+  ]
+
+  const steps = isCompany ? companySteps : isPayee ? payeeSteps : role === 'payer' ? payerSteps : partnerSteps
   const completed = steps.filter((s) => s.done).length
 
   return (
@@ -212,7 +229,23 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                 </div>
                 <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
                   <div className='text-2xl font-semibold text-ink mb-1'>—</div>
-                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Documents</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Invoices</div>
+                </div>
+              </>
+            )}
+            {isPayer && (
+              <>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.walletCount}</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Wallets</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>—</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Invoices</div>
+                </div>
+                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
+                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.settledCount}</div>
+                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Payments</div>
                 </div>
               </>
             )}
@@ -283,11 +316,34 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                     <div className='text-xs text-ink/40'>Add your wallet to receive payments</div>
                   </div>
                 </Link>
-                <Link href='/start/documents' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                <Link href='/start/payments' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
                   <FileText className='w-5 h-5 text-ink/40' />
                   <div>
-                    <div className='text-sm font-medium text-ink'>View Documents</div>
+                    <div className='text-sm font-medium text-ink'>View Payments</div>
                     <div className='text-xs text-ink/40'>Access payslips, invoices, and records</div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions - Payer */}
+          {isPayer && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
+              <h3 className='text-sm font-medium text-ink mb-4'>Quick Actions</h3>
+              <div className='space-y-3'>
+                <Link href='/start/wallets' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                  <Wallet className='w-5 h-5 text-ink/40' />
+                  <div>
+                    <div className='text-sm font-medium text-ink'>Register Wallet</div>
+                    <div className='text-xs text-ink/40'>Add your wallet to send payments</div>
+                  </div>
+                </Link>
+                <Link href='/start/invoices' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                  <FileText className='w-5 h-5 text-ink/40' />
+                  <div>
+                    <div className='text-sm font-medium text-ink'>View Invoices</div>
+                    <div className='text-xs text-ink/40'>Review and pay invoices</div>
                   </div>
                 </Link>
               </div>

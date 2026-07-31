@@ -8,10 +8,10 @@ const useCases = [
     title: 'Payments, Simplified.',
     subtitle: 'Manage payroll, contractors, and invoices from one single visual workspace.',
     bullets: [
-      'Import payee records — employees, contractors, vendors',
+      'Manage employees, contractors, and vendors',
       'Draw payment flows on a visual canvas',
       'Click connections to set taxes, deductions & terms',
-      'Real-time collaborative approvals'
+      'Unified Balance for instant USDC payments'
     ]
   },
   {

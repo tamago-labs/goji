@@ -193,6 +193,26 @@ schema.register({
   fields: [{ name: 'flowId', type: 'buffer', required: true }]
 })
 
+schema.register({
+  name: 'template',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'name', type: 'string', required: true },
+    { name: 'companyName', type: 'string' },
+    { name: 'fields', type: 'json' },
+    { name: 'html', type: 'string', required: true },
+    { name: 'isDefault', type: 'int' },
+    { name: 'createdBy', type: 'buffer' },
+    { name: 'createdAt', type: 'int', required: true },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'template-remove',
+  fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
 Hyperschema.toDisk(hyperSchema)
 
 const hyperdb = HyperdbBuilder.from(SCHEMA_DIR, DB_DIR)
@@ -206,6 +226,7 @@ db.collections.register({ name: 'invites', schema: '@goji/invite', key: ['id'] }
 db.collections.register({ name: 'identity', schema: '@goji/identity', key: ['writerKey'] })
 db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] })
 db.collections.register({ name: 'flowStatuses', schema: '@goji/flow-status', key: ['id'] })
+db.collections.register({ name: 'templates', schema: '@goji/template', key: ['id'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -231,6 +252,9 @@ dispatch.register({ name: 'set-flow-status', requestType: '@goji/flow-status' })
 dispatch.register({ name: 'remove-flow-statuses', requestType: '@goji/flow-status-remove' })
 dispatch.register({ name: 'add-wallet', requestType: '@goji/wallet' })
 dispatch.register({ name: 'remove-wallet', requestType: '@goji/wallet-remove' })
+dispatch.register({ name: 'add-template', requestType: '@goji/template' })
+dispatch.register({ name: 'update-template', requestType: '@goji/template' })
+dispatch.register({ name: 'remove-template', requestType: '@goji/template-remove' })
 
 Hyperdispatch.toDisk(hyperdispatch)
 

@@ -2,10 +2,11 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Settings } from 'lucide-react'
+import { Users, Settings, FileText } from 'lucide-react'
 
 const ORG_ITEMS = [
   { href: '/start/organization/members', label: 'Members', icon: Users },
+  { href: '/start/organization/templates', label: 'Templates', icon: FileText },
   { href: '/start/organization/settings', label: 'Settings', icon: Settings, disabled: true },
 ]
 

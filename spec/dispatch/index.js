@@ -27,8 +27,11 @@ class Router {
     this._handler16 = null
     this._handler17 = null
     this._handler18 = null
+    this._handler19 = null
+    this._handler20 = null
+    this._handler21 = null
 
-    this._missing = 19
+    this._missing = 22
   }
 
   add (name, handler) {
@@ -90,6 +93,15 @@ class Router {
       case '@goji/remove-wallet':
         this._handler18 = handler
         break
+      case '@goji/add-template':
+        this._handler19 = handler
+        break
+      case '@goji/update-template':
+        this._handler20 = handler
+        break
+      case '@goji/remove-template':
+        this._handler21 = handler
+        break
       default:
         throw DispatchError.NONEXISTENT_ROUTE(name)
     }
@@ -116,6 +128,9 @@ class Router {
     assert(this._handler16 !== null, 'Missing handler for "@goji/remove-flow-statuses"')
     assert(this._handler17 !== null, 'Missing handler for "@goji/add-wallet"')
     assert(this._handler18 !== null, 'Missing handler for "@goji/remove-wallet"')
+    assert(this._handler19 !== null, 'Missing handler for "@goji/add-template"')
+    assert(this._handler20 !== null, 'Missing handler for "@goji/update-template"')
+    assert(this._handler21 !== null, 'Missing handler for "@goji/remove-template"')
   }
 
   async dispatch (message, context) {
@@ -166,6 +181,12 @@ class Router {
         return this._handler17(op.value, context)
       case 18:
         return this._handler18(op.value, context)
+      case 19:
+        return this._handler19(op.value, context)
+      case 20:
+        return this._handler20(op.value, context)
+      case 21:
+        return this._handler21(op.value, context)
       default:
         throw DispatchError.HANDLER_NOT_FOUND_BY_ID(op.id)
     }
@@ -313,6 +334,24 @@ const route18 = {
   enc: getEncoding('@goji/wallet-remove')
 }
 
+const route19 = {
+  name: '@goji/add-template',
+  id: 19,
+  enc: getEncoding('@goji/template')
+}
+
+const route20 = {
+  name: '@goji/update-template',
+  id: 20,
+  enc: getEncoding('@goji/template')
+}
+
+const route21 = {
+  name: '@goji/remove-template',
+  id: 21,
+  enc: getEncoding('@goji/template-remove')
+}
+
 function getRouteByName (name) {
   switch (name) {
     case '@goji/add-writer':
@@ -353,6 +392,12 @@ function getRouteByName (name) {
       return route17
     case '@goji/remove-wallet':
       return route18
+    case '@goji/add-template':
+      return route19
+    case '@goji/update-template':
+      return route20
+    case '@goji/remove-template':
+      return route21
     default:
       throw DispatchError.ROUTE_NOT_FOUND_BY_NAME(name)
   }
@@ -398,6 +443,12 @@ function getRouteById (id) {
       return route17
     case 18:
       return route18
+    case 19:
+      return route19
+    case 20:
+      return route20
+    case 21:
+      return route21
     default:
       throw DispatchError.HANDLER_NOT_FOUND_BY_ID(id)
   }

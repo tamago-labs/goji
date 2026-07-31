@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "name": "writer",
@@ -624,6 +624,78 @@
           "required": true,
           "type": "buffer",
           "version": 1
+        }
+      ]
+    },
+    {
+      "name": "template",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 2,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 2
+        },
+        {
+          "name": "name",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "companyName",
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "fields",
+          "type": "json",
+          "version": 2
+        },
+        {
+          "name": "html",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "isDefault",
+          "type": "int",
+          "version": 2
+        },
+        {
+          "name": "createdBy",
+          "type": "buffer",
+          "version": 2
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 2
+        },
+        {
+          "name": "updatedAt",
+          "required": true,
+          "type": "int",
+          "version": 2
+        }
+      ]
+    },
+    {
+      "name": "template-remove",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 2
         }
       ]
     }

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
-import { DEFAULT_TEMPLATES, renderTemplate } from '../../../lib/payslipTemplates'
 import { type FlowCard, type Connection } from './types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,45 +18,88 @@ const CHAIN_LABELS: Record<string, string> = {
   Ethereum_Sepolia: 'Ethereum Sepolia'
 }
 
+interface TemplateField {
+  key: string
+  label: string
+  type: 'text' | 'number' | 'date' | 'textarea'
+  autoFill: boolean
+}
+
+interface Template {
+  id: string
+  name: string
+  companyName: string | null
+  fields: TemplateField[]
+  html: string
+}
+
 interface ConnectionDrawerProps {
   isOpen: boolean
   connection: Connection | null
   cards: FlowCard[]
+  apiUrl: string
   onClose: () => void
   onSave: (id: string, patch: Partial<Connection>) => void
 }
 
-export default function ConnectionDrawer({ isOpen, connection, cards, onClose, onSave }: ConnectionDrawerProps) {
+function renderTemplate(html: string, vars: Record<string, string>): string {
+  let result = html
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
+  }
+  return result
+}
+
+export default function ConnectionDrawer({ isOpen, connection, cards, apiUrl, onClose, onSave }: ConnectionDrawerProps) {
   const [amount, setAmount] = useState('')
   const [payment, setPayment] = useState(false)
   const [document, setDocument] = useState(false)
-  const [templateId, setTemplateId] = useState('standard')
-  const [customDoc, setCustomDoc] = useState('')
+  const [templateId, setTemplateId] = useState('')
   const [docName, setDocName] = useState('')
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
 
   const fromCard = connection ? cards.find((c) => c.id === connection.from) : null
   const toCard = connection ? cards.find((c) => c.id === connection.to) : null
   const isVerifiedRecipient = toCard?.fields?.type === 'verified'
 
   useEffect(() => {
+    async function loadTemplates() {
+      try {
+        const res = await fetch(`${apiUrl}/api/templates`)
+        if (res.ok) {
+          const data = await res.json()
+          setTemplates(data)
+          if (data.length > 0 && !templateId) {
+            setTemplateId(data[0].id)
+          }
+        }
+      } catch {}
+    }
+    loadTemplates()
+  }, [apiUrl])
+
+  useEffect(() => {
     if (connection) {
       setAmount(connection.amount || '')
       setPayment(!!connection.payment)
       setDocument(!!connection.document)
-      setTemplateId(connection.template || 'standard')
-      setCustomDoc(connection.customDoc || '')
+      setTemplateId(connection.template || (templates.length > 0 ? templates[0].id : ''))
       setDocName(connection.docName || '')
     }
-  }, [connection])
+  }, [connection, templates])
 
-  const selectedTemplate = DEFAULT_TEMPLATES.find((t) => t.id === templateId) || DEFAULT_TEMPLATES[0]
+  const selectedTemplate = templates.find((t) => t.id === templateId) || templates[0]
 
-  const previewHtml = document ? renderTemplate(selectedTemplate, {
+  const previewHtml = document && selectedTemplate ? renderTemplate(selectedTemplate.html, {
+    company: selectedTemplate.companyName || 'Company',
     amount: amount || '0',
     sender: fromCard?.title || 'Wallet',
     recipient: toCard?.title || 'Recipient',
     date: new Date().toLocaleDateString(),
-    txHash: connection?.txHash || 'Pending...'
+    txHash: connection?.txHash || 'Pending...',
+    chain: String(toCard?.fields?.chain || ''),
+    ...fieldValues
   }) : ''
 
   const handleSave = () => {
@@ -67,13 +109,14 @@ export default function ConnectionDrawer({ isOpen, connection, cards, onClose, o
       payment: payment ? 1 : undefined,
       document: document ? 1 : undefined,
       template: document ? templateId : undefined,
-      customDoc: document && templateId === 'custom' ? customDoc : undefined,
-      docName: document ? (docName || selectedTemplate.docName) : undefined
+      docName: document ? (docName || selectedTemplate?.name || '') : undefined
     })
     onClose()
   }
 
   const canSave = payment || document
+
+  const dynamicFields = selectedTemplate?.fields?.filter((f) => !f.autoFill) || []
 
   return (
     <AnimatePresence>
@@ -179,7 +222,7 @@ export default function ConnectionDrawer({ isOpen, connection, cards, onClose, o
                             onChange={(e) => setTemplateId(e.target.value)}
                             className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 appearance-none focus:outline-none focus:border-ink/20'
                           >
-                            {DEFAULT_TEMPLATES.map((t) => (
+                            {templates.map((t) => (
                               <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
                           </select>
@@ -188,16 +231,38 @@ export default function ConnectionDrawer({ isOpen, connection, cards, onClose, o
                           </svg>
                         </div>
                       </label>
+
                       <label className='block'>
                         <span className='text-xs text-ink/40 mb-1.5 block'>Document Name</span>
                         <input
                           type='text'
                           value={docName}
                           onChange={(e) => setDocName(e.target.value)}
-                          placeholder={selectedTemplate.docName}
+                          placeholder={selectedTemplate?.name || 'Document'}
                           className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
                         />
                       </label>
+
+                      {/* Dynamic fields */}
+                      {dynamicFields.map((field) => (
+                        <label key={field.key} className='block'>
+                          <span className='text-xs text-ink/40 mb-1.5 block'>{field.label}</span>
+                          {field.type === 'textarea' ? (
+                            <textarea
+                              value={fieldValues[field.key] || ''}
+                              onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                              className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20 min-h-[80px]'
+                            />
+                          ) : (
+                            <input
+                              type={field.type}
+                              value={fieldValues[field.key] || ''}
+                              onChange={(e) => setFieldValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                              className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
+                            />
+                          )}
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>

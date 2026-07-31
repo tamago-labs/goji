@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "offset": 0,
   "schema": [
     {
@@ -115,6 +115,24 @@
       "name": "@goji/remove-wallet",
       "requestType": "@goji/wallet-remove",
       "version": 1
+    },
+    {
+      "id": 19,
+      "name": "@goji/add-template",
+      "requestType": "@goji/template",
+      "version": 2
+    },
+    {
+      "id": 20,
+      "name": "@goji/update-template",
+      "requestType": "@goji/template",
+      "version": 2
+    },
+    {
+      "id": 21,
+      "name": "@goji/remove-template",
+      "requestType": "@goji/template-remove",
+      "version": 2
     }
   ]
 }

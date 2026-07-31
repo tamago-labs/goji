@@ -643,6 +643,7 @@ export default function FlowBuilder({
         isOpen={selectedConnection !== null}
         connection={selectedConnection}
         cards={cards}
+        apiUrl={API}
         onClose={() => setSelectedConnection(null)}
         onSave={updateConnection}
       />

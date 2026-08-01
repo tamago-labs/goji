@@ -73,6 +73,13 @@ npx @tamago-labs/goji
 3. **Settle on Arc** — USDC payment executed, proof anchored on-chain
 4. **Originate & Finance** — Receivable asset created, financial partners evaluate and fund
 
+### Proof Explorer
+
+- Search any merkle root hash to verify on-chain via GojiProof contract
+- Your Proofs table shows Date, Document, From, To, Amount, Status
+- Click Verify to open modal with on-chain verification result
+- Document preview iframe for anchored payments
+
 ---
 
 ## Tech Stack
@@ -94,6 +101,9 @@ npx @tamago-labs/goji
 - Arc Testnet, Base Sepolia, Ethereum Sepolia
 - Circle Unified Balance (cross-chain USDC)
 - Circle Gateway (settlement)
+- GojiProof contract (merkle root anchoring)
+- ReceivableToken + ReceivableFactory (RWA issuance)
+- PriceOracle (custom + Pyth)
 
 ### Protocols
 - Pear P2P (real-time sync)

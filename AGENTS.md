@@ -39,6 +39,14 @@ npm run lint             # eslint
 - `spec/` — Generated schema/dispatch/db specs
 - Keet identity key integration for portable P2P identities and wallet verification
 
+### Contracts
+
+- `contracts/src/GojiProof.sol` — Merkle root storage for document verification
+- `contracts/src/ReceivableToken.sol` — ERC-20 for receivable assets
+- `contracts/src/ReceivableFactory.sol` — Factory for creating receivable tokens
+- `contracts/src/PriceOracle.sol` — Custom + Pyth price oracle
+- `contracts/script/` — Deploy scripts (1-DeployTokens, 2-DeployOracles, 3-DeployProof, 4-DeployReceivable)
+
 ### Frontend
 
 - `app/components/landing/` — Landing page (Nav, Hero, UseCases, CardCanvas, HowItWorks, InvoiceFlow, SupportedChains, CTA)
@@ -50,6 +58,8 @@ npm run lint             # eslint
 - `lib/wagmi.ts` — Wagmi config with injected wallet (no MetaMask SDK)
 - `lib/unified-balance.ts` — Circle Unified Balance API (deposit, spend, fetch, delegate)
 - `lib/payslipTemplates.ts` — 3 default templates (Standard Receipt, Invoice, Service Agreement)
+- `lib/gojiProof.ts` — GojiProof ABI for on-chain merkle root verification
+- `lib/merkle.ts` — Merkle tree generation with viem + merkletreejs
 
 ## API Endpoints
 
@@ -82,8 +92,18 @@ npm run lint             # eslint
 1. Click Start → Preview modal with all routes and real statuses
 2. Click "Start Flow" → Canvas locks, overlay panel appears
 3. Sign routes → Uses Circle Unified Balance spend
-4. Status persists via P2P → Survives page navigation
-5. Stop → Only clears pending routes, preserves settled
+4. Merkle root generated from document values, anchored on GojiProof contract
+5. Status persists via P2P → Survives page navigation
+6. Stop → Only clears pending routes, preserves settled
+
+## Proof Explorer
+
+- Table shows Date, Document, From, To, Amount, Status columns
+- Resolves card titles for from/to names (not raw IDs)
+- Search bar accepts any merkle root hash
+- Verification calls GojiProof.isAnchored() on Arc Testnet
+- Modal shows document info, merkle root, timestamp, contract address
+- Document preview iframe for anchored payments
 
 ## Roles
 
@@ -103,3 +123,4 @@ npm run lint             # eslint
 - **Keet identity**: First run prompts for identity setup (generate/import mnemonic). Saved to `identity.json` in storage folder.
 - **No monorepo tooling**: Two separate npm projects. Run `npm install` independently in each directory.
 - **`frontend/AGENTS.md`**: Next.js 16 has breaking changes from training data. Read `node_modules/next/dist/docs/` before modifying frontend code.
+- **Forge/Git Bash**: Use Git Bash for forge commands on Windows.

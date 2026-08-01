@@ -90,18 +90,22 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
 
             const row: PaymentRow = {
               boardName: board.name,
-              counterpartyName: fromCard.title || 'Wallet',
+              counterpartyName: isSender ? (toCard.title || 'Wallet') : (fromCard.title || 'Wallet'),
               amount: conn.amount || '0',
-              chain: String(toCard.fields?.chain || ''),
+              chain: String(isSender ? toCard.fields?.chain : fromCard.fields?.chain || ''),
               txHash: status?.txHash || null,
               date: status?.updatedAt || conn.updatedAt || 0,
               status: statusText,
               docName: conn.docName || null,
               payslipHtml: status?.payslipHtml || null,
-              direction: 'incoming'
+              direction: isSender ? 'outgoing' : 'incoming'
             }
 
-            incoming.push(row)
+            if (isSender) {
+              outgoing.push(row)
+            } else {
+              incoming.push(row)
+            }
           }
         }
 

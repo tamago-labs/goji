@@ -355,7 +355,9 @@ export default function InvoicesPage() {
               <thead>
                 <tr className='border-b border-ink/5 text-left'>
                   <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Document</th>
-                  <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>From</th>
+                  <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>
+                    {activeTab === 'incoming' ? 'From' : 'To'}
+                  </th>
                   <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
                   <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Status</th>
                   <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Action</th>

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 1,
   "offset": 0,
   "schema": [
     {
@@ -120,19 +120,19 @@
       "id": 19,
       "name": "@goji/add-template",
       "requestType": "@goji/template",
-      "version": 2
+      "version": 1
     },
     {
       "id": 20,
       "name": "@goji/update-template",
       "requestType": "@goji/template",
-      "version": 2
+      "version": 1
     },
     {
       "id": 21,
       "name": "@goji/remove-template",
       "requestType": "@goji/template-remove",
-      "version": 2
+      "version": 1
     }
   ]
 }

@@ -418,6 +418,7 @@ class GojiRoom {
 }
 
 function hexId(s) {
+  if (b4a.isBuffer(s)) return s
   return b4a.from(String(s).replace(/-/g, ''), 'hex')
 }
 
@@ -492,7 +493,8 @@ function decodeConnection(raw) {
     template: raw.template || null,
     customDoc: raw.customDoc || null,
     docName: raw.docName || null,
-    txHash: raw.txHash || null
+    txHash: raw.txHash || null,
+    delegationEnabled: raw.delegationEnabled || null
   }
 }
 
@@ -770,16 +772,22 @@ async function main() {
   app.post('/api/connections', async (req, res) => {
     const { boardId, from, to, label, amount, payment, document, template, customDoc, docName, txHash } = req.body
     const now = Date.now()
-    const id = require('crypto').randomBytes(16).toString('hex')
+    const id = require('crypto').randomBytes(16)
     const connection = {
-      id, boardId, from, to, label: label || null, updatedAt: now,
-      amount: amount || null, payment: payment || null, document: document || null,
+      id, 
+      boardId: b4a.from(boardId, 'hex'), 
+      from, to, label: label || null, updatedAt: now,
+      amount: amount || null, 
+      payment: payment || null, 
+      document: document || null,
       template: template || null, customDoc: customDoc || null, docName: docName || null,
       txHash: txHash || null
     }
     await room.appendConnection({ type: 'add-connection', connection })
-    wsBroadcast({ type: 'connection:added', connection })
-    res.json(connection)
+    // Return connection with hex string ID
+    const response = { ...connection, id: b4a.toString(id, 'hex'), boardId: boardId }
+    wsBroadcast({ type: 'connection:added', connection: response })
+    res.json(response)
   })
 
   app.put('/api/connections/:id', async (req, res) => {
@@ -991,18 +999,19 @@ async function main() {
 
     const now = Date.now()
     const id = require('crypto').randomBytes(16).toString('hex')
-    const flowStatus = { id: b4a.from(id, 'hex'), flowId: b4a.from(flowId, 'hex'), routeId, status, txHash: txHash || null, error: error || null, updatedAt: now }
+    // Ensure routeId is a string
+    const routeIdStr = typeof routeId === 'string' ? routeId : b4a.toString(routeId, 'hex')
     await room.base.append(GojiDispatch.encode('@goji/set-flow-status', {
       id: b4a.from(id, 'hex'),
       flowId: b4a.from(flowId, 'hex'),
-      routeId,
+      routeId: routeIdStr,
       status,
       txHash: txHash || null,
       error: error || null,
       updatedAt: now
     }))
-    wsBroadcast({ type: 'flow-status:updated', flowStatus: { id, flowId, routeId, status, txHash, error, updatedAt: now } })
-    res.json({ id, flowId, routeId, status, txHash, error, updatedAt: now })
+    wsBroadcast({ type: 'flow-status:updated', flowStatus: { id, flowId, routeId: routeIdStr, status, txHash, error, updatedAt: now } })
+    res.json({ id, flowId, routeId: routeIdStr, status, txHash, error, updatedAt: now })
   })
 
   app.put('/api/flow-status/:id', async (req, res) => {

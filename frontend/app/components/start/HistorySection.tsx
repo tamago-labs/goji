@@ -36,11 +36,6 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
   useEffect(() => {
     async function load() {
       try {
-        const walletsRes = await fetch(`${apiUrl}/api/wallets`)
-        if (!walletsRes.ok) { setLoading(false); return }
-        const wallets = await walletsRes.json()
-        const myAddresses = new Set(wallets.map((w: { address: string }) => w.address.toLowerCase()))
-
         const boardsRes = await fetch(`${apiUrl}/api/boards`)
         if (!boardsRes.ok) { setLoading(false); return }
         const boards = await boardsRes.json()
@@ -64,37 +59,36 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
           )
 
           for (const conn of connections) {
+            // Only show connections with payment or document
+            if (!conn.payment && !conn.document) continue
+
             const toCard = cardMap.get(conn.to)
             const fromCard = cardMap.get(conn.from)
             if (!toCard || !fromCard) continue
 
-            const isIncoming = myAddresses.has(String(toCard.fields?.address || '').toLowerCase())
-            const isOutgoing = myAddresses.has(String(fromCard.fields?.address || '').toLowerCase())
-
-            if (!isIncoming && !isOutgoing) continue
-
             const status = statuses.find((s: { routeId: string }) => s.routeId === conn.id)
             const statusText = status?.status || 'pending'
-            const counterparty = isIncoming ? fromCard : toCard
+
+            // Parse customDoc for invoice data
+            let customData = {}
+            if (conn.customDoc) {
+              try { customData = JSON.parse(conn.customDoc) } catch {}
+            }
 
             const row: PaymentRow = {
               boardName: board.name,
-              counterpartyName: counterparty.title || 'Wallet',
+              counterpartyName: fromCard.title || 'Wallet',
               amount: conn.amount || '0',
-              chain: String(isIncoming ? toCard.fields?.chain : fromCard.fields?.chain || ''),
+              chain: String(toCard.fields?.chain || ''),
               txHash: status?.txHash || null,
-              date: status?.updatedAt || 0,
+              date: status?.updatedAt || conn.updatedAt || 0,
               status: statusText,
               docName: conn.docName || null,
               payslipHtml: status?.payslipHtml || null,
-              direction: isIncoming ? 'incoming' : 'outgoing'
+              direction: 'incoming'
             }
 
-            if (isIncoming) {
-              incoming.push(row)
-            } else {
-              outgoing.push(row)
-            }
+            incoming.push(row)
           }
         }
 
@@ -142,9 +136,9 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
 
   const getTableHeaders = () => {
     if (activeTab === 'incoming') {
-      return ['Date', 'From', 'Amount', 'Status', 'Tx', '']
+      return ['Date', 'From', 'Amount', 'Document', 'Status', 'Tx', '']
     }
-    return ['Date', 'To', 'Amount', 'Status', 'Tx', '']
+    return ['Date', 'To', 'Amount', 'Document', 'Status', 'Tx', '']
   }
 
   return (
@@ -214,6 +208,18 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
                     <td className='px-6 py-3 text-ink/50 text-xs'>{new Date(row.date).toLocaleDateString()}</td>
                     <td className='px-6 py-3 text-ink/70 truncate max-w-[120px]'>{row.counterpartyName}</td>
                     <td className='px-6 py-3 font-mono text-ink/60'>{row.amount} USDC</td>
+                    <td className='px-6 py-3'>
+                      {row.docName ? (
+                        <button
+                          onClick={() => openPayslip(row)}
+                          className='text-[10px] text-mint hover:text-[#1B7A50] font-medium transition-colors'
+                        >
+                          {row.docName}
+                        </button>
+                      ) : (
+                        <span className='text-[10px] text-ink/20'>—</span>
+                      )}
+                    </td>
                     <td className='px-6 py-3'>{getStatusBadge(row.status)}</td>
                     <td className='px-6 py-3'>
                       {row.txHash ? (

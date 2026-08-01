@@ -41,7 +41,15 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
   const cardMap = new Map(cards.map((c) => [c.id, c]))
 
   const routes = connections
-    .filter((c) => c.payment || c.document)
+    .filter((c) => {
+      const from = cardMap.get(c.from)
+      const to = cardMap.get(c.to)
+      // Include regular payment/document connections
+      if (c.payment || c.document) return true
+      // Include invoice connections (wallet -> deposit)
+      if (from?.category === 'wallet' && to?.category === 'deposit' && c.document) return true
+      return false
+    })
     .map((conn) => {
       const from = cardMap.get(conn.from)
       const to = cardMap.get(conn.to)
@@ -54,18 +62,68 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
   const totalCount = routes.length
   const progress = totalCount > 0 ? (settledCount / totalCount) * 100 : 0
 
-  const isMyRoute = useCallback((fromCard: FlowCard | undefined) => {
-    if (!fromCard || fromCard.category !== 'wallet' || !walletState.address) return false
-    return String(fromCard.fields.address).toLowerCase() === walletState.address.toLowerCase()
+  // Check if current user is the sender (for pay flow) or receiver (for invoice flow)
+  const isMyRoute = useCallback((fromCard: FlowCard | undefined, toCard: FlowCard | undefined) => {
+    if (!walletState.address) return false
+    
+    // Pay flow: wallet → recipient - sender signs
+    if (fromCard?.category === 'wallet' && toCard?.category === 'recipient') {
+      return String(fromCard.fields.address).toLowerCase() === walletState.address.toLowerCase()
+    }
+    
+    // Invoice flow: deposit → wallet - receiver (company) signs
+    if (fromCard?.category === 'deposit' && toCard?.category === 'wallet') {
+      return String(toCard.fields.address).toLowerCase() === walletState.address.toLowerCase()
+    }
+    
+    return false
   }, [walletState.address])
 
   const handleSign = async (route: typeof routes[0]) => {
-    if (!route.conn.payment || !route.from || !route.to || !walletState.adapter) return
-    if (!isMyRoute(route.from)) return
+    if (!route.from || !route.to || !walletState.adapter) return
+    
+    // Determine flow type
+    const isInvoice = route.from.category === 'deposit' && route.to.category === 'wallet'
+    const isPayFlow = route.from.category === 'wallet' && route.to.category === 'recipient'
+    
+    // Check ownership
+    if (!isMyRoute(route.from, route.to)) return
+    
+    // Check flags
+    if (isPayFlow && !route.conn.payment) return
+    if (isInvoice && !route.conn.document) return
+
+    // Check delegation for invoice flow - fetch latest connection data
+    if (isInvoice) {
+      // Refresh connection data to get latest delegation status
+      try {
+        const connRes = await fetch(`${apiUrl}/api/connections?boardId=${boardId}`)
+        if (connRes.ok) {
+          const conns = await connRes.json()
+          const latestConn = conns.find((c: { id: string }) => c.id === route.conn.id)
+          if (latestConn && !latestConn.delegationEnabled) {
+            alert('Delegation is not enabled for this invoice. Please enable delegation in the Invoices page first.')
+            return
+          }
+        }
+      } catch {}
+    }
 
     const amount = route.conn.amount || '0'
-    const chain = String(route.to.fields.chain || 'Arc_Testnet')
-    const recipient = String(route.to.fields.address || '')
+    
+    // For pay flow: sender pays recipient
+    // For invoice flow: payer (deposit) pays company (wallet)
+    let sourceChain: string
+    let recipientAddress: string
+    
+    if (isPayFlow) {
+      sourceChain = String(route.to.fields.chain || 'Arc_Testnet')
+      recipientAddress = String(route.to.fields.address || '')
+    } else {
+      // Invoice flow: deposit wallet pays company wallet
+      sourceChain = String(route.from.fields.chain || 'Arc_Testnet')
+      recipientAddress = String(route.to.fields.address || '')
+    }
 
     setSigningId(route.conn.id)
 
@@ -85,15 +143,34 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
     } catch {}
 
     try {
-      const result = await spendFromUnified(walletState.adapter, amount, chain, recipient)
+      // For invoice flow, we need to use the deposit wallet's adapter
+      // For now, use current user's adapter (Payer should be logged in)
+      const result = await spendFromUnified(walletState.adapter, amount, sourceChain, recipientAddress)
 
       if (result.success) {
         // Render payslip HTML if document is attached
         let payslipHtml = null
         if (route.conn.document && route.conn.template) {
-          const template = DEFAULT_TEMPLATES.find((t) => t.id === route.conn.template)
-          if (template) {
-            payslipHtml = renderTemplate(template, {
+          // Try to find template from API first, then from defaults
+          let templateHtml = null
+          const defaultTemplate = DEFAULT_TEMPLATES.find((t) => t.id === route.conn.template)
+          if (defaultTemplate && defaultTemplate.html) {
+            templateHtml = defaultTemplate.html
+          } else {
+            try {
+              const templatesRes = await fetch(`${apiUrl}/api/templates`)
+              if (templatesRes.ok) {
+                const templates = await templatesRes.json()
+                const found = templates.find((t: { id: string }) => t.id === route.conn.template)
+                if (found && found.html) {
+                  templateHtml = found.html
+                }
+              }
+            } catch {}
+          }
+          if (templateHtml) {
+            payslipHtml = renderTemplate(templateHtml, {
+              company: 'Company',
               amount: amount || '0',
               sender: route.from?.title || 'Wallet',
               recipient: route.to?.title || 'Recipient',
@@ -177,7 +254,7 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
           </thead>
           <tbody>
             {routes.map((route, i) => {
-              const mine = isMyRoute(route.from)
+              const mine = isMyRoute(route.from, route.to)
               const status = route.status?.status
               return (
                 <tr key={route.conn.id} className='border-b border-ink/5 hover:bg-ink/3 transition-colors'>
@@ -202,7 +279,7 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
                     {getStatusPill(status)}
                   </td>
                   <td className='px-6 py-2'>
-                    {mine && route.conn.payment && status !== 'settled' && status !== 'failed' && (
+                    {mine && (route.conn.payment || route.conn.document) && status !== 'settled' && status !== 'failed' && (
                       <button
                         onClick={() => handleSign(route)}
                         disabled={signingId === route.conn.id}

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 1,
   "offset": 0,
   "schema": [
     {
@@ -127,7 +127,7 @@
       "namespace": "goji",
       "id": 8,
       "type": 1,
-      "version": 2,
+      "version": 1,
       "versionField": null,
       "indexes": [],
       "schema": "@goji/template",

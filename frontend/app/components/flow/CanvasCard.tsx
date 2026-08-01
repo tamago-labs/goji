@@ -46,8 +46,12 @@ export default function CanvasCard({
     ...(transform ? { transform: CSS.Translate.toString(transform) } : {})
   }
 
-  const canInput = card.category === 'recipient' || card.category === 'gate'
-  const canOutput = card.category === 'wallet' || card.category === 'gate'
+  // wallet: output + input (can send payments, can receive invoice payments)
+  // deposit: output only (sends from Unified Balance)
+  // recipient: input only (receives payments)
+  // gate: both
+  const canInput = card.category === 'wallet' || card.category === 'recipient' || card.category === 'gate'
+  const canOutput = card.category === 'wallet' || card.category === 'gate' || card.category === 'deposit'
   const isConnectTarget = connectFrom && connectFrom !== card.id && canInput
 
   return (
@@ -137,6 +141,20 @@ export default function CanvasCard({
           <div className='text-coral text-xs font-medium mt-1'>
             {card.fields.required} of {card.fields.total} required
           </div>
+        )}
+        {card.category === 'deposit' && (
+          <>
+            <div className='text-ink/40 text-xs truncate'>{card.fields.address || '0x...'}</div>
+            {card.fields.chain && (() => {
+              const ChainIcon = CHAIN_ICONS[String(card.fields.chain)]
+              return (
+                <div className='flex items-center gap-1 mt-1'>
+                  {ChainIcon && <ChainIcon variant='branded' size={10} />}
+                  <span className='text-[10px] text-ink/40'>{String(card.fields.chain).replace('_', ' ')}</span>
+                </div>
+              )
+            })()}
+          </>
         )}
       </div>
 

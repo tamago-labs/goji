@@ -4,7 +4,7 @@
 const { IndexEncoder, c, b4a } = require('hyperdb/runtime')
 const { version, getEncoding, setVersion } = require('./messages.js')
 
-const versions = { schema: version, db: 2 }
+const versions = { schema: version, db: 1 }
 
 // '@goji/boards' collection key
 const collection0_key = new IndexEncoder([
@@ -579,7 +579,7 @@ function collection8_reconstruct_key (keyBuf) {
 const collection8 = {
   name: '@goji/templates',
   id: 8,
-  version: 2,
+  version: 1,
   encodeKey (record) {
     const key = [record.id]
     return collection8_key.encode(key)

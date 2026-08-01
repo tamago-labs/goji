@@ -63,7 +63,8 @@ schema.register({
     { name: 'template', type: 'string' },
     { name: 'customDoc', type: 'string' },
     { name: 'docName', type: 'string' },
-    { name: 'txHash', type: 'string' }
+    { name: 'txHash', type: 'string' },
+    { name: 'delegationEnabled', type: 'int' }
   ]
 })
 
@@ -130,12 +131,13 @@ schema.register({
     { name: 'label', type: 'string' },
     { name: 'updatedAt', type: 'int', required: true },
     { name: 'amount', type: 'string' },
-    { name: 'payment', type: 'buffer' },
-    { name: 'document', type: 'buffer' },
+    { name: 'payment', type: 'int' },
+    { name: 'document', type: 'int' },
     { name: 'template', type: 'string' },
     { name: 'customDoc', type: 'string' },
     { name: 'docName', type: 'string' },
-    { name: 'txHash', type: 'string' }
+    { name: 'txHash', type: 'string' },
+    { name: 'delegationEnabled', type: 'int' }
   ]
 })
 

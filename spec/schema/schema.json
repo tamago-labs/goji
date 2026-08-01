@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 1,
   "schema": [
     {
       "name": "writer",
@@ -208,6 +208,11 @@
         {
           "name": "txHash",
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "delegationEnabled",
+          "type": "int",
           "version": 1
         }
       ]
@@ -427,12 +432,12 @@
         },
         {
           "name": "payment",
-          "type": "buffer",
+          "type": "int",
           "version": 1
         },
         {
           "name": "document",
-          "type": "buffer",
+          "type": "int",
           "version": 1
         },
         {
@@ -453,6 +458,11 @@
         {
           "name": "txHash",
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "delegationEnabled",
+          "type": "int",
           "version": 1
         }
       ]
@@ -637,51 +647,51 @@
           "name": "id",
           "required": true,
           "type": "buffer",
-          "version": 2
+          "version": 1
         },
         {
           "name": "name",
           "required": true,
           "type": "string",
-          "version": 2
+          "version": 1
         },
         {
           "name": "companyName",
           "type": "string",
-          "version": 2
+          "version": 1
         },
         {
           "name": "fields",
           "type": "json",
-          "version": 2
+          "version": 1
         },
         {
           "name": "html",
           "required": true,
           "type": "string",
-          "version": 2
+          "version": 1
         },
         {
           "name": "isDefault",
           "type": "int",
-          "version": 2
+          "version": 1
         },
         {
           "name": "createdBy",
           "type": "buffer",
-          "version": 2
+          "version": 1
         },
         {
           "name": "createdAt",
           "required": true,
           "type": "int",
-          "version": 2
+          "version": 1
         },
         {
           "name": "updatedAt",
           "required": true,
           "type": "int",
-          "version": 2
+          "version": 1
         }
       ]
     },
@@ -695,7 +705,7 @@
           "name": "id",
           "required": true,
           "type": "buffer",
-          "version": 2
+          "version": 1
         }
       ]
     }

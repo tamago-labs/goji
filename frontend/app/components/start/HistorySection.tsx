@@ -20,6 +20,7 @@ interface PaymentRow {
   docName: string | null
   customDoc: string | null
   template: string | null
+  merkleRoot: string | null
   payslipHtml: string | null
   direction: 'incoming' | 'outgoing'
 }
@@ -102,6 +103,7 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
               docName: conn.docName || null,
               customDoc: conn.customDoc || null,
               template: conn.template || null,
+              merkleRoot: status?.merkleRoot || null,
               payslipHtml: status?.payslipHtml || null,
               direction: isSender ? 'outgoing' : 'incoming'
             }
@@ -194,9 +196,9 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
 
   const getTableHeaders = () => {
     if (activeTab === 'incoming') {
-      return ['Date', 'From', 'Amount', 'Document', 'Status', 'Tx', '']
+      return ['Date', 'From', 'Amount', 'Document', 'Status', 'Tx', 'Proof', '']
     }
-    return ['Date', 'To', 'Amount', 'Document', 'Status', 'Tx', '']
+    return ['Date', 'To', 'Amount', 'Document', 'Status', 'Tx', 'Proof', '']
   }
 
   return (
@@ -284,6 +286,13 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
                         <span className='text-[10px] text-ink/30 font-mono'>{row.txHash.slice(0, 8)}...</span>
                       ) : (
                         <span className='text-[10px] text-ink/20'>—</span>
+                      )}
+                    </td>
+                    <td className='px-6 py-3'>
+                      {row.merkleRoot ? (
+                        <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Anchored</span>
+                      ) : (
+                        <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-ink/10 text-ink/40'>None</span>
                       )}
                     </td>
                     <td className='px-6 py-3'>

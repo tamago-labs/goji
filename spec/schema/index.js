@@ -474,15 +474,17 @@ const encoding17 = {
     c.buffer.preencode(state, m.flowId)
     c.string.preencode(state, m.routeId)
     c.string.preencode(state, m.status)
-    state.end++ // max flag is 4 so always one byte
+    state.end++ // max flag is 8 so always one byte
 
     if (m.txHash) c.string.preencode(state, m.txHash)
     if (m.error) c.string.preencode(state, m.error)
     if (m.payslipHtml) c.string.preencode(state, m.payslipHtml)
+    if (m.merkleRoot) c.string.preencode(state, m.merkleRoot)
     c.int.preencode(state, m.updatedAt)
   },
   encode(state, m) {
-    const flags = (m.txHash ? 1 : 0) | (m.error ? 2 : 0) | (m.payslipHtml ? 4 : 0)
+    const flags =
+      (m.txHash ? 1 : 0) | (m.error ? 2 : 0) | (m.payslipHtml ? 4 : 0) | (m.merkleRoot ? 8 : 0)
 
     c.buffer.encode(state, m.id)
     c.buffer.encode(state, m.flowId)
@@ -493,6 +495,7 @@ const encoding17 = {
     if (m.txHash) c.string.encode(state, m.txHash)
     if (m.error) c.string.encode(state, m.error)
     if (m.payslipHtml) c.string.encode(state, m.payslipHtml)
+    if (m.merkleRoot) c.string.encode(state, m.merkleRoot)
     c.int.encode(state, m.updatedAt)
   },
   decode(state) {
@@ -510,6 +513,7 @@ const encoding17 = {
       txHash: (flags & 1) !== 0 ? c.string.decode(state) : null,
       error: (flags & 2) !== 0 ? c.string.decode(state) : null,
       payslipHtml: (flags & 4) !== 0 ? c.string.decode(state) : null,
+      merkleRoot: (flags & 8) !== 0 ? c.string.decode(state) : null,
       updatedAt: c.int.decode(state)
     }
   }

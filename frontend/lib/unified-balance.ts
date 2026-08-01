@@ -344,3 +344,49 @@ export async function getDelegateStatus(
     return 'error'
   }
 }
+
+/**
+ * Call a contract function using the adapter's wallet client
+ */
+export async function callContract(
+  adapter: Adapter,
+  contractAddress: `0x${string}`,
+  abi: any[],
+  functionName: string,
+  args: any[]
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  const appKit = getKit()
+  if (!appKit) {
+    return { success: false, error: 'AppKit not available' }
+  }
+
+  try {
+    // Get the wallet client from the adapter's internal state
+    // The adapter has a getWalletClient method that we can use
+    const walletClient = await (adapter as any).getWalletClient?.({
+      chain: 'Arc_Testnet',
+      account: (adapter as any).address
+    })
+    
+    if (!walletClient) {
+      return { success: false, error: 'Wallet client not available' }
+    }
+
+    // Encode the function call
+    const { encodeFunctionData } = await import('viem')
+    const data = encodeFunctionData({ abi, functionName, args })
+
+    // Send the transaction
+    const tx = await walletClient.sendTransaction({
+      to: contractAddress,
+      data,
+      chain: undefined // Will use the chain from the adapter
+    })
+
+    return { success: true, txHash: tx }
+  } catch (err: any) {
+    const errMsg = err?.message || String(err)
+    console.error('[unified-balance] callContract error:', errMsg)
+    return { success: false, error: errMsg }
+  }
+}

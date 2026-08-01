@@ -2,10 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
+import { keccak256, toBytes } from 'viem'
 import { spendFromUnified } from '../../../lib/unified-balance'
 import { renderTemplate, DEFAULT_TEMPLATES } from '../../../lib/payslipTemplates'
+import { buildMerkleTree, getMerkleRoot } from '../../../lib/merkle'
+import { GOJIPROOF_ABI } from '../../../lib/gojiProof'
 import { useWallet } from '../../providers/WalletProvider'
+import { usePublicClient, useWalletClient } from 'wagmi'
 import { type FlowCard, type Connection } from './types'
+
+// GojiProof contract address on Arc Testnet
+const GOJIPROOF_ADDRESS = '0x9465a4C246D44F32F391Ebda165Acb12886746Ca' as `0x${string}`
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
@@ -36,6 +43,8 @@ interface FlowOverlayProps {
 
 export default function FlowOverlay({ boardId, cards, connections, flowStatuses, apiUrl, onStatusUpdate }: FlowOverlayProps) {
   const { state: walletState, dispatch } = useWallet()
+  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient()
   const [signingId, setSigningId] = useState<string | null>(null)
 
   const cardMap = new Map(cards.map((c) => [c.id, c]))
@@ -143,11 +152,21 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
     } catch {}
 
     try {
+      console.log('[FlowOverlay] calling spendFromUnified...')
       // For invoice flow, we need to use the deposit wallet's adapter
       // For now, use current user's adapter (Payer should be logged in)
       const result = await spendFromUnified(walletState.adapter, amount, sourceChain, recipientAddress)
+      console.log('[FlowOverlay] spendFromUnified result:', result)
 
       if (result.success) {
+        // Parse customDoc for field values
+        let customFields: Record<string, string> = {}
+        if (route.conn.customDoc) {
+          try {
+            customFields = JSON.parse(route.conn.customDoc)
+          } catch {}
+        }
+        
         // Render payslip HTML if document is attached
         let payslipHtml = null
         if (route.conn.document && route.conn.template) {
@@ -169,14 +188,6 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
             } catch {}
           }
           if (templateHtml) {
-            // Parse customDoc for field values
-            let customFields: Record<string, string> = {}
-            if (route.conn.customDoc) {
-              try {
-                customFields = JSON.parse(route.conn.customDoc)
-              } catch {}
-            }
-            
             payslipHtml = renderTemplate(templateHtml, {
               company: 'Company',
               amount: amount || '0',
@@ -189,15 +200,54 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
           }
         }
 
+        console.log('[FlowOverlay] about to generate merkle root')
+
+        // Generate Merkle root from document values
+        let merkleRoot = null
+        try {
+          const documentValues = [
+            'Company',  // companyName
+            route.to?.title || 'Recipient',
+            amount || '0',
+            new Date().toLocaleDateString(),
+            result.txHash || 'N/A',
+            ...Object.values(customFields)
+          ]
+          const tree = buildMerkleTree(documentValues)
+          merkleRoot = getMerkleRoot(tree)
+        } catch (err) {
+          console.error('[FlowOverlay] merkle root generation failed:', err)
+        }
+
+        // Anchor Merkle root on GojiProof contract
+        if (publicClient && walletClient) {
+          try {
+            const connectionId = keccak256(toBytes(route.conn.id))
+            const { request } = await publicClient.simulateContract({
+              address: GOJIPROOF_ADDRESS,
+              abi: GOJIPROOF_ABI,
+              functionName: 'anchorRoot',
+              args: [merkleRoot, connectionId],
+              account: walletClient.account
+            })
+            await walletClient.writeContract(request)
+          } catch (err) {
+            console.error('[FlowOverlay] GojiProof.anchorRoot() failed:', err)
+          }
+        } else {
+          console.log('[FlowOverlay] skipping anchorRoot - missing publicClient or walletClient')
+          console.log('[FlowOverlay] publicClient:', !!publicClient, 'walletClient:', !!walletClient)
+        }
+
         // Update to settled
         const existing = flowStatuses.find((s) => s.routeId === route.conn.id)
         if (existing) {
           const res = await fetch(`${apiUrl}/api/flow-status/${existing.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'settled', txHash: result.txHash, payslipHtml })
+            body: JSON.stringify({ status: 'settled', txHash: result.txHash, payslipHtml, merkleRoot })
           })
-          onStatusUpdate({ ...existing, status: 'settled', txHash: result.txHash || undefined, payslipHtml: payslipHtml || undefined })
+          onStatusUpdate({ ...existing, status: 'settled', txHash: result.txHash || undefined, payslipHtml: payslipHtml || undefined, merkleRoot: merkleRoot || undefined })
         }
       } else {
         const existing = flowStatuses.find((s) => s.routeId === route.conn.id)
@@ -299,7 +349,7 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
                     {getStatusPill(displayStatus)}
                   </td>
                   <td className='px-6 py-2'>
-                    {mine && (route.conn.payment || route.conn.document) && status !== 'settled' && status !== 'failed' && delegationEnabled && (
+                    {mine && (route.conn.payment || route.conn.document) && status !== 'settled' && status !== 'failed' && (isInvoice ? delegationEnabled : true) && (
                       <button
                         onClick={() => handleSign(route)}
                         disabled={signingId === route.conn.id}

@@ -24,10 +24,9 @@ function getActionLabel(conn: Connection, cards: FlowCard[]): string {
   const isInvoice = fromCard?.category === 'deposit' && toCard?.category === 'wallet'
   
   if (isInvoice) {
-    parts.push(conn.docName || 'Invoice')
+    parts.push('Receive Payment')
   } else {
-    if (conn.payment) parts.push('Payment')
-    if (conn.document) parts.push(conn.docName || 'Document')
+    if (conn.payment) parts.push('Send Payment')
   }
   
   return parts.join(' + ') || '—'

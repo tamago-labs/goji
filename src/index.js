@@ -978,6 +978,7 @@ async function main() {
         txHash: r.txHash || null,
         error: r.error || null,
         payslipHtml: r.payslipHtml || null,
+        merkleRoot: r.merkleRoot || null,
         updatedAt: r.updatedAt
       }))
     res.json(statuses)
@@ -1027,6 +1028,7 @@ async function main() {
         txHash: patch.txHash || existing.txHash,
         error: patch.error || existing.error,
         payslipHtml: patch.payslipHtml || existing.payslipHtml || null,
+        merkleRoot: patch.merkleRoot || existing.merkleRoot || null,
         updatedAt: patch.updatedAt
       }))
       await room.base.append(GojiDispatch.encode('@goji/set-flow-status', {
@@ -1037,6 +1039,7 @@ async function main() {
         txHash: patch.txHash || existing.txHash,
         error: patch.error || existing.error,
         payslipHtml: patch.payslipHtml || existing.payslipHtml || null,
+        merkleRoot: patch.merkleRoot || existing.merkleRoot || null,
         updatedAt: patch.updatedAt
       }))
     }

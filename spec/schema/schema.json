@@ -616,6 +616,11 @@
           "version": 1
         },
         {
+          "name": "merkleRoot",
+          "type": "string",
+          "version": 1
+        },
+        {
           "name": "updatedAt",
           "required": true,
           "type": "int",

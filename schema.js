@@ -186,6 +186,7 @@ schema.register({
     { name: 'txHash', type: 'string' },
     { name: 'error', type: 'string' },
     { name: 'payslipHtml', type: 'string' },
+    { name: 'merkleRoot', type: 'string' },
     { name: 'updatedAt', type: 'int', required: true }
   ]
 })

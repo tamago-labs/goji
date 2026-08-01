@@ -58,7 +58,7 @@ export default function BoardsGrid({ boards, disabled, flowStatuses = [] }: Boar
   return (
     <div>
       <div className='flex items-center justify-between mb-4'>
-        <h2 className='font-display text-xl font-semibold'>Boards</h2>
+        <h2 className='font-display text-xl font-semibold'>Workflows</h2>
         <Link
           href='/flow/new?type=blank'
           className={`flex items-center gap-1.5 px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}

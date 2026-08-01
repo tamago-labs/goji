@@ -36,6 +36,11 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
   useEffect(() => {
     async function load() {
       try {
+        // Get user's registered wallets
+        const walletsRes = await fetch(`${apiUrl}/api/wallets`)
+        const wallets = walletsRes.ok ? await walletsRes.json() : []
+        const myAddresses = new Set(wallets.map((w: { address: string }) => w.address.toLowerCase()))
+
         const boardsRes = await fetch(`${apiUrl}/api/boards`)
         if (!boardsRes.ok) { setLoading(false); return }
         const boards = await boardsRes.json()
@@ -65,6 +70,14 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
             const toCard = cardMap.get(conn.to)
             const fromCard = cardMap.get(conn.from)
             if (!toCard || !fromCard) continue
+
+            // Check if user is involved (sender or receiver)
+            const isSender = myAddresses.has(String(fromCard.fields?.address || '').toLowerCase())
+            const isReceiver = myAddresses.has(String(toCard.fields?.address || '').toLowerCase())
+            
+            // If user has no wallets, show all (fallback)
+            // If user has wallets, only show where they're involved
+            if (myAddresses.size > 0 && !isSender && !isReceiver) continue
 
             const status = statuses.find((s: { routeId: string }) => s.routeId === conn.id)
             const statusText = status?.status || 'pending'

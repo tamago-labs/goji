@@ -328,10 +328,10 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                 </thead>
                 <tbody>
                   {outgoingRoutes.slice(0, 5).map((route, i) => (
-                    <Link
+                    <tr
                       key={i}
-                      href={`/flow/${route.boardId}`}
-                      className='table-row hover:bg-ink/3 transition-colors border-b border-ink/5 last:border-0'
+                      onClick={() => window.location.href = `/flow/${route.boardId}`}
+                      className='hover:bg-ink/3 transition-colors border-b border-ink/5 last:border-0 cursor-pointer'
                     >
                       <td className='px-6 py-3 text-ink/70'>{route.boardName}</td>
                       <td className='px-6 py-3 text-ink/60 truncate max-w-[120px]'>{route.recipientName}</td>
@@ -347,7 +347,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                           {route.status === 'settled' ? 'Settled' : route.status === 'failed' ? 'Failed' : 'Pending'}
                         </span>
                       </td>
-                    </Link>
+                    </tr>
                   ))}
                 </tbody>
               </table>

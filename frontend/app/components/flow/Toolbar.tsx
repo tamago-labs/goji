@@ -8,12 +8,14 @@ import UsernameModal from '../start/UsernameModal'
 import DepositSpendModal from '../start/DepositSpendModal'
 import AddWalletPopover from './AddWalletPopover'
 import AddRecipientPopover from './AddRecipientPopover'
+import AddDepositPopover from './AddDepositPopover'
 
 interface ToolbarProps {
   flowName: string
   onNameChange: (name: string) => void
   onAddWallet: (wallet: { id: string; address: string; name: string | null; verified?: boolean }) => void
   onAddRecipient: (recipient: { address: string; chain: string; type: 'verified' | 'custom'; name: string }) => void
+  onAddDeposit: (deposit: { id: string; address: string; chain: string; name: string | null }) => void
   onStart: () => void
   onStop: () => void
   flowActive: boolean
@@ -29,6 +31,7 @@ export default function Toolbar({
   onNameChange,
   onAddWallet,
   onAddRecipient,
+  onAddDeposit,
   onStart,
   onStop,
   flowActive,
@@ -45,6 +48,7 @@ export default function Toolbar({
   const [showInvite, setShowInvite] = useState(false)
   const [showAddWallet, setShowAddWallet] = useState(false)
   const [showAddRecipient, setShowAddRecipient] = useState(false)
+  const [showAddDeposit, setShowAddDeposit] = useState(false)
   const [usernameInput, setUsernameInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -113,6 +117,25 @@ export default function Toolbar({
                     onClose={() => setShowAddRecipient(false)}
                     apiUrl={apiUrl}
                     onAdd={(recipient) => { onAddRecipient(recipient); setShowAddRecipient(false) }}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className='relative'>
+              <button
+                onClick={() => setShowAddDeposit(!showAddDeposit)}
+                className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+              >
+                + Deposit Wallet
+              </button>
+              <AnimatePresence>
+                {showAddDeposit && (
+                  <AddDepositPopover
+                    isOpen={showAddDeposit}
+                    onClose={() => setShowAddDeposit(false)}
+                    apiUrl={apiUrl}
+                    onSelect={(wallet) => { onAddDeposit(wallet); setShowAddDeposit(false) }}
                   />
                 )}
               </AnimatePresence>

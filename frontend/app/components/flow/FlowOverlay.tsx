@@ -221,7 +221,9 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
       case 'settled': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Settled</span>
       case 'signing': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700'>Signing</span>
       case 'sending': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700'>Sending</span>
-      case 'failed': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-coral/15 text-[#C24E33]'>Failed</span>
+      case 'approved': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Approved</span>
+      case 'awaiting': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700'>Awaiting Approval</span>
+      case 'failed': return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-coral/15 text-coral'>Failed</span>
       default: return <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-ink/10 text-ink/40'>Pending</span>
     }
   }
@@ -256,6 +258,15 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
             {routes.map((route, i) => {
               const mine = isMyRoute(route.from, route.to)
               const status = route.status?.status
+              const isInvoice = route.from?.category === 'deposit' && route.to?.category === 'wallet'
+              const delegationEnabled = route.conn.delegationEnabled
+              
+              // Determine display status for invoice flow
+              let displayStatus = status
+              if (isInvoice && status !== 'settled') {
+                displayStatus = delegationEnabled ? 'approved' : 'awaiting'
+              }
+
               return (
                 <tr key={route.conn.id} className='border-b border-ink/5 hover:bg-ink/3 transition-colors'>
                   <td className='px-6 py-2 text-ink/30 font-mono text-xs'>{i + 1}</td>
@@ -276,10 +287,10 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
                     {route.conn.amount ? `${route.conn.amount} USDC` : '—'}
                   </td>
                   <td className='px-6 py-2'>
-                    {getStatusPill(status)}
+                    {getStatusPill(displayStatus)}
                   </td>
                   <td className='px-6 py-2'>
-                    {mine && (route.conn.payment || route.conn.document) && status !== 'settled' && status !== 'failed' && (
+                    {mine && (route.conn.payment || route.conn.document) && status !== 'settled' && status !== 'failed' && delegationEnabled && (
                       <button
                         onClick={() => handleSign(route)}
                         disabled={signingId === route.conn.id}

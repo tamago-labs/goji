@@ -28,7 +28,6 @@ const NAV_ITEMS = [
   // All roles
   { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['employer', 'payee', 'payer', 'partner'] },
   // Company only
-  { href: '/start/ai-assistant', label: 'AI Assistant', icon: Bot, roles: ['employer'] },
   { href: '/start/receivables', label: 'Receivables', icon: TrendingUp, roles: ['employer'] },
   // Admin
   { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['employer'] },

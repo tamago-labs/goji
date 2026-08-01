@@ -282,8 +282,10 @@ export default function InvoicesPage() {
     if (conn.customDoc) {
       try {
         customFields = JSON.parse(conn.customDoc)
+        console.log('[InvoicePreview] customDoc:', conn.customDoc, 'parsed:', customFields)
       } catch {}
     }
+    console.log('[InvoicePreview] conn.customDoc:', conn.customDoc)
 
     // Render template with custom fields
     const html = renderTemplate(templateHtml, {

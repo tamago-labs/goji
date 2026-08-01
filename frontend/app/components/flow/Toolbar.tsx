@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Play } from 'lucide-react'
 import UserMenuPopover from '../start/UserMenuPopover'
 import UsernameModal from '../start/UsernameModal'
 import DepositSpendModal from '../start/DepositSpendModal'
@@ -87,9 +88,10 @@ export default function Toolbar({
             <div className='relative'>
               <button
                 onClick={() => setShowAddWallet(!showAddWallet)}
-                className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+                className='flex items-center gap-1.5 px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
               >
-                + Add Wallet
+                <Plus className='w-3.5 h-3.5' />
+                Company Wallet
               </button>
               <AnimatePresence>
                 {showAddWallet && (
@@ -106,9 +108,10 @@ export default function Toolbar({
             <div className='relative'>
               <button
                 onClick={() => setShowAddRecipient(!showAddRecipient)}
-                className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+                className='flex items-center gap-1.5 px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
               >
-                + Add Recipient
+                <Plus className='w-3.5 h-3.5' />
+                Recipient Wallet
               </button>
               <AnimatePresence>
                 {showAddRecipient && (
@@ -125,9 +128,10 @@ export default function Toolbar({
             <div className='relative'>
               <button
                 onClick={() => setShowAddDeposit(!showAddDeposit)}
-                className='px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+                className='flex items-center gap-1.5 px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
               >
-                + Deposit Wallet
+                <Plus className='w-3.5 h-3.5' />
+                Deposit Wallet
               </button>
               <AnimatePresence>
                 {showAddDeposit && (
@@ -153,8 +157,9 @@ export default function Toolbar({
         ) : (
           <button
             onClick={onStart}
-            className='px-3 py-1.5 bg-mint text-white text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+            className='flex items-center gap-1.5 px-3 py-1.5 bg-mint text-white text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
           >
+            <Play className='w-3.5 h-3.5' />
             Start
           </button>
         )}

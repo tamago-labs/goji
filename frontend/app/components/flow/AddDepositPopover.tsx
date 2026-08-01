@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 interface WalletData {
   id: string
@@ -20,8 +20,6 @@ interface AddDepositPopoverProps {
   onSelect: (wallet: WalletData & { chain: string }) => void
 }
 
-type Tab = 'wallets' | 'custom'
-
 const CHAINS = [
   { id: 'Arc_Testnet', label: 'Arc Testnet' },
   { id: 'Base_Sepolia', label: 'Base Sepolia' },
@@ -32,8 +30,6 @@ export default function AddDepositPopover({ isOpen, onClose, apiUrl, onSelect }:
   const [wallets, setWallets] = useState<WalletData[]>([])
   const [search, setSearch] = useState('')
   const [selectedWallet, setSelectedWallet] = useState<WalletData | null>(null)
-  const [activeTab, setActiveTab] = useState<Tab>('wallets')
-  const [customAddress, setCustomAddress] = useState('')
   const [selectedChain, setSelectedChain] = useState(CHAINS[0])
 
   useEffect(() => {
@@ -59,29 +55,12 @@ export default function AddDepositPopover({ isOpen, onClose, apiUrl, onSelect }:
   }, {} as Record<string, WalletData[]>)
 
   const handleAdd = () => {
-    if (activeTab === 'wallets' && selectedWallet) {
+    if (selectedWallet) {
       onSelect({ ...selectedWallet, chain: selectedChain.id })
       setSelectedWallet(null)
       onClose()
-    } else if (activeTab === 'custom' && customAddress) {
-      onSelect({
-        id: '',
-        address: customAddress,
-        chain: selectedChain.id,
-        chainType: null,
-        walletType: null,
-        name: 'Custom Wallet',
-        owner: '',
-        verified: false
-      })
-      setCustomAddress('')
-      onClose()
     }
   }
-
-  const canAdd = activeTab === 'wallets'
-    ? selectedWallet !== null
-    : customAddress.length > 10
 
   if (!isOpen) return null
 
@@ -93,80 +72,23 @@ export default function AddDepositPopover({ isOpen, onClose, apiUrl, onSelect }:
       transition={{ duration: 0.15 }}
       className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 w-[300px] z-50 overflow-hidden'
     >
-      {/* Tabs */}
-      <div className='flex border-b border-ink/8'>
-        {(['wallets', 'custom'] as Tab[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => { setActiveTab(tab); setSelectedWallet(null) }}
-            className={`flex-1 py-2.5 text-[11px] font-medium transition-colors ${
-              activeTab === tab
-                ? 'text-ink border-b-2 border-ink'
-                : 'text-ink/40 hover:text-ink/60'
-            }`}
-          >
-            {tab === 'wallets' ? 'Verified Wallets' : 'Custom Address'}
-          </button>
-        ))}
+      <div className='px-4 py-3 border-b border-ink/8'>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder='Search wallets...'
+          className='w-full text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-1.5 focus:outline-none focus:border-ink/20'
+        />
       </div>
 
-      {activeTab === 'wallets' ? (
-        <>
-          <div className='px-4 py-3 border-b border-ink/8'>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder='Search wallets...'
-              className='w-full text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-1.5 focus:outline-none focus:border-ink/20'
-            />
-          </div>
-          <div className='max-h-[200px] overflow-y-auto p-2'>
-            {Object.keys(grouped).length === 0 ? (
-              <div className='text-center py-6 text-ink/30 text-xs'>No wallets found</div>
-            ) : (
-              Object.entries(grouped).map(([owner, ownerWallets]) => (
-                <div key={owner} className='mb-2'>
-                  <p className='text-[10px] text-ink/40 font-medium px-2 py-1'>{owner}</p>
-                  {ownerWallets.map((w) => (
-                    <div
-                      key={w.id}
-                      onClick={() => setSelectedWallet(w)}
-                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
-                        selectedWallet?.id === w.id ? 'bg-mint/10 ring-1 ring-mint/30' : 'hover:bg-ink/5'
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${w.verified ? 'bg-[#28C840]' : 'bg-ink/20'}`} />
-                      <span className='text-xs text-ink/70 truncate'>{w.name || 'Unnamed'}</span>
-                    </div>
-                  ))}
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      ) : (
-        <div className='px-4 py-3'>
-          <label className='block mb-3'>
-            <span className='text-[10px] text-ink/40 mb-1.5 block'>Wallet Address</span>
-            <input
-              value={customAddress}
-              onChange={(e) => setCustomAddress(e.target.value)}
-              placeholder='0x...'
-              className='w-full text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-1.5 focus:outline-none focus:border-ink/20 font-mono'
-            />
-          </label>
-        </div>
-      )}
-
-      {/* Chain selector */}
-      <div className='px-4 py-2 border-t border-ink/8'>
+      <div className='px-4 py-2 border-b border-ink/8'>
         <label className='block'>
-          <span className='text-[10px] text-ink/40 mb-1.5 block'>Target Chain</span>
+          <span className='text-[10px] text-ink/40 mb-1.5 block'>Chain</span>
           <div className='relative'>
             <select
               value={selectedChain.id}
               onChange={(e) => setSelectedChain(CHAINS.find((c) => c.id === e.target.value) || CHAINS[0])}
-              className='w-full text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-1.5 appearance-none focus:outline-none focus:border-ink/20'
+              className='w-full text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-1.5 appearance-none focus:outline-none'
             >
               {CHAINS.map((chain) => (
                 <option key={chain.id} value={chain.id}>{chain.label}</option>
@@ -179,10 +101,34 @@ export default function AddDepositPopover({ isOpen, onClose, apiUrl, onSelect }:
         </label>
       </div>
 
+      <div className='max-h-[200px] overflow-y-auto p-2'>
+        {Object.keys(grouped).length === 0 ? (
+          <div className='text-center py-6 text-ink/30 text-xs'>No wallets found</div>
+        ) : (
+          Object.entries(grouped).map(([owner, ownerWallets]) => (
+            <div key={owner} className='mb-2'>
+              <p className='text-[10px] text-ink/40 font-medium px-2 py-1'>{owner}</p>
+              {ownerWallets.map((w) => (
+                <div
+                  key={w.id}
+                  onClick={() => setSelectedWallet(w)}
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                    selectedWallet?.id === w.id ? 'bg-mint/10 ring-1 ring-mint/30' : 'hover:bg-ink/5'
+                  }`}
+                >
+                  <span className='w-2 h-2 rounded-full flex-shrink-0 bg-[#28C840]' />
+                  <span className='text-xs text-ink/70 truncate'>{w.name || 'Unnamed'}</span>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+
       <div className='border-t border-ink/8 p-3'>
         <button
           onClick={handleAdd}
-          disabled={!canAdd}
+          disabled={!selectedWallet}
           className='w-full py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-30'
         >
           Add Deposit Wallet

@@ -2,12 +2,12 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Settings, FileText } from 'lucide-react'
+import { Users, Bot, FileText } from 'lucide-react'
 
 const ORG_ITEMS = [
   { href: '/start/organization/members', label: 'Members', icon: Users },
   { href: '/start/organization/templates', label: 'Templates', icon: FileText },
-  { href: '/start/organization/settings', label: 'Settings', icon: Settings, disabled: true },
+  { href: '/start/organization/ai-assistant', label: 'AI Assistant', icon: Bot },
 ]
 
 export default function OrganizationLayout({ children }: { children: React.ReactNode }) {

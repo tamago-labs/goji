@@ -169,13 +169,22 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
             } catch {}
           }
           if (templateHtml) {
+            // Parse customDoc for field values
+            let customFields: Record<string, string> = {}
+            if (route.conn.customDoc) {
+              try {
+                customFields = JSON.parse(route.conn.customDoc)
+              } catch {}
+            }
+            
             payslipHtml = renderTemplate(templateHtml, {
               company: 'Company',
               amount: amount || '0',
               sender: route.from?.title || 'Wallet',
               recipient: route.to?.title || 'Recipient',
               date: new Date().toLocaleDateString(),
-              txHash: result.txHash || 'N/A'
+              txHash: result.txHash || 'N/A',
+              ...customFields
             })
           }
         }

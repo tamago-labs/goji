@@ -1,8 +1,8 @@
-# Goji: Visual Payment Canvas for DAOs & Teams
+# Goji — The P2P Origination Layer Built on Arc
 
-**Collaborative USDC flows • Payroll • Treasury • Arc-native cross-chain • P2P & non-custodial**
+**Private Payments. Public Proof.**
 
-<img width="886" height="408" alt="Screenshot 2026-07-26 085530" src="https://github.com/user-attachments/assets/c17d5a2c-1245-41dd-8625-52e4f4f13f53" />
+<img width="886" height="408" alt="Goji" src="https://github.com/user-attachments/assets/c17d5a2c-1245-41dd-8625-52e4f4f13f53" />
 
 ## Quick Links
 
@@ -10,63 +10,70 @@
 - **Demo Video:** https://www.youtube.com/watch?v=YfxArY9uQQo
 - **Presentation:** https://canva.link/7z2iw3keeii3uwc
 
-Goji is a collaborative workspace where teams review, approve, and execute USDC payments with attached payslips and documents. Built on Arc, it streamlines cross-chain payroll and payment operations into an interactive, visual workflow.
-
-Under the hood, Goji combines Circle Gateway's unified USDC balance with Pear P2P's real-time state synchronization and local document transfer. Teams can chat, approve flows, and send payslips directly to payees — completely serverless, with zero data collection or central infrastructure.
+Goji is a P2P payment origination layer built on Arc. Businesses run payroll, contractor payments, and invoices in a private workspace. Every settlement creates verifiable proof on Arc, enabling them to originate receivables and other real-world assets for financial partners.
 
 ---
 
 ## The Problem
 
-Today's team payment operations suffer from three major bottlenecks:
+Traditional businesses generate financial records through disconnected systems:
 
-- **Context-Free Workflows:** Payments are disconnected from contracts and invoices. Teams must manually match spreadsheet rows to raw wallet addresses, making reviews slow and error-prone.
+- **Payroll software** — siloed from other payments
+- **Spreadsheets** — manual, error-prone, not verifiable
+- **Email approvals** — no audit trail
+- **Banking systems** — isolated, no proof of payment
 
-- **Data Privacy & GDPR Risk:** Storing employee details, invoices, and pay rates across spreadsheets and centralized platforms exposes sensitive data to third-party risks.
+These records are difficult to verify and expensive to underwrite.
 
-- **Multi-Chain & Admin Overhead:** Managing single-chain transfers across multiple networks requires constant bridging, while manually issuing pay receipts adds hours of overhead.
+---
 
 ## What Goji Does
 
-Goji transforms complex payroll and team payouts into an interactive, visual payment canvas. Instead of wrestling with spreadsheet rows and copy-pasting raw wallet addresses, teams can visually map out connected payment flows, assign amounts, attach contracts or invoices directly to transfers, and review execution paths together in real time.
+Goji creates a private payment workspace where businesses, counterparties, and financial partners collaborate through a permissioned P2P network.
 
-Every co-signer, finance lead, and payee gets complete context on the same canvas before signing a single transaction hash. Once approved, payments settle cross-chain in USDC via Circle Gateway, while auto-generated payslips and encrypted documents are delivered directly to recipients over Pear P2P — keeping your sensitive payroll data off central servers and GDPR-clean by design.
+**Private Layer:** Payroll, contractor payments, invoices, and vendor payments stay between authorized participants.
+
+**Verification Layer:** Every payment generates cryptographic proof — Merkle roots, signatures, audit trails — without exposing sensitive data.
+
+**Settlement Layer:** USDC payments settle on Arc with on-chain proof anchoring.
+
+**Financial Layer:** Verified payment records become real-world assets for receivable financing, treasury, and credit.
+
+---
 
 ## Who It's For
 
-- **Web3 Teams & Remote Startups:** Companies paying global employees and contractors in USDC that need automated payslips, seamless cross-chain payouts, and strict data privacy without relying on centralized SaaS tools.
+- **Businesses:** Run payroll, pay contractors, and manage invoices in one private workspace
+- **Contractors & Vendors:** Receive payments, verify records, access documents
+- **Financial Partners:** Verify proof, evaluate receivables, provide financing
 
-- **DAO Treasury & Ops Leads:** Finance managers who need an interactive, visual canvas to map out and review multi-recipient payouts with co-signers before signing off on transactions.
-
-- **Agencies & Software Houses:** Teams managing project-based contractor payouts that require attaching contracts and invoices directly to payments with verifiable, auto-generated receipts.
-
-- **Privacy-Conscious Organizations:** Companies prioritizing serverless architecture and GDPR compliance by keeping payroll records, worker details, and transfer histories strictly peer-to-peer.
+---
 
 ## How It Works
 
 ### Run the Terminal
 
-Goji runs as a local P2P node on your machine:
+```
+npx @tamago-labs/goji
+```
 
-1. **Install** — `npx @tamago-labs/goji`
-2. **Host mode** — Runs on port 3001, creates an invite code
-3. **Join mode** — `npx @tamago-labs/goji --join <code>` connects to a host
-4. **Open the app** — Visit https://goji-testnet.vercel.app/ or run the frontend locally at http://localhost:3000
+### Workspace Roles
 
-### For Co-Payers & Teams
+| Role | Description |
+|------|-------------|
+| Company | Creates payment workflows, manages participants |
+| Payee | Receives payments, views documents |
+| Payer | Approves and sends payments |
+| Financial Partner | Verifies proof, provides financing |
 
-1. **Register your wallet** — Connect and register your wallet address.
-2. **Create a flow** — Build a payment pipeline on the canvas with wallets, recipients, and connection lines.
-3. **Set payment details** — Click connection lines to set amounts, attach payslips or documents.
-4. **Review & approve** — Collaborate with your team in real-time on the same canvas.
-5. **Sign & settle** — Start the flow, preview all routes, and sign to send USDC to recipients.
+### Invoice Flow
 
-### For Payees & Contractors
+1. **Create** — Draft invoice, add documents, send P2P
+2. **Fund & Approve** — Payer tops up Unified Balance, reviews and approves
+3. **Settle on Arc** — USDC payment executed, proof anchored on-chain
+4. **Originate & Finance** — Receivable asset created, financial partners evaluate and fund
 
-1. **Join via invite** — Connect to the host terminal using the invite code.
-2. **Check History tab** — View all received payments with amounts, statuses, and dates.
-3. **View documents** — Access payslips, invoices, and contracts attached to each payment.
-4. **Funds arrive** — USDC lands in your wallet across any supported chain.
+---
 
 ## Tech Stack
 
@@ -86,25 +93,53 @@ Goji runs as a local P2P node on your machine:
 ### Blockchain
 - Arc Testnet, Base Sepolia, Ethereum Sepolia
 - Circle Unified Balance (cross-chain USDC)
-- Circle Gateway (deposit/spend)
+- Circle Gateway (settlement)
 
 ### Protocols
 - Pear P2P (real-time sync)
 - Hyperschema (schema-driven storage)
 
-## Status
+---
 
-### Current (v0.5)
-✓ **Visual Canvas** — Interactive workflow builder for mapping out payments
-✓ **Unified Balance** — Cross-chain payment processing via Circle Gateway
-✓ **Payslip Generation** — Automated distribution of payment receipts via P2P
-✓ **Real-Time Sync** — Peer-to-peer live state synchronization
+## API Endpoints
 
-### Roadmap to v1
-○ **Multi-Sig Gate** — M-of-N approval workflow for team payments
-○ **Recipient Mode** — Read-only payslip & document viewer for payees
-○ **Batch Payments** — Multiple payments in a single transaction signature
-○ **Transaction Export** — CSV & PDF export with full history
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | /api/health | Server status, peer info, role |
+| GET/POST | /api/boards | List/create boards |
+| PUT/DELETE | /api/boards/:id | Rename/delete board |
+| GET/POST/PUT/DELETE | /api/cards | Card CRUD |
+| GET/POST/PUT/DELETE | /api/connections | Connection CRUD |
+| GET/POST/PUT/DELETE | /api/flow-status | Flow execution status |
+| GET/POST | /api/chat | Chat messages |
+| GET/POST/DELETE | /api/wallets | Wallet registration |
+| GET/POST/PUT/DELETE | /api/templates | Invoice templates |
+| GET/PUT/DELETE | /api/invoices | Invoice management |
+| POST | /api/members/assign | Role assignment |
+| GET | /api/members | List members |
+| WebSocket | ws://localhost:3001 | Real-time sync |
+
+---
+
+## Canvas System
+
+- **Wallet Card** — Company wallet (Arc settlement)
+- **Recipient Card** — Payment target with chain selector
+- **Deposit Wallet Card** — Payer's Unified Balance wallet
+- **Connection Lines** — Click to configure payment/document/template
+- **Invoice Flow** — Deposit Wallet → Company Wallet (delegation-based)
+
+---
+
+## Gotchas
+
+- **`--webpack` flag**: Frontend scripts use `--webpack` because RainbowKit has Turbopack compatibility issues.
+- **Lockfile warning**: Next.js warns about multiple lockfiles (root + frontend). This is cosmetic — ignore it.
+- **P2P requires UDP**: Hyperswarm uses UDP for peer discovery. Cloud servers need UDP open.
+- **Keet identity**: First run prompts for identity setup (generate/import mnemonic). Saved to `identity.json` in storage folder.
+- **No monorepo tooling**: Two separate npm projects. Run `npm install` independently in each directory.
+
+---
 
 ## License
 

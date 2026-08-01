@@ -17,3 +17,6 @@ docs/
 bin/ 
 DeployMigration*
 ManagePar*
+
+# Dependencies
+lib/

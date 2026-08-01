@@ -28,7 +28,7 @@ Returns on Settlement
 
 ## Smart Contracts
 
-### 1. GojiProof (Existing)
+### 1. GojiProof
 
 **Purpose:** Store Merkle roots for payment verification.
 

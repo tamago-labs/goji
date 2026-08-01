@@ -141,6 +141,19 @@ npx @tamago-labs/goji
 
 ---
 
+## Deployment (Arc Testnet)
+
+| Contract | Address |
+|----------|---------|
+| GojiProof | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
+| ReceivableFactory | `0x004c688Da6225623ba79fA2d3A868D578cF76638` |
+
+**Chain:** Arc Testnet (Chain ID: 5042002)
+
+**Deployer:** `0x36bBb997235Fc965a854e132976fC8461B9392F5`
+
+---
+
 ## License
 
 TBD.

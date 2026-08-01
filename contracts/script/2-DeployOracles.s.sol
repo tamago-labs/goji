@@ -15,7 +15,7 @@ import {PriceOracle} from "../src/PriceOracle.sol";
  *   3. USDC (loan) <> GOJFIN (collateral)   — USDC=$1.0, GOJFIN=$1.20
  *
  * @dev Usage:
- *   forge script script/2-DeployGojiOracles.s.sol --rpc-url $RPC_URL --broadcast --legacy
+ *   forge script script/2-DeployGojiOracles.s.sol --rpc-url $RPC_URL --broadcast
  *
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key

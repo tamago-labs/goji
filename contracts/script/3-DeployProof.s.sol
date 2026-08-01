@@ -8,7 +8,7 @@ import {GojiProof} from "../src/GojiProof.sol";
  * @title DeployGojiProof
  * @notice Deploy the GojiProof contract for document verification on Arc
  * @dev Usage:
- *   forge script script/3-DeployProof.s.sol --rpc-url $RPC_URL --broadcast --legacy
+ *   forge script script/3-DeployProof.s.sol --rpc-url $RPC_URL --broadcast
  *
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key

@@ -8,7 +8,7 @@ import {ERC20Mock} from "../src/mocks/ERC20Mock.sol";
  * @title DeployGojiTokens
  * @notice Deploy RWA tokens for Goji: Payroll, Receivables, Finance
  * @dev Usage:
- *   forge script script/1-DeployGojiTokens.s.sol --rpc-url $RPC_URL --broadcast --legacy
+ *   forge script script/1-DeployGojiTokens.s.sol --rpc-url $RPC_URL --broadcast
  *
  *   Environment variables:
  *   - PRIVATE_KEY: Deployer private key

@@ -1,0 +1,20 @@
+[profile.default]
+libs = ["lib"]
+solc = "0.8.20"
+names = true
+sizes = true
+optimizer = true
+
+[lint]
+exclude_lints = [
+    "unaliased-plain-import",
+    "asm-keccak256",
+    "unwrapped-modifier-logic",
+    "ast-src-not-found",
+]
+ignore = [
+    'test/**/*.sol'
+]
+
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

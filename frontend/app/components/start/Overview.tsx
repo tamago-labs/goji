@@ -196,53 +196,56 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
         <div className='text-center py-12 text-ink/30 text-sm'>Loading...</div>
       ) : (
         <>
-          {/* Progress */}
-          <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 mb-5'>
-            <div className='flex items-center justify-between mb-3'>
-              <span className='text-sm font-medium text-ink'>
-                {isCompany ? 'Getting Started' : isPayee ? 'Your Setup' : 'Quick Start'}
-              </span>
-              <span className='text-xs text-ink/40'>{completed}/{steps.length} done</span>
-            </div>
-            <div className='w-full h-1.5 bg-ink/10 rounded-full overflow-hidden mb-5'>
-              <motion.div
-                className='h-full bg-mint rounded-full'
-                initial={{ width: 0 }}
-                animate={{ width: `${(completed / steps.length) * 100}%` }}
-                transition={{ duration: 0.5 }}
-              />
-            </div>
+          {/* Progress - Hide for partners */}
+          {!isPartner && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 mb-5'>
+              <div className='flex items-center justify-between mb-3'>
+                <span className='text-sm font-medium text-ink'>
+                  {isCompany ? 'Getting Started' : isPayee ? 'Your Setup' : 'Quick Start'}
+                </span>
+                <span className='text-xs text-ink/40'>{completed}/{steps.length} done</span>
+              </div>
+              <div className='w-full h-1.5 bg-ink/10 rounded-full overflow-hidden mb-5'>
+                <motion.div
+                  className='h-full bg-mint rounded-full'
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(completed / steps.length) * 100}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
 
-            {/* Steps */}
-            <div className='space-y-3'>
-              {steps.map((step, i) => (
-                <div
-                  key={i}
-                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                    step.done ? 'bg-mint/5' : 'bg-ink/3'
-                  }`}
-                >
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    step.done ? 'bg-mint text-white' : 'bg-ink/10 text-ink/30'
-                  }`}>
-                    {step.done ? <Check className='w-3 h-3' /> : <span className='text-[10px]'>{i + 1}</span>}
-                  </div>
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-center justify-between'>
-                      <span className={`text-sm font-medium ${step.done ? 'text-ink/70' : 'text-ink'}`}>
-                        {step.title}
-                      </span>
-                      {step.action}
+              {/* Steps */}
+              <div className='space-y-3'>
+                {steps.map((step, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                      step.done ? 'bg-mint/5' : 'bg-ink/3'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                      step.done ? 'bg-mint text-white' : 'bg-ink/10 text-ink/30'
+                    }`}>
+                      {step.done ? <Check className='w-3 h-3' /> : <span className='text-[10px]'>{i + 1}</span>}
                     </div>
-                    <p className='text-xs text-ink/40 mt-0.5'>{step.desc}</p>
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex items-center justify-between'>
+                        <span className={`text-sm font-medium ${step.done ? 'text-ink/70' : 'text-ink'}`}>
+                          {step.title}
+                        </span>
+                        {step.action}
+                      </div>
+                      <p className='text-xs text-ink/40 mt-0.5'>{step.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Stats */}
-          <div className='grid grid-cols-3 gap-4 mb-5'>
+          {/* Stats - Hide for partners */}
+          {!isPartner && (
+            <div className='grid grid-cols-3 gap-4 mb-5'>
             {isCompany && (
               <>
                 <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
@@ -307,7 +310,8 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                 </div>
               </>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Outgoing Payments - Company and Payer */}
           {(isCompany || isPayer) && outgoingRoutes.length > 0 && (

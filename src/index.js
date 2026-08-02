@@ -250,6 +250,21 @@ class GojiRoom {
     this.router.add('@goji/remove-template', async (data, ctx) => {
       await ctx.view.delete('@goji/templates', { id: data.id })
     })
+
+    this.router.add('@goji/add-receivable', async (data, ctx) => {
+      await ctx.view.insert('@goji/receivables', data)
+    })
+    this.router.add('@goji/update-receivable', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/receivables', { id: data.id })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/receivables', { id: data.id }, () => data)
+      } else {
+        await ctx.view.insert('@goji/receivables', data)
+      }
+    })
+    this.router.add('@goji/remove-receivable', async (data, ctx) => {
+      await ctx.view.delete('@goji/receivables', { id: data.id })
+    })
   }
 
   get view() {

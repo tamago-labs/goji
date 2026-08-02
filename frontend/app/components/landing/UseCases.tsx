@@ -36,8 +36,11 @@ const useCases = [
   }
 ]
 
-const image =
-  'https://framerusercontent.com/images/xZnqD4ngWlNKrEWyolXWc79DUMs.png?scale-down-to=1024&width=5750&height=3234'
+const images = [
+  '/screenshot-1.png',
+  '/screenshot-2.png',
+  '/screenshot-3.png'
+]
 
 export default function UseCases() {
   return (
@@ -79,7 +82,7 @@ export default function UseCases() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={image}
+                  src={images[i]}
                   alt={`${useCase.title} preview`}
                   className='w-full h-auto'
                 />

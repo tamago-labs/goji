@@ -11,9 +11,8 @@ Private P2P workspace for business payments that anchors cryptographic proof on 
 
 ## Quick Links
 
-- **Live App:** https://goji-testnet.vercel.app/
-- **Demo Video:** https://www.youtube.com/watch?v=YfxArY9uQQo
-- **Presentation:** https://canva.link/7z2iw3keeii3uwc
+- **Live App:** https://goji.tamagolabs.com/
+- **Demo Video:** https://youtu.be/QaZRVty_ViE
 - **Architecture:** [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 Goji is a P2P payment origination layer built on Arc.
@@ -176,23 +175,6 @@ Goji includes a private knowledge base for company documents. The employer termi
 - Current model: GTE-Large embeddings and vector search
 
 Source documents and embeddings are never replicated. Members receive only relevant search snippets while the employer host is online. The employer controls model lifecycle and document management.
-
-## Architecture
-
-```text
-Next.js frontend
-        |
-HTTP / WebSocket
-        |
-Goji terminal
-  Express | WebSocket | Local RAG | Autobase | HyperDB
-        |
-Encrypted Pear P2P room
-        |
-Authorized workspace peers
-        |
-Arc contracts for proofs and receivables
-```
 
 | Component            | Responsibility                                                 |
 | -------------------- | -------------------------------------------------------------- |

@@ -312,7 +312,6 @@ export default function RWATokenDetailPage() {
                 <li>Contact the issuer company directly</li>
                 <li>Request an invite code to their workspace</li>
                 <li>Join the P2P terminal for real-time collaboration</li>
-                <li>Access documents, proofs, and AI-powered insights</li>
               </ol>
             </div>
             <a

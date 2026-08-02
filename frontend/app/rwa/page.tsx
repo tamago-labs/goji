@@ -133,7 +133,7 @@ export default function RWAPage() {
       <div className='mb-8'>
         <h1 className='font-display text-3xl font-bold text-ink mb-2'>RWA Explorer</h1>
         <p className='text-ink/50 max-w-2xl'>
-          Browse verified real-world assets from businesses. Each asset is backed by cryptographic proofs on Arc.
+          Browse real-world assets verified on Arc. Each asset has cryptographic proof of payment history.
         </p>
       </div>
 

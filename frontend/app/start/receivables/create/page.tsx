@@ -64,7 +64,7 @@ export default function CreateReceivablePage() {
     type: 'invoice',
     amount: '',
     interestRate: '20',
-    minInvestment: '100',
+    minInvestment: '1',
     expiryDays: '90'
   })
 
@@ -148,7 +148,7 @@ export default function CreateReceivablePage() {
       type: 'invoice',
       amount: flow.amount,
       interestRate: '20',
-      minInvestment: '100',
+      minInvestment: '1',
       expiryDays: '90'
     })
     setShowModal(true)
@@ -163,7 +163,11 @@ export default function CreateReceivablePage() {
   }
 
   const handleCreate = async () => {
-    if (!walletClient || !address || !publicClient || !selectedFlow) return
+    console.log('handleCreate called', { terms, selectedProofs, selectedFlow })
+    if (!walletClient || !address || !publicClient || !selectedFlow) {
+      console.log('Missing required data', { walletClient: !!walletClient, address, publicClient: !!publicClient, selectedFlow: !!selectedFlow })
+      return
+    }
 
     setCreating(true)
     try {
@@ -370,13 +374,16 @@ export default function CreateReceivablePage() {
                     />
                   </div>
                   <div>
-                    <label className='block text-xs text-ink/40 mb-1'>Expiry (days)</label>
-                    <input
-                      type='number'
+                    <label className='block text-xs text-ink/40 mb-1'>Term</label>
+                    <select
                       value={terms.expiryDays}
                       onChange={(e) => setTerms({ ...terms, expiryDays: e.target.value })}
                       className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
-                    />
+                    >
+                      <option value='30'>30 days</option>
+                      <option value='60'>60 days</option>
+                      <option value='90'>90 days</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -450,7 +457,13 @@ export default function CreateReceivablePage() {
             </div>
 
             {/* Footer */}
-            <div className='px-6 py-4 border-t border-ink/8 flex items-center justify-end gap-3'>
+            <div className='px-6 py-4 border-t border-ink/8'>
+              {!walletClient && (
+                <div className='mb-3 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2'>
+                  Please connect your wallet first to create a receivable.
+                </div>
+              )}
+              <div className='flex items-center justify-end gap-3'>
               <button
                 onClick={() => setShowModal(false)}
                 className='px-4 py-2 text-xs text-ink/40 hover:text-ink/60 transition-colors'
@@ -458,9 +471,10 @@ export default function CreateReceivablePage() {
                 Cancel
               </button>
               <button
-                onClick={handleCreate}
-                disabled={creating || !terms.name || !terms.amount || selectedProofs.length === 0}
+                onClick={() => { console.log('Button clicked', { creating, name: terms.name, amount: terms.amount, proofs: selectedProofs.length }); handleCreate() }}
+                disabled={creating || !terms.name || !terms.amount || selectedProofs.length === 0 || !walletClient}
                 className='px-4 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 disabled:opacity-30 transition-opacity'
+                title={!walletClient ? 'Connect wallet first' : !terms.name ? 'Enter name' : !terms.amount ? 'Enter amount' : selectedProofs.length === 0 ? 'Select proofs' : ''}
               >
                 {creating ? (
                   <span className='flex items-center gap-2'>
@@ -471,6 +485,7 @@ export default function CreateReceivablePage() {
                   'Create Receivable'
                 )}
               </button>
+              </div>
             </div>
           </div>
         </div>

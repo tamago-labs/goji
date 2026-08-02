@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { usePublicClient, useWalletClient } from 'wagmi'
-import { ArrowLeft, ExternalLink, Loader2, CheckCircle, XCircle, Shield } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Loader2, CheckCircle, Shield, Clock, TrendingUp, Wallet } from 'lucide-react'
 import Link from 'next/link'
 import { RECEIVABLE_TOKEN_ABI, getTokenStatusLabel, getTokenStatusColor } from '../../../../lib/receivableToken'
 import { GOJIPROOF_ABI } from '../../../../lib/gojiProof'
@@ -21,7 +21,11 @@ interface TokenInfo {
   fundedAmount: bigint
   status: number
   proofHashes: string[]
-  repaymentAmount: bigint
+  totalInterest: bigint
+  totalRepayment: bigint
+  userShare: bigint
+  userInterest: bigint
+  userBalance: bigint
 }
 
 interface ProofVerification {
@@ -66,11 +70,47 @@ export default function ReceivableDetailPage() {
           functionName: 'getProofHashes'
         }) as string[]
 
-        const repaymentAmount = await publicClient!.readContract({
+        const totalInterest = await publicClient!.readContract({
           address: tokenAddress as `0x${string}`,
           abi: RECEIVABLE_TOKEN_ABI,
-          functionName: 'getRepaymentAmount'
+          functionName: 'getTotalInterest'
         }) as bigint
+
+        const totalRepayment = await publicClient!.readContract({
+          address: tokenAddress as `0x${string}`,
+          abi: RECEIVABLE_TOKEN_ABI,
+          functionName: 'getTotalRepayment'
+        }) as bigint
+
+        // Get user's token balance
+        let userBalance = 0n
+        let userShare = 0n
+        let userInterest = 0n
+
+        if (address) {
+          userBalance = await publicClient!.readContract({
+            address: tokenAddress as `0x${string}`,
+            abi: RECEIVABLE_TOKEN_ABI,
+            functionName: 'balanceOf',
+            args: [address]
+          }) as bigint
+
+          if (userBalance > 0n) {
+            userShare = await publicClient!.readContract({
+              address: tokenAddress as `0x${string}`,
+              abi: RECEIVABLE_TOKEN_ABI,
+              functionName: 'calculateShare',
+              args: [address]
+            }) as bigint
+
+            userInterest = await publicClient!.readContract({
+              address: tokenAddress as `0x${string}`,
+              abi: RECEIVABLE_TOKEN_ABI,
+              functionName: 'calculateInvestorInterest',
+              args: [address]
+            }) as bigint
+          }
+        }
 
         setToken({
           name,
@@ -84,10 +124,13 @@ export default function ReceivableDetailPage() {
           fundedAmount: info[7],
           status: info[8],
           proofHashes,
-          repaymentAmount
+          totalInterest,
+          totalRepayment,
+          userShare,
+          userInterest,
+          userBalance
         })
 
-        // Initialize proof verification state
         setProofs(proofHashes.map(h => ({ hash: h, verified: false, loading: false })))
       } catch (e) {
         console.error('Failed to load token:', e)
@@ -96,7 +139,7 @@ export default function ReceivableDetailPage() {
     }
 
     load()
-  }, [publicClient, tokenAddress])
+  }, [publicClient, tokenAddress, address])
 
   const verifyProof = async (index: number) => {
     if (!publicClient || !token) return
@@ -128,14 +171,12 @@ export default function ReceivableDetailPage() {
         address: tokenAddress as `0x${string}`,
         abi: RECEIVABLE_TOKEN_ABI,
         functionName: 'claimRepayment',
-        value: token.repaymentAmount,
+        value: token.totalRepayment,
         account: address
       })
 
       const hash = await walletClient.writeContract(request)
       await publicClient.waitForTransactionReceipt({ hash })
-
-      // Reload token info
       window.location.reload()
     } catch (e) {
       console.error('Failed to claim repayment:', e)
@@ -145,7 +186,7 @@ export default function ReceivableDetailPage() {
   }
 
   const formatAmount = (amount: bigint) => {
-    return `${(Number(amount) / 1e18).toLocaleString()} USDC`
+    return `${(Number(amount) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`
   }
 
   const formatDate = (timestamp: bigint) => {
@@ -165,6 +206,17 @@ export default function ReceivableDetailPage() {
   const isIssuer = () => {
     if (!token || !address) return false
     return token.issuer.toLowerCase() === address.toLowerCase()
+  }
+
+  const getDaysRemaining = () => {
+    if (!token) return 0
+    const remaining = Number(token.expiresAt) - Date.now() / 1000
+    return remaining > 0 ? Math.ceil(remaining / 86400) : 0
+  }
+
+  const getTermDays = () => {
+    if (!token) return 0
+    return Math.ceil((Number(token.expiresAt) - Number(token.issuedAt)) / 86400)
   }
 
   if (loading) {
@@ -214,8 +266,9 @@ export default function ReceivableDetailPage() {
       </div>
 
       <div className='grid grid-cols-3 gap-6'>
-        {/* Terms */}
+        {/* Main Content */}
         <div className='col-span-2 space-y-4'>
+          {/* Terms */}
           <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
             <h3 className='text-sm font-semibold text-ink mb-4'>Terms</h3>
             <div className='grid grid-cols-3 gap-4'>
@@ -229,15 +282,19 @@ export default function ReceivableDetailPage() {
               </div>
               <div className='bg-ink/[0.02] rounded-xl p-3'>
                 <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Interest</div>
-                <div className='text-sm text-ink'>{Number(token.interestRate) / 100}%</div>
+                <div className='text-sm text-ink'>Up to {Number(token.interestRate) / 100}%</div>
+                <div className='text-[10px] text-ink/40'>Pro-rata by time</div>
+              </div>
+              <div className='bg-ink/[0.02] rounded-xl p-3'>
+                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Term</div>
+                <div className='text-sm text-ink'>{getTermDays()} days</div>
+                {!isExpired() && token.status < 2 && (
+                  <div className='text-[10px] text-mint'>{getDaysRemaining()} days left</div>
+                )}
               </div>
               <div className='bg-ink/[0.02] rounded-xl p-3'>
                 <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Min Investment</div>
                 <div className='text-sm text-ink'>{formatAmount(token.minInvestment)}</div>
-              </div>
-              <div className='bg-ink/[0.02] rounded-xl p-3'>
-                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Issued</div>
-                <div className='text-sm text-ink'>{formatDate(token.issuedAt)}</div>
               </div>
               <div className='bg-ink/[0.02] rounded-xl p-3'>
                 <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Expires</div>
@@ -312,27 +369,54 @@ export default function ReceivableDetailPage() {
             </div>
           </div>
 
-          {/* Repayment */}
+          {/* Repayment Projection */}
           <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
-            <h3 className='text-sm font-semibold text-ink mb-3'>Repayment</h3>
+            <h3 className='text-sm font-semibold text-ink mb-3'>Repayment (Projected)</h3>
             <div className='space-y-2'>
               <div className='flex items-center justify-between text-xs'>
                 <span className='text-ink/40'>Principal</span>
                 <span className='text-ink/60'>{formatAmount(token.totalReceivable)}</span>
               </div>
               <div className='flex items-center justify-between text-xs'>
-                <span className='text-ink/40'>Interest</span>
-                <span className='text-ink/60'>{formatAmount(token.totalReceivable * token.interestRate / 10000n)}</span>
+                <span className='text-ink/40'>Max Interest (full term)</span>
+                <span className='text-ink/60'>{formatAmount(token.totalInterest)}</span>
               </div>
               <div className='border-t border-ink/10 pt-2 flex items-center justify-between text-sm'>
-                <span className='text-ink font-medium'>Total Due</span>
-                <span className='text-ink font-semibold'>{formatAmount(token.repaymentAmount)}</span>
+                <span className='text-ink font-medium'>Max Total</span>
+                <span className='text-ink font-semibold'>{formatAmount(token.totalRepayment)}</span>
               </div>
+              <p className='text-[10px] text-ink/30 mt-2'>
+                Actual repayment depends on when investors funded. Early investors earn more interest.
+              </p>
             </div>
           </div>
 
+          {/* User Investment (if investor) */}
+          {token.userBalance > 0n && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
+              <h3 className='text-sm font-semibold text-ink mb-3 flex items-center gap-2'>
+                <Wallet className='w-4 h-4' />
+                Your Investment
+              </h3>
+              <div className='space-y-2'>
+                <div className='flex items-center justify-between text-xs'>
+                  <span className='text-ink/40'>Tokens Held</span>
+                  <span className='text-ink/60 font-mono'>{(Number(token.userBalance) / 1e6).toLocaleString()}</span>
+                </div>
+                <div className='flex items-center justify-between text-xs'>
+                  <span className='text-ink/40'>Interest Earned</span>
+                  <span className='text-[#28C840] font-medium'>{formatAmount(token.userInterest)}</span>
+                </div>
+                <div className='border-t border-ink/10 pt-2 flex items-center justify-between text-sm'>
+                  <span className='text-ink font-medium'>Your Share</span>
+                  <span className='text-ink font-semibold'>{formatAmount(token.userShare)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
-          {isIssuer() && token.status === 1 && isExpired() && (
+          {isIssuer() && (token.status === 0 || token.status === 1) && isExpired() && (
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
               <h3 className='text-sm font-semibold text-ink mb-3'>Actions</h3>
               <button
@@ -346,7 +430,7 @@ export default function ReceivableDetailPage() {
                     Claiming...
                   </span>
                 ) : (
-                  `Claim Repayment (${formatAmount(token.repaymentAmount)})`
+                  `Claim Repayment (${formatAmount(token.totalRepayment)})`
                 )}
               </button>
               <p className='text-[10px] text-ink/30 mt-2 text-center'>

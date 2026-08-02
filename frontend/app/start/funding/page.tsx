@@ -26,7 +26,7 @@ interface PortfolioItem {
   name: string
   type: string
   myTokens: bigint
-  myShare: bigint
+  projectedShare: bigint
   myInterest: bigint
   status: number
 }
@@ -137,12 +137,17 @@ export default function FundingPage() {
               args: [address!]
             }) as bigint
 
+            // Calculate projected share (principal + interest) since totalRedeemable is 0 before repayment
+            const totalReceivable = info[2]
+            const projectedPrincipal = (myTokens * totalReceivable) / 1_000_000_000_000n
+            const projectedShare = projectedPrincipal + myInterest
+
             items.push({
               address: addr,
               name,
               type: info[0],
               myTokens,
-              myShare,
+              projectedShare,
               myInterest,
               status: info[8]
             })
@@ -279,7 +284,7 @@ export default function FundingPage() {
                     <div className='flex justify-between'>
                       <span className='text-ink/40'>Tokens received</span>
                       <span className='text-ink/60'>
-                        {((parseFloat(investAmount) * 1e18 * 1_000_000_000_000) / Number(token.totalReceivable)).toLocaleString()}
+                        {((parseFloat(investAmount) * 1_000_000) / (Number(token.totalReceivable) / 1e18)).toLocaleString()} tokens
                       </span>
                     </div>
                     <div className='flex justify-between'>
@@ -348,7 +353,7 @@ export default function FundingPage() {
                     <tr key={item.address} className='border-b border-ink/5 hover:bg-ink/3 transition-colors'>
                       <td className='px-6 py-3 text-ink/70 text-sm font-medium'>{item.name}</td>
                       <td className='px-6 py-3 font-mono text-ink/60 text-xs'>{formatTokens(item.myTokens)}</td>
-                      <td className='px-6 py-3 text-ink/60 text-sm'>{formatAmount(item.myShare)}</td>
+                      <td className='px-6 py-3 text-ink/60 text-sm'>{formatAmount(item.projectedShare)}</td>
                       <td className='px-6 py-3 text-[#28C840] text-sm'>{formatAmount(item.myInterest)}</td>
                       <td className='px-6 py-3'>
                         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${getTokenStatusColor(item.status)}`}>

@@ -1,7 +1,7 @@
 {
   "name": "@tamago-labs/goji",
-  "version": "0.1.3",
-  "description": "Visual payment flows for DAOs and teams. P2P collaborative canvas with Circle Wallets integration.",
+  "version": "0.7.5",
+  "description": "Arc-native P2P origination layer. Turn verified USDC payments into real-world assets with cryptographic proof.",
   "main": "src/index.js",
   "bin": {
     "goji": "src/index.js"
@@ -23,7 +23,12 @@
     "wallet",
     "usdc",
     "collaboration",
-    "canvas"
+    "canvas",
+    "rwa",
+    "origination",
+    "arc",
+    "receivables",
+    "merkle"
   ],
   "dependencies": {
     "autobase": "^7.28.1",

@@ -168,9 +168,9 @@ export default function CreateReceivablePage() {
     setCreating(true)
     try {
       const proofHashes = selectedProofs.map(p => p.merkleRoot as `0x${string}`)
-      const amount = BigInt(Math.floor(parseFloat(terms.amount) * 1e6))
+      const amount = BigInt(Math.floor(parseFloat(terms.amount) * 1e18))
       const interestRate = BigInt(Math.floor(parseFloat(terms.interestRate) * 100))
-      const minInvest = BigInt(Math.floor(parseFloat(terms.minInvestment) * 1e6))
+      const minInvest = BigInt(Math.floor(parseFloat(terms.minInvestment) * 1e18))
       const expiresAt = BigInt(Math.floor(Date.now() / 1000) + parseInt(terms.expiryDays) * 86400)
 
       const fee = await publicClient.readContract({

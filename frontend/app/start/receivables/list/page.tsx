@@ -80,7 +80,7 @@ export default function ReceivablesListPage() {
   }, [address, publicClient])
 
   const formatAmount = (amount: bigint) => {
-    return `$${(Number(amount) / 1e6).toLocaleString()}`
+    return `${(Number(amount) / 1e18).toLocaleString()} USDC`
   }
 
   const formatDate = (timestamp: bigint) => {

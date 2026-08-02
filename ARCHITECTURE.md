@@ -424,8 +424,246 @@ Expired  Defaulted (if no repayment)
 1. ~~Rewrite `ReceivableToken.sol` with new architecture~~ ✓
 2. ~~Rewrite `ReceivableFactory.sol` with new parameters~~ ✓
 3. ~~Add flat fee model to factory~~ ✓
-4. Deploy to Arc Testnet
+4. ~~Deploy to Arc Testnet~~ ✓
 5. Create ABI files in `frontend/lib/`
 6. Implement company receivables pages
 7. Implement partner pages
 8. Implement public RWA Explorer
+
+---
+
+## 3-Phase UI Implementation Plan
+
+### Data Sources
+
+| Source | Data |
+|--------|------|
+| **P2P (flow-status API)** | Flow name, route details (from/to card titles, amount, docName), merkleRoot, payslipHtml |
+| **On-chain (ReceivableFactory)** | Token addresses per issuer, total value |
+| **On-chain (ReceivableToken)** | Token info: type, proofs, terms, status, fundedAmount, investor balances |
+
+**Key Insight:** Company creates receivable from P2P data (flows with merkleRoot). Once token is minted, all data comes from on-chain. Partners combine P2P (details) + on-chain (verification).
+
+---
+
+### Phase 1: Company View
+
+**Goal:** Company sees pending/settled flows, selects proofs, creates receivable tokens.
+
+#### Pages
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| Receivables Layout | `/start/receivables` | Sidebar sub-menu (List, Create) |
+| My Receivables | `/start/receivables/list` | Table of issued tokens |
+| Create Receivable | `/start/receivables/create` | Select proofs → set terms → mint |
+| Receivable Detail | `/start/receivables/[id]` | View token status, investors, repayment |
+
+#### Create Flow (Step by Step)
+
+```
+Step 1: Select Proofs
+  - Fetch all boards → fetch flow-status per board
+  - Filter: status === 'settled' && merkleRoot exists
+  - Show table: Date | Flow Name | Document | From | To | Amount | Proof Hash
+  - Checkboxes to select which proofs to include
+  - "Select All" button
+
+Step 2: Set Terms
+  - Receivable Name: "Invoice #123"
+  - Type: dropdown (invoice / payroll / contractor)
+  - Amount: USDC input (total receivable value)
+  - Interest Rate: % input (default 20%)
+  - Min Investment: USDC input (default 100)
+  - Expiry: date picker (default 90 days from now)
+
+Step 3: Review & Pay
+  - Summary: name, type, proofs count, amount, interest, expiry
+  - Fee: 1 USDC
+  - Total cost: 1 USDC (fee)
+  - "Create Receivable" button → calls createReceivable{value: fee}
+  - On success: redirect to /start/receivables/[id]
+```
+
+#### My Receivables List
+
+| Column | Source |
+|--------|--------|
+| Name | token.name() |
+| Type | token.receivableType() |
+| Amount | token.totalReceivable() |
+| Interest | token.interestRate() |
+| Funded | token.fundedAmount() / totalReceivable |
+| Status | token.status() |
+| Expires | token.expiresAt() |
+| Action | View |
+
+Status badges:
+- Active (blue) — Accepting investments
+- Funded (green) — Fully funded
+- Expired (amber) — Waiting for repayment
+- Redeemed (mint) — Company paid, partners can redeem
+- Defaulted (red) — Company didn't pay
+
+#### Receivable Detail
+
+- Header: Name, Type, Status badge
+- Terms card: Amount, Interest, Min Investment, Expiry, Proofs
+- Proof list: Clickable merkle roots → Proof Explorer
+- Funding progress bar: fundedAmount / totalReceivable
+- Investors table: Address, Funded Amount, Tokens, % (from on-chain events)
+- Actions:
+  - If Active/Funded + expired: "Claim Repayment" button (sends USDC)
+  - If Redeemed: "Fully Redeemed" badge
+
+#### Files
+
+| File | Action |
+|------|--------|
+| `frontend/lib/receivableFactory.ts` | **Create** — ABI |
+| `frontend/lib/receivableToken.ts` | **Create** — ABI |
+| `frontend/app/start/receivables/layout.tsx` | **Create** — Sub-menu |
+| `frontend/app/start/receivables/page.tsx` | **Update** — Redirect to list |
+| `frontend/app/start/receivables/list/page.tsx` | **Create** — Table |
+| `frontend/app/start/receivables/create/page.tsx` | **Create** — 3-step wizard |
+| `frontend/app/start/receivables/[id]/page.tsx` | **Create** — Detail view |
+
+---
+
+### Phase 2: Financial Partner View
+
+**Goal:** Partner browses receivables, verifies proofs, funds tokens.
+
+#### Pages
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| Available Receivables | `/start/available-receivables` | Browse all active/funded tokens |
+| Due Diligence | `/start/due-diligence` | Verify proofs, check history |
+| Funding | `/start/funding` | Fund receivable, track portfolio |
+
+#### Available Receivables
+
+```
+- Fetch all token addresses from ReceivableFactory.getReceivables(issuer)
+- For each token, call getReceivableInfo()
+- Show table: Name | Type | Amount | Interest | Funded | Expires | Status | Action
+- Filter: Type (all/invoice/payroll/contractor), Status (all/active/funded)
+- Click row → Due Diligence page
+```
+
+#### Due Diligence
+
+```
+- Receivable info card (from on-chain)
+- Proofs section:
+  - List of merkle roots
+  - Click to verify on GojiProof contract (isAnchored)
+  - Show proof details (submitter, timestamp)
+- Company info (issuer address)
+- Terms review
+- "Fund This Receivable" button → Funding page
+```
+
+#### Funding
+
+```
+- Receivable summary
+- Investment input:
+  - Amount (USDC)
+  - Shows: tokens to receive, % of total, projected return
+- Fund button → calls ReceivableToken.finance{value: amount}()
+- Portfolio section (funded receivables):
+  - Table: Name | Funded | Tokens | % | Status | Action
+  - Action: "Redeem" if status === Redeemed
+```
+
+#### Files
+
+| File | Action |
+|------|--------|
+| `frontend/app/start/available-receivables/page.tsx` | **Update** — Table with filters |
+| `frontend/app/start/due-diligence/page.tsx` | **Update** — Proof verification |
+| `frontend/app/start/funding/page.tsx` | **Update** — Fund + portfolio |
+
+---
+
+### Phase 3: Public RWA Explorer
+
+**Goal:** Public users view all receivable assets (no wallet required).
+
+#### Pages
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| RWA Explorer | `/rwa` | List all tokens |
+| Token Detail | `/rwa/[address]` | View token details |
+
+#### RWA Explorer
+
+```
+- No auth required
+- Fetch all token addresses from ReceivableFactory
+- Show table: Name | Type | Amount | Interest | Funded | Status | Issuer
+- Issuer shown as shortened address (0x36bB...92F5)
+- Click row → Token Detail page
+```
+
+#### Token Detail
+
+```
+- Token info card (all fields from getReceivableInfo)
+- Proof hashes list
+- Funding progress bar
+- Status badge
+- Link to Arc Explorer (address)
+- No fund/redeem buttons (read-only)
+```
+
+#### Files
+
+| File | Action |
+|------|--------|
+| `frontend/app/rwa/layout.tsx` | **Create** — Public layout (no auth) |
+| `frontend/app/rwa/page.tsx` | **Create** — Explorer table |
+| `frontend/app/rwa/[address]/page.tsx` | **Create** — Detail view |
+
+---
+
+### Shared Components
+
+| Component | Purpose |
+|-----------|---------|
+| `ReceivableStatusBadge.tsx` | Status badge (Active/Funded/Expired/Redeemed/Defaulted) |
+| `ReceivableProofList.tsx` | List of merkle roots with verify button |
+| `ReceivableFundingProgress.tsx` | Progress bar (funded / total) |
+| `ReceivableTermsCard.tsx` | Terms display (amount, interest, min, expiry) |
+
+---
+
+### Data Flow Diagram
+
+```
+Phase 1 (Company):
+  P2P (flow-status) → Select Proofs → Set Terms → ReceivableFactory.createReceivable()
+  → ReceivableToken deployed → Listed in My Receivables
+
+Phase 2 (Partner):
+  ReceivableFactory.getReceivables() → ReceivableToken.getReceivableInfo()
+  + P2P (flow-status for proof details) → Due Diligence → Finance
+  → ReceivableToken.finance{value}() → Tokens minted
+
+Phase 3 (Public):
+  ReceivableFactory.getReceivables() → ReceivableToken.getReceivableInfo()
+  → Read-only display
+```
+
+---
+
+### Implementation Order
+
+1. **Create ABI files** (`lib/receivableFactory.ts`, `lib/receivableToken.ts`)
+2. **Phase 1: Company** — Layout → Create → List → Detail
+3. **Phase 2: Partner** — Available → Due Diligence → Funding
+4. **Phase 3: Public** — RWA Explorer → Detail
+5. **Shared components** — Extract after Phase 1 is complete

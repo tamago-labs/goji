@@ -271,11 +271,21 @@ class GojiRoom {
       const existing = await ctx.view.get('@goji/knowledgeDocuments', { id: data.id })
       if (!existing) await ctx.view.insert('@goji/knowledgeDocuments', data)
     })
-    this.router.add('@goji/rag-search', async (data) => {
-      if (typeof this.onRagSearch === 'function') await this.onRagSearch(data)
+    this.router.add('@goji/rag-search', async (data, ctx) => {
+      await ctx.view.insert('@goji/ragSearches', data)
+      if (typeof this.onRagSearch === 'function') {
+        // Run the host search after Autobase finishes applying the node.
+        // Appending a response from inside apply can deadlock the base.
+        setImmediate(() => this.onRagSearch(data).catch((error) => {
+          console.error('[rag] host search failed:', error.message)
+        }))
+      }
     })
-    this.router.add('@goji/rag-search-result', async (data) => {
-      if (typeof this.onRagSearchResult === 'function') await this.onRagSearchResult(data)
+    this.router.add('@goji/rag-search-result', async (data, ctx) => {
+      await ctx.view.insert('@goji/ragSearchResults', data)
+      if (typeof this.onRagSearchResult === 'function') {
+        setImmediate(() => this.onRagSearchResult(data))
+      }
     })
   }
 
@@ -637,6 +647,7 @@ async function main() {
     const pending = ragRequests.get(data.requestId)
     if (!pending) return
     clearTimeout(pending.timeout)
+    clearInterval(pending.poll)
     ragRequests.delete(data.requestId)
     if (data.error) pending.reject(new Error(data.error))
     else pending.resolve(data.results || [])
@@ -668,10 +679,24 @@ async function main() {
     const requestId = `rag_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
+        clearInterval(poll)
         ragRequests.delete(requestId)
         reject(new Error('Knowledge search timed out. The company host may be offline.'))
-      }, 15000)
-      ragRequests.set(requestId, { resolve, reject, timeout })
+      }, 30000)
+      const poll = setInterval(async () => {
+        try {
+          const result = await room.view.get('@goji/ragSearchResults', { requestId })
+          if (!result) return
+          clearTimeout(timeout)
+          clearInterval(poll)
+          ragRequests.delete(requestId)
+          if (result.error) reject(new Error(result.error))
+          else resolve(result.results || [])
+        } catch {
+          // The callback path remains active; transient view reads can fail while syncing.
+        }
+      }, 500)
+      ragRequests.set(requestId, { resolve, reject, timeout, poll })
       room.appendRagSearch({
         requestId,
         fromKey: room.localBase.key,
@@ -680,6 +705,7 @@ async function main() {
         topK
       }).catch((error) => {
         clearTimeout(timeout)
+        clearInterval(poll)
         ragRequests.delete(requestId)
         reject(error)
       })
@@ -799,8 +825,14 @@ async function main() {
 
   app.get('/api/username', (req, res) => res.json({ name: identityName }))
 
-  function isEmployer() {
-    return !isGuest && role === 'employer'
+  async function getCurrentRole() {
+    if (!isGuest) return 'employer'
+    const identity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    return identity?.role || 'pending'
+  }
+
+  async function isEmployer() {
+    return !isGuest && (await getCurrentRole()) === 'employer'
   }
 
   app.get('/api/knowledge/model', (_req, res) => {
@@ -808,7 +840,7 @@ async function main() {
   })
 
   app.post('/api/knowledge/model/load', async (_req, res) => {
-    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
     try {
       await ragStore.ensureEmbeddingModel()
       res.json(ragStore.getModelStatus())
@@ -818,18 +850,18 @@ async function main() {
   })
 
   app.post('/api/knowledge/model/unload', async (_req, res) => {
-    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
     await ragStore.unloadEmbeddingModel()
     res.json(ragStore.getModelStatus())
   })
 
-  app.get('/api/knowledge/documents', (_req, res) => {
-    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can list managed documents' })
+  app.get('/api/knowledge/documents', async (_req, res) => {
+    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can list managed documents' })
     res.json(ragStore.listDocuments().map(({ qvacIds, ...document }) => document))
   })
 
   app.post('/api/knowledge/documents', async (req, res) => {
-    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can add documents' })
+    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can add documents' })
     const { name, content, source = 'text' } = req.body || {}
     if (!name?.trim() || !content?.trim()) return res.status(400).json({ error: 'name and content are required' })
     try {
@@ -842,7 +874,7 @@ async function main() {
   })
 
   app.post('/api/knowledge/url', async (req, res) => {
-    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can import websites' })
+    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can import websites' })
     const { url } = req.body || {}
     if (!url?.trim()) return res.status(400).json({ error: 'url is required' })
     const result = await ragStore.fetchUrlContent(url.trim())
@@ -851,7 +883,7 @@ async function main() {
   })
 
   app.delete('/api/knowledge/documents/:id', async (req, res) => {
-    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can delete documents' })
+    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can delete documents' })
     try {
       res.json(await ragStore.deleteDocument(req.params.id))
     } catch (error) {
@@ -860,11 +892,12 @@ async function main() {
   })
 
   app.post('/api/knowledge/search', async (req, res) => {
-    if (role === 'pending') return res.status(403).json({ error: 'Your workspace role is not assigned yet' })
+    const currentRole = await getCurrentRole()
+    if (currentRole === 'pending') return res.status(403).json({ error: 'Your workspace role is not assigned yet' })
     const { query, topK = 5 } = req.body || {}
     if (!query?.trim()) return res.status(400).json({ error: 'query is required' })
     try {
-      const results = isEmployer()
+      const results = (await isEmployer())
         ? (await ragStore.searchDocuments(query.trim(), topK)).results
         : await relayRagSearch(query.trim(), topK)
       res.json({ success: true, results })

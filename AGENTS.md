@@ -134,7 +134,7 @@ npm run lint             # eslint
 ### Platform Fees
 
 - **Fee Type:** Flat fee at creation
-- **Fee Amount:** 1 USDC (configurable by admin)
+- **Fee Amount:** 1 USDC (18 decimals on Arc, configurable by admin)
 - **Fee Payer:** Company (issuer)
 - **Treasury:** Configurable by admin
 - **Withdrawal:** Admin calls `withdrawFees()`

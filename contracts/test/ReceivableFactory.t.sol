@@ -11,7 +11,7 @@ contract ReceivableFactoryTest is Test {
     address public owner;
     bytes32[] public proofHashes;
 
-    uint256 constant FEE = 1e6; // 1 USDC
+    uint256 constant FEE = 1e18; // 1 USDC (18 decimals on Arc)
 
     event FeeUpdated(uint256 oldFee, uint256 newFee);
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
@@ -24,7 +24,7 @@ contract ReceivableFactoryTest is Test {
         proofHashes.push(keccak256("proof-1"));
         proofHashes.push(keccak256("proof-2"));
 
-        vm.deal(issuer, 100_000 * 1e6);
+        vm.deal(issuer, 100_000 * 1e18);
         vm.deal(treasury, 0);
 
         factory = new ReceivableFactory(treasury, FEE);
@@ -109,20 +109,20 @@ contract ReceivableFactoryTest is Test {
     // ── Admin: set fee ──────────────────────────────────────
 
     function test_setFee() public {
-        factory.setFee(2e6);
-        assertEq(factory.feeAmount(), 2e6);
+        factory.setFee(2e18);
+        assertEq(factory.feeAmount(), 2e18);
     }
 
     function test_setFee_onlyOwner() public {
         vm.prank(issuer);
         vm.expectRevert("Not owner");
-        factory.setFee(2e6);
+        factory.setFee(2e18);
     }
 
     function test_setFee_event() public {
         vm.expectEmit(false, false, false, true);
-        emit FeeUpdated(FEE, 2e6);
-        factory.setFee(2e6);
+        emit FeeUpdated(FEE, 2e18);
+        factory.setFee(2e18);
     }
 
     function test_setFee_zero() public {
@@ -185,21 +185,21 @@ contract ReceivableFactoryTest is Test {
         _createReceivable();
         _createReceivable();
 
-        factory.setFee(2e6);
+        factory.setFee(2e18);
 
-        // Third one costs 2e6
+        // Third one costs 2e18
         vm.prank(issuer);
-        factory.createReceivable{value: 2e6}("Invoice #3", "invoice", 1000 * 1e6, 2000, 100 * 1e6, block.timestamp + 90 days, proofHashes);
+        factory.createReceivable{value: 2e18}("Invoice #3", "invoice", 1000 * 1e6, 2000, 100 * 1e6, block.timestamp + 90 days, proofHashes);
 
         // Total fees: 1 + 1 + 2 = 4 USDC
-        assertEq(factory.getCollectedFees(), 4e6);
+        assertEq(factory.getCollectedFees(), 4e18);
 
         uint256 treasuryBefore = treasury.balance;
         factory.withdrawFees();
         uint256 treasuryAfter = treasury.balance;
 
         assertEq(factory.getCollectedFees(), 0);
-        assertEq(treasuryAfter - treasuryBefore, 4e6);
+        assertEq(treasuryAfter - treasuryBefore, 4e18);
     }
 
     // ── Existing tests (updated) ────────────────────────────

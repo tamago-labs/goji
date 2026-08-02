@@ -249,7 +249,7 @@ Logic:
 
 | Parameter | Default | Notes |
 |-----------|---------|-------|
-| Fee Amount | 1 USDC | Configurable by admin |
+| Fee Amount | 1 USDC (18 decimals) | Configurable by admin |
 | Fee Payer | Company (Issuer) | Pays when creating receivable |
 | Fee Timing | At Creation | Before token is deployed |
 | Collection | Factory Contract | Accumulates until withdrawal |

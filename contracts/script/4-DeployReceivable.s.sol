@@ -37,7 +37,7 @@ contract DeployReceivable is Script {
         // Deploy ReceivableFactory
         // TODO: Set your treasury address and fee amount
         address treasury = deployer; // Temporary: deployer as treasury
-        uint256 feeAmount = 1e6;    // 1 USDC flat fee
+        uint256 feeAmount = 1e18;   // 1 USDC flat fee (18 decimals on Arc)
         ReceivableFactory factory = new ReceivableFactory(treasury, feeAmount);
         console.log("\n[1/1] ReceivableFactory deployed at:", address(factory));
 

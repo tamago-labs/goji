@@ -188,7 +188,8 @@ export default function RWAPage() {
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Name</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Type</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
-                <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Interest</th>
+                <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium' title='Interest is pro-rata: earlier investors earn more'>Interest*</th>
+                <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Tokens</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Funded</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Status</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'></th>
@@ -200,7 +201,10 @@ export default function RWAPage() {
                   <td className='px-6 py-4 text-ink/70 text-sm font-medium'>{token.name}</td>
                   <td className='px-6 py-4 text-ink/50 text-xs capitalize'>{token.type}</td>
                   <td className='px-6 py-4 font-mono text-ink/60 text-sm'>{formatAmount(token.amount)}</td>
-                  <td className='px-6 py-4 text-ink/60 text-sm'>{Number(token.interestRate) / 100}%</td>
+                  <td className='px-6 py-4 text-ink/60 text-sm' title='Pro-rata: earlier investors earn more'>
+                    {Number(token.interestRate) / 100}%*
+                  </td>
+                  <td className='px-6 py-4 font-mono text-ink/50 text-xs'>1,000,000</td>
                   <td className='px-6 py-4'>
                     <div className='flex items-center gap-2'>
                       <div className='w-16 h-1.5 bg-ink/10 rounded-full overflow-hidden'>
@@ -233,6 +237,11 @@ export default function RWAPage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Note */}
+      <div className='mt-4 text-[10px] text-ink/30'>
+        * Interest is pro-rata: calculated based on how long your funds are invested. Earlier investors earn more interest than later investors.
       </div>
     </div>
   )

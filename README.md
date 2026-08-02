@@ -1,4 +1,4 @@
-# Goji — The P2P Payment Origination Layer Built on Arc
+# Goji — The Origination Layer Built on Arc
 
 [![npm version](https://img.shields.io/npm/v/@tamago-labs/goji.svg)](https://www.npmjs.com/package/@tamago-labs/goji)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -7,7 +7,7 @@
 
 Private P2P workspace for business payments that anchors cryptographic proof on Arc, enabling receivables and other real-world assets to originate from verified payment history.
 
-<img width="886" height="408" alt="Goji" src="https://github.com/user-attachments/assets/c17d5a2c-1245-41dd-8625-52e4f4f13f53" />
+<img width="922" height="398" alt="Screenshot 2026-08-02 220139" src="https://github.com/user-attachments/assets/d52bd988-6b6b-4348-8709-b5fe73eb44a2" />
 
 ## Quick Links
 

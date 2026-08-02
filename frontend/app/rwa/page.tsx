@@ -33,40 +33,29 @@ export default function RWAPage() {
 
     async function load() {
       try {
-        // Get latest block number
-        const latestBlock = await publicClient!.getBlockNumber()
-        const chunkSize = 1000n
-        const allEvents: any[] = []
+        // Known issuers (hardcoded for now)
+        const knownIssuers = [
+          '0x3D63Ce608deB81f9436198A93BCC2e8f3D79F56E'
+        ]
 
-        // Paginate through blocks in chunks
-        for (let from = 0n; from <= latestBlock; from += chunkSize) {
-          const to = from + chunkSize - 1n > latestBlock ? latestBlock : from + chunkSize - 1n
+        // Get token addresses for each issuer
+        const allTokenAddresses: string[] = []
+        for (const issuer of knownIssuers) {
           try {
-            const events = await publicClient!.getLogs({
+            const addresses = await publicClient!.readContract({
               address: RECEIVABLE_FACTORY_ADDRESS,
-              event: {
-                type: 'event',
-                name: 'ReceivableCreated',
-                inputs: [
-                  { type: 'address', name: 'token', indexed: true },
-                  { type: 'address', name: 'issuer', indexed: true },
-                  { type: 'string', name: 'name', indexed: false },
-                  { type: 'uint256', name: 'amount', indexed: false },
-                  { type: 'uint256', name: 'interestRate', indexed: false },
-                  { type: 'uint256', name: 'expiresAt', indexed: false }
-                ]
-              },
-              fromBlock: from,
-              toBlock: to
-            })
-            allEvents.push(...events)
+              abi: RECEIVABLE_FACTORY_ABI,
+              functionName: 'getReceivables',
+              args: [issuer as `0x${string}`]
+            }) as string[]
+            allTokenAddresses.push(...addresses)
           } catch (e) {
-            console.error(`Failed to fetch events for blocks ${from}-${to}:`, e)
+            console.error('Failed to get receivables for issuer:', issuer, e)
           }
         }
 
         // Get unique token addresses
-        const tokenAddresses = [...new Set(allEvents.map(e => e.args.token))]
+        const tokenAddresses = [...new Set(allTokenAddresses.filter(a => a !== '0x0000000000000000000000000000000000000000'))]
 
         // Fetch details for each token
         const tokenData: TokenData[] = []
@@ -229,22 +218,6 @@ export default function RWAPage() {
             </tbody>
           </table>
         )}
-      </div>
-
-      {/* Contact Message */}
-      <div className='mt-8 bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 text-center'>
-        <p className='text-ink/50 text-sm mb-2'>
-          Interested in funding these assets?
-        </p>
-        <p className='text-ink/40 text-xs max-w-xl mx-auto'>
-          Connect your wallet and visit the app to invest, or contact the company directly to discuss investment opportunities.
-        </p>
-        <a
-          href='/start'
-          className='inline-block mt-4 px-6 py-2 bg-ink text-lavender text-sm font-medium rounded-xl hover:opacity-90 transition-opacity'
-        >
-          Open App
-        </a>
       </div>
     </div>
   )

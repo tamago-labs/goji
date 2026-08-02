@@ -33,27 +33,40 @@ export default function RWAPage() {
 
     async function load() {
       try {
-        // Get past ReceivableCreated events
-        const events = await publicClient!.getLogs({
-          address: RECEIVABLE_FACTORY_ADDRESS,
-          event: {
-            type: 'event',
-            name: 'ReceivableCreated',
-            inputs: [
-              { type: 'address', name: 'token', indexed: true },
-              { type: 'address', name: 'issuer', indexed: true },
-              { type: 'string', name: 'name', indexed: false },
-              { type: 'uint256', name: 'amount', indexed: false },
-              { type: 'uint256', name: 'interestRate', indexed: false },
-              { type: 'uint256', name: 'expiresAt', indexed: false }
-            ]
-          },
-          fromBlock: 0n,
-          toBlock: 'latest'
-        })
+        // Get latest block number
+        const latestBlock = await publicClient!.getBlockNumber()
+        const chunkSize = 1000n
+        const allEvents: any[] = []
+
+        // Paginate through blocks in chunks
+        for (let from = 0n; from <= latestBlock; from += chunkSize) {
+          const to = from + chunkSize - 1n > latestBlock ? latestBlock : from + chunkSize - 1n
+          try {
+            const events = await publicClient!.getLogs({
+              address: RECEIVABLE_FACTORY_ADDRESS,
+              event: {
+                type: 'event',
+                name: 'ReceivableCreated',
+                inputs: [
+                  { type: 'address', name: 'token', indexed: true },
+                  { type: 'address', name: 'issuer', indexed: true },
+                  { type: 'string', name: 'name', indexed: false },
+                  { type: 'uint256', name: 'amount', indexed: false },
+                  { type: 'uint256', name: 'interestRate', indexed: false },
+                  { type: 'uint256', name: 'expiresAt', indexed: false }
+                ]
+              },
+              fromBlock: from,
+              toBlock: to
+            })
+            allEvents.push(...events)
+          } catch (e) {
+            console.error(`Failed to fetch events for blocks ${from}-${to}:`, e)
+          }
+        }
 
         // Get unique token addresses
-        const tokenAddresses = [...new Set(events.map(e => e.args.token))]
+        const tokenAddresses = [...new Set(allEvents.map(e => e.args.token))]
 
         // Fetch details for each token
         const tokenData: TokenData[] = []

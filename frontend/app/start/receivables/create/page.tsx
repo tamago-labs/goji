@@ -34,7 +34,7 @@ interface SettledProof {
 
 interface Terms {
   name: string
-  type: 'invoice' | 'payroll' | 'contractor'
+  type: 'invoice' | 'payment'
   amount: string
   interestRate: string
   minInvestment: string
@@ -339,8 +339,7 @@ export default function CreateReceivablePage() {
                       className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
                     >
                       <option value='invoice'>Invoice</option>
-                      <option value='payroll'>Payroll</option>
-                      <option value='contractor'>Contractor</option>
+                      <option value='payment'>Payment</option>
                     </select>
                   </div>
                   <div>

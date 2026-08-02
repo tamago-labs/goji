@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Check, Wallet, FileText, Shield } from 'lucide-react'
+import { Check, Wallet, FileText, Shield, Package } from 'lucide-react'
+import Portfolio from './Portfolio'
 
 interface OverviewProps {
   apiUrl: string
@@ -447,18 +448,28 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
 
           {/* Quick Actions - Partner */}
           {isPartner && (
-            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
-              <h3 className='text-sm font-medium text-ink mb-4'>Quick Actions</h3>
-              <div className='space-y-3'>
-                <Link href='/start/proof' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
-                  <Shield className='w-5 h-5 text-ink/40' />
-                  <div>
-                    <div className='text-sm font-medium text-ink'>Proof Explorer</div>
-                    <div className='text-xs text-ink/40'>View and verify cryptographic proofs</div>
-                  </div>
-                </Link>
+            <>
+              <Portfolio />
+              <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 mt-5'>
+                <h3 className='text-sm font-medium text-ink mb-4'>Quick Actions</h3>
+                <div className='space-y-3'>
+                  <Link href='/start/available-receivables' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                    <Package className='w-5 h-5 text-ink/40' />
+                    <div>
+                      <div className='text-sm font-medium text-ink'>Browse Receivables</div>
+                      <div className='text-xs text-ink/40'>Find investment opportunities</div>
+                    </div>
+                  </Link>
+                  <Link href='/start/proof' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
+                    <Shield className='w-5 h-5 text-ink/40' />
+                    <div>
+                      <div className='text-sm font-medium text-ink'>Proof Explorer</div>
+                      <div className='text-xs text-ink/40'>View and verify cryptographic proofs</div>
+                    </div>
+                  </Link>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </>
       )}

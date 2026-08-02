@@ -4,23 +4,32 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { usePublicClient, useWalletClient } from 'wagmi'
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, Loader2, Search, ExternalLink } from 'lucide-react'
+import { X, Loader2, Search, CheckCircle, Plus } from 'lucide-react'
 import { useStart } from '../../../components/start/StartProvider'
 import { RECEIVABLE_FACTORY_ABI, RECEIVABLE_FACTORY_ADDRESS } from '../../../../lib/receivableFactory'
-import { keccak256, toBytes } from 'viem'
 
-interface FlowProof {
+interface PendingFlow {
   id: string
-  flowId: string
-  flowName: string
+  boardId: string
+  boardName: string
   routeId: string
+  status: string
+  from: string
+  to: string
+  amount: string
+  docName: string
+  updatedAt: number
+}
+
+interface SettledProof {
+  id: string
+  flowName: string
   merkleRoot: string
   from: string
   to: string
   amount: string
   docName: string
   updatedAt: number
-  selected: boolean
 }
 
 interface Terms {
@@ -39,12 +48,17 @@ export default function CreateReceivablePage() {
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
 
-  const [step, setStep] = useState(1)
-  const [proofs, setProofs] = useState<FlowProof[]>([])
+  const [pendingFlows, setPendingFlows] = useState<PendingFlow[]>([])
+  const [settledProofs, setSettledProofs] = useState<SettledProof[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [searchHash, setSearchHash] = useState('')
+  const [searchPending, setSearchPending] = useState('')
+  const [searchProofs, setSearchProofs] = useState('')
 
+  // Modal state
+  const [showModal, setShowModal] = useState(false)
+  const [selectedFlow, setSelectedFlow] = useState<PendingFlow | null>(null)
+  const [selectedProofs, setSelectedProofs] = useState<SettledProof[]>([])
   const [terms, setTerms] = useState<Terms>({
     name: '',
     type: 'invoice',
@@ -54,7 +68,7 @@ export default function CreateReceivablePage() {
     expiryDays: '90'
   })
 
-  // Load settled flows with merkleRoot
+  // Load data
   useEffect(() => {
     async function load() {
       try {
@@ -62,7 +76,9 @@ export default function CreateReceivablePage() {
         if (!boardsRes.ok) { setLoading(false); return }
         const boards = await boardsRes.json()
 
-        const allProofs: FlowProof[] = []
+        const pending: PendingFlow[] = []
+        const settled: SettledProof[] = []
+
         for (const board of boards) {
           const [statusRes, connRes, cardsRes] = await Promise.all([
             fetch(`${apiUrl}/api/flow-status?flowId=${board.id}`),
@@ -79,77 +95,84 @@ export default function CreateReceivablePage() {
           const cardMap = new Map(cards.map((c: any) => [c.id, c]))
 
           for (const s of statuses) {
-            if (s.status !== 'settled' || !s.merkleRoot) continue
-
             const conn = connMap.get(s.routeId)
             if (!conn) continue
 
             const fromCard = cardMap.get(conn.from)
             const toCard = cardMap.get(conn.to)
 
-            allProofs.push({
+            const base = {
               id: s.id,
-              flowId: s.flowId,
               flowName: board.name,
-              routeId: s.routeId,
-              merkleRoot: s.merkleRoot,
               from: fromCard?.title || 'Unknown',
               to: toCard?.title || 'Unknown',
               amount: conn.amount || '0',
               docName: conn.docName || 'Document',
-              updatedAt: s.updatedAt,
-              selected: false
-            })
+              updatedAt: s.updatedAt
+            }
+
+            if (s.status === 'pending') {
+              pending.push({
+                ...base,
+                boardId: board.id,
+                routeId: s.routeId,
+                status: s.status
+              })
+            } else if (s.status === 'settled' && s.merkleRoot) {
+              settled.push({
+                ...base,
+                merkleRoot: s.merkleRoot
+              })
+            }
           }
         }
 
-        allProofs.sort((a, b) => b.updatedAt - a.updatedAt)
-        setProofs(allProofs)
+        pending.sort((a, b) => b.updatedAt - a.updatedAt)
+        settled.sort((a, b) => b.updatedAt - a.updatedAt)
+
+        setPendingFlows(pending)
+        setSettledProofs(settled)
       } catch (e) {
-        console.error('Failed to load proofs:', e)
+        console.error('Failed to load data:', e)
       }
       setLoading(false)
     }
     load()
   }, [apiUrl])
 
-  const toggleProof = (id: string) => {
-    setProofs(proofs.map(p => p.id === id ? { ...p, selected: !p.selected } : p))
+  const openModal = (flow: PendingFlow) => {
+    setSelectedFlow(flow)
+    setSelectedProofs([])
+    setTerms({
+      name: flow.docName || flow.boardName,
+      type: 'invoice',
+      amount: flow.amount,
+      interestRate: '20',
+      minInvestment: '100',
+      expiryDays: '90'
+    })
+    setShowModal(true)
   }
 
-  const selectAll = () => {
-    const filtered = getFilteredProofs()
-    const allSelected = filtered.every(p => p.selected)
-    setProofs(proofs.map(p => filtered.find(f => f.id === p.id) ? { ...p, selected: !allSelected } : p))
-  }
-
-  const getFilteredProofs = () => {
-    if (!searchHash) return proofs
-    return proofs.filter(p =>
-      p.merkleRoot.toLowerCase().includes(searchHash.toLowerCase()) ||
-      p.flowName.toLowerCase().includes(searchHash.toLowerCase()) ||
-      p.docName.toLowerCase().includes(searchHash.toLowerCase())
+  const toggleProof = (proof: SettledProof) => {
+    setSelectedProofs(prev =>
+      prev.find(p => p.id === proof.id)
+        ? prev.filter(p => p.id !== proof.id)
+        : [...prev, proof]
     )
   }
 
-  const getSelectedProofs = () => proofs.filter(p => p.selected)
-
-  const getTotalAmount = () => {
-    return getSelectedProofs().reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0)
-  }
-
   const handleCreate = async () => {
-    if (!walletClient || !address || !publicClient) return
+    if (!walletClient || !address || !publicClient || !selectedFlow) return
 
     setCreating(true)
     try {
-      const proofHashes = getSelectedProofs().map(p => p.merkleRoot as `0x${string}`)
+      const proofHashes = selectedProofs.map(p => p.merkleRoot as `0x${string}`)
       const amount = BigInt(Math.floor(parseFloat(terms.amount) * 1e6))
       const interestRate = BigInt(Math.floor(parseFloat(terms.interestRate) * 100))
       const minInvest = BigInt(Math.floor(parseFloat(terms.minInvestment) * 1e6))
       const expiresAt = BigInt(Math.floor(Date.now() / 1000) + parseInt(terms.expiryDays) * 86400)
 
-      // Get fee from factory
       const fee = await publicClient.readContract({
         address: RECEIVABLE_FACTORY_ADDRESS,
         abi: RECEIVABLE_FACTORY_ABI,
@@ -176,6 +199,7 @@ export default function CreateReceivablePage() {
       const hash = await walletClient.writeContract(request)
       await publicClient.waitForTransactionReceipt({ hash })
 
+      setShowModal(false)
       router.push('/start/receivables/list')
     } catch (e) {
       console.error('Failed to create receivable:', e)
@@ -190,279 +214,278 @@ export default function CreateReceivablePage() {
     return `$${num.toLocaleString()}`
   }
 
+  const filteredPending = pendingFlows.filter(f =>
+    !searchPending ||
+    f.flowName.toLowerCase().includes(searchPending.toLowerCase()) ||
+    f.docName.toLowerCase().includes(searchPending.toLowerCase()) ||
+    f.from.toLowerCase().includes(searchPending.toLowerCase()) ||
+    f.to.toLowerCase().includes(searchPending.toLowerCase())
+  )
+
+  const filteredProofs = settledProofs.filter(p =>
+    !searchProofs ||
+    p.flowName.toLowerCase().includes(searchProofs.toLowerCase()) ||
+    p.docName.toLowerCase().includes(searchProofs.toLowerCase()) ||
+    p.merkleRoot.toLowerCase().includes(searchProofs.toLowerCase())
+  )
+
   return (
     <div>
-      <h2 className='font-display text-xl font-semibold mb-6'>Create Receivable</h2>
-
-      {/* Progress Steps */}
-      <div className='flex items-center gap-4 mb-8'>
-        {[
-          { num: 1, label: 'Select Proofs' },
-          { num: 2, label: 'Set Terms' },
-          { num: 3, label: 'Review & Pay' }
-        ].map((s, i) => (
-          <div key={s.num} className='flex items-center gap-2'>
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
-              step > s.num ? 'bg-mint text-white' :
-              step === s.num ? 'bg-ink text-lavender' :
-              'bg-ink/10 text-ink/40'
-            }`}>
-              {step > s.num ? <CheckCircle className='w-4 h-4' /> : s.num}
-            </div>
-            <span className={`text-sm ${step === s.num ? 'text-ink font-medium' : 'text-ink/40'}`}>{s.label}</span>
-            {i < 2 && <div className='w-12 h-px bg-ink/10 mx-2' />}
-          </div>
-        ))}
+      <div className='flex items-center justify-between mb-6'>
+        <div>
+          <h2 className='font-display text-xl font-semibold'>Create Receivable</h2>
+          <p className='text-xs text-ink/40 mt-1'>Select a pending flow to create a receivable asset</p>
+        </div>
       </div>
 
-      {/* Step 1: Select Proofs */}
-      {step === 1 && (
-        <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='text-sm font-semibold text-ink'>Select Verified Payments</h3>
-            <div className='flex items-center gap-3'>
-              <div className='relative'>
-                <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30' />
-                <input
-                  value={searchHash}
-                  onChange={(e) => setSearchHash(e.target.value)}
-                  placeholder='Search proofs...'
-                  className='text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg pl-9 pr-3 py-1.5 focus:outline-none focus:border-ink/20 w-48'
-                />
+      {/* Pending Flows Table */}
+      <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden'>
+        <div className='px-6 py-3 border-b border-ink/8 flex items-center justify-between'>
+          <span className='text-xs text-ink/40 uppercase tracking-wider'>Pending Flows ({filteredPending.length})</span>
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/30' />
+            <input
+              value={searchPending}
+              onChange={(e) => setSearchPending(e.target.value)}
+              placeholder='Search flows...'
+              className='text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg pl-9 pr-3 py-1.5 focus:outline-none focus:border-ink/20 w-48'
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className='flex items-center justify-center min-h-[200px]'>
+            <Loader2 className='w-6 h-6 text-ink/40 animate-spin' />
+          </div>
+        ) : filteredPending.length === 0 ? (
+          <div className='p-8 text-center'>
+            <p className='text-ink/40 text-sm font-medium mb-1'>No pending flows</p>
+            <p className='text-ink/30 text-xs'>Create a payment flow first, then come back to create a receivable.</p>
+          </div>
+        ) : (
+          <table className='w-full text-sm'>
+            <thead>
+              <tr className='border-b border-ink/5 text-left'>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Date</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Flow</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Document</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>From</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>To</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Status</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPending.map((flow) => (
+                <tr key={flow.id} className='border-b border-ink/5 hover:bg-ink/3 transition-colors'>
+                  <td className='px-6 py-3 text-ink/50 text-xs'>
+                    {new Date(flow.updatedAt).toLocaleDateString()}
+                  </td>
+                  <td className='px-6 py-3 text-ink/70 text-sm'>{flow.flowName}</td>
+                  <td className='px-6 py-3 text-ink/60 text-xs'>{flow.docName}</td>
+                  <td className='px-6 py-3 text-ink/60 text-xs max-w-[120px] truncate'>{flow.from}</td>
+                  <td className='px-6 py-3 text-ink/60 text-xs max-w-[120px] truncate'>{flow.to}</td>
+                  <td className='px-6 py-3 font-mono text-ink/60 text-sm'>{formatAmount(flow.amount)}</td>
+                  <td className='px-6 py-3'>
+                    <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700'>
+                      Pending
+                    </span>
+                  </td>
+                  <td className='px-6 py-3'>
+                    <button
+                      onClick={() => openModal(flow)}
+                      className='flex items-center gap-1 text-[10px] text-mint hover:text-[#1B7A50] font-medium transition-colors'
+                    >
+                      <Plus className='w-3 h-3' />
+                      Create Receivable
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Create Receivable Modal */}
+      {showModal && selectedFlow && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center'>
+          <div className='absolute inset-0 bg-black/40' onClick={() => setShowModal(false)} />
+          <div className='relative bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.25)] w-[700px] max-h-[85vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150'>
+            {/* Header */}
+            <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
+              <div>
+                <h3 className='font-display text-lg font-semibold'>Create Receivable</h3>
+                <p className='text-xs text-ink/40 mt-0.5'>From: {selectedFlow.docName} — {formatAmount(selectedFlow.amount)}</p>
               </div>
-              <button onClick={selectAll} className='text-xs text-ink/40 hover:text-ink/60 transition-colors'>
-                {getFilteredProofs().every(p => p.selected) ? 'Deselect All' : 'Select All'}
+              <button
+                onClick={() => setShowModal(false)}
+                className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
+              >
+                <X className='w-4 h-4' />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className='flex-1 overflow-y-auto p-6'>
+              {/* Terms Section */}
+              <div className='mb-6'>
+                <h4 className='text-xs text-ink/40 uppercase tracking-wider mb-3'>Terms</h4>
+                <div className='grid grid-cols-2 gap-3'>
+                  <div>
+                    <label className='block text-xs text-ink/40 mb-1'>Name</label>
+                    <input
+                      value={terms.name}
+                      onChange={(e) => setTerms({ ...terms, name: e.target.value })}
+                      className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-xs text-ink/40 mb-1'>Type</label>
+                    <select
+                      value={terms.type}
+                      onChange={(e) => setTerms({ ...terms, type: e.target.value as any })}
+                      className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
+                    >
+                      <option value='invoice'>Invoice</option>
+                      <option value='payroll'>Payroll</option>
+                      <option value='contractor'>Contractor</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className='block text-xs text-ink/40 mb-1'>Amount (USDC)</label>
+                    <input
+                      type='number'
+                      value={terms.amount}
+                      onChange={(e) => setTerms({ ...terms, amount: e.target.value })}
+                      className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-xs text-ink/40 mb-1'>Interest Rate (%)</label>
+                    <input
+                      type='number'
+                      value={terms.interestRate}
+                      onChange={(e) => setTerms({ ...terms, interestRate: e.target.value })}
+                      className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-xs text-ink/40 mb-1'>Min Investment (USDC)</label>
+                    <input
+                      type='number'
+                      value={terms.minInvestment}
+                      onChange={(e) => setTerms({ ...terms, minInvestment: e.target.value })}
+                      className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
+                    />
+                  </div>
+                  <div>
+                    <label className='block text-xs text-ink/40 mb-1'>Expiry (days)</label>
+                    <input
+                      type='number'
+                      value={terms.expiryDays}
+                      onChange={(e) => setTerms({ ...terms, expiryDays: e.target.value })}
+                      className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-2 focus:outline-none focus:border-ink/20'
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Proofs Section */}
+              <div>
+                <div className='flex items-center justify-between mb-3'>
+                  <h4 className='text-xs text-ink/40 uppercase tracking-wider'>
+                    Collateral Proofs ({selectedProofs.length} selected)
+                  </h4>
+                  <div className='relative'>
+                    <Search className='absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-ink/30' />
+                    <input
+                      value={searchProofs}
+                      onChange={(e) => setSearchProofs(e.target.value)}
+                      placeholder='Search proofs...'
+                      className='text-[10px] text-ink bg-ink/5 border border-ink/10 rounded-lg pl-7 pr-2 py-1 focus:outline-none focus:border-ink/20 w-36'
+                    />
+                  </div>
+                </div>
+
+                {settledProofs.length === 0 ? (
+                  <div className='bg-ink/[0.02] rounded-xl p-4 text-center'>
+                    <p className='text-xs text-ink/40'>No settled proofs available</p>
+                    <p className='text-[10px] text-ink/30 mt-1'>Settle some payment flows first to use as collateral</p>
+                  </div>
+                ) : (
+                  <div className='space-y-1 max-h-[200px] overflow-y-auto'>
+                    {filteredProofs.map((proof) => {
+                      const isSelected = selectedProofs.find(p => p.id === proof.id)
+                      return (
+                        <div
+                          key={proof.id}
+                          onClick={() => toggleProof(proof)}
+                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected ? 'bg-mint/5 border border-mint/20' : 'hover:bg-ink/3 border border-transparent'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                            isSelected ? 'bg-mint border-mint' : 'border-ink/20'
+                          }`}>
+                            {isSelected && <CheckCircle className='w-3 h-3 text-white' />}
+                          </div>
+                          <div className='flex-1 min-w-0'>
+                            <div className='flex items-center gap-2'>
+                              <span className='text-xs text-ink/70 font-medium'>{proof.docName}</span>
+                              <span className='text-[10px] text-ink/40'>•</span>
+                              <span className='text-[10px] text-ink/40'>{proof.flowName}</span>
+                            </div>
+                            <div className='text-[10px] text-ink/40 font-mono truncate'>{proof.merkleRoot}</div>
+                          </div>
+                          <span className='text-xs text-ink/60 font-mono flex-shrink-0'>{formatAmount(proof.amount)}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Summary */}
+              <div className='mt-6 bg-ink/[0.02] rounded-xl p-4'>
+                <div className='flex items-center justify-between text-xs mb-2'>
+                  <span className='text-ink/40'>Platform Fee</span>
+                  <span className='text-ink/60'>1 USDC</span>
+                </div>
+                <div className='flex items-center justify-between text-xs'>
+                  <span className='text-ink/40'>Proofs Selected</span>
+                  <span className='text-ink/60'>{selectedProofs.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className='px-6 py-4 border-t border-ink/8 flex items-center justify-end gap-3'>
+              <button
+                onClick={() => setShowModal(false)}
+                className='px-4 py-2 text-xs text-ink/40 hover:text-ink/60 transition-colors'
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={creating || !terms.name || !terms.amount || selectedProofs.length === 0}
+                className='px-4 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 disabled:opacity-30 transition-opacity'
+              >
+                {creating ? (
+                  <span className='flex items-center gap-2'>
+                    <Loader2 className='w-3 h-3 animate-spin' />
+                    Creating...
+                  </span>
+                ) : (
+                  'Create Receivable'
+                )}
               </button>
             </div>
           </div>
-
-          {loading ? (
-            <div className='flex items-center justify-center min-h-[200px]'>
-              <Loader2 className='w-6 h-6 text-ink/40 animate-spin' />
-            </div>
-          ) : proofs.length === 0 ? (
-            <div className='p-8 text-center'>
-              <p className='text-ink/40 text-sm'>No settled payments with proofs found.</p>
-              <p className='text-ink/30 text-xs mt-1'>Complete a payment flow first to generate proofs.</p>
-            </div>
-          ) : (
-            <>
-              <table className='w-full text-sm'>
-                <thead>
-                  <tr className='border-b border-ink/5 text-left'>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium w-8'></th>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Date</th>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Flow</th>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Document</th>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>From</th>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>To</th>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
-                    <th className='px-4 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Proof</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getFilteredProofs().map((proof) => (
-                    <tr
-                      key={proof.id}
-                      onClick={() => toggleProof(proof.id)}
-                      className={`border-b border-ink/5 cursor-pointer transition-colors ${
-                        proof.selected ? 'bg-mint/5' : 'hover:bg-ink/3'
-                      }`}
-                    >
-                      <td className='px-4 py-3'>
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                          proof.selected ? 'bg-mint border-mint' : 'border-ink/20'
-                        }`}>
-                          {proof.selected && <CheckCircle className='w-3 h-3 text-white' />}
-                        </div>
-                      </td>
-                      <td className='px-4 py-3 text-ink/50 text-xs'>
-                        {new Date(proof.updatedAt).toLocaleDateString()}
-                      </td>
-                      <td className='px-4 py-3 text-ink/70 text-sm'>{proof.flowName}</td>
-                      <td className='px-4 py-3 text-ink/60 text-xs'>{proof.docName}</td>
-                      <td className='px-4 py-3 text-ink/60 text-xs max-w-[100px] truncate'>{proof.from}</td>
-                      <td className='px-4 py-3 text-ink/60 text-xs max-w-[100px] truncate'>{proof.to}</td>
-                      <td className='px-4 py-3 font-mono text-ink/60 text-sm'>{formatAmount(proof.amount)}</td>
-                      <td className='px-4 py-3 font-mono text-ink/40 text-[10px] max-w-[120px] truncate'>
-                        {proof.merkleRoot.slice(0, 14)}...
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className='mt-4 text-xs text-ink/40'>
-                {getSelectedProofs().length} selected · Total: {formatAmount(String(getTotalAmount()))}
-              </div>
-            </>
-          )}
         </div>
       )}
-
-      {/* Step 2: Set Terms */}
-      {step === 2 && (
-        <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
-          <h3 className='text-sm font-semibold text-ink mb-4'>Set Receivable Terms</h3>
-
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <label className='block text-xs text-ink/40 mb-1.5'>Receivable Name</label>
-              <input
-                value={terms.name}
-                onChange={(e) => setTerms({ ...terms, name: e.target.value })}
-                placeholder='e.g., Invoice #123'
-                className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-              />
-            </div>
-            <div>
-              <label className='block text-xs text-ink/40 mb-1.5'>Type</label>
-              <select
-                value={terms.type}
-                onChange={(e) => setTerms({ ...terms, type: e.target.value as any })}
-                className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-              >
-                <option value='invoice'>Invoice</option>
-                <option value='payroll'>Payroll</option>
-                <option value='contractor'>Contractor</option>
-              </select>
-            </div>
-            <div>
-              <label className='block text-xs text-ink/40 mb-1.5'>Amount (USDC)</label>
-              <input
-                type='number'
-                value={terms.amount}
-                onChange={(e) => setTerms({ ...terms, amount: e.target.value })}
-                placeholder='10000'
-                className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-              />
-            </div>
-            <div>
-              <label className='block text-xs text-ink/40 mb-1.5'>Interest Rate (%)</label>
-              <input
-                type='number'
-                value={terms.interestRate}
-                onChange={(e) => setTerms({ ...terms, interestRate: e.target.value })}
-                placeholder='20'
-                className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-              />
-            </div>
-            <div>
-              <label className='block text-xs text-ink/40 mb-1.5'>Min Investment (USDC)</label>
-              <input
-                type='number'
-                value={terms.minInvestment}
-                onChange={(e) => setTerms({ ...terms, minInvestment: e.target.value })}
-                placeholder='100'
-                className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-              />
-            </div>
-            <div>
-              <label className='block text-xs text-ink/40 mb-1.5'>Expiry (days)</label>
-              <input
-                type='number'
-                value={terms.expiryDays}
-                onChange={(e) => setTerms({ ...terms, expiryDays: e.target.value })}
-                placeholder='90'
-                className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Review & Pay */}
-      {step === 3 && (
-        <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
-          <h3 className='text-sm font-semibold text-ink mb-4'>Review & Create</h3>
-
-          <div className='grid grid-cols-2 gap-6'>
-            <div className='space-y-3'>
-              <div className='bg-ink/[0.02] rounded-xl p-4'>
-                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Name</div>
-                <div className='text-sm font-medium text-ink'>{terms.name || 'Unnamed'}</div>
-              </div>
-              <div className='bg-ink/[0.02] rounded-xl p-4'>
-                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Type</div>
-                <div className='text-sm text-ink capitalize'>{terms.type}</div>
-              </div>
-              <div className='bg-ink/[0.02] rounded-xl p-4'>
-                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Amount</div>
-                <div className='text-sm font-semibold text-ink'>{formatAmount(terms.amount)}</div>
-              </div>
-            </div>
-            <div className='space-y-3'>
-              <div className='bg-ink/[0.02] rounded-xl p-4'>
-                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Interest Rate</div>
-                <div className='text-sm text-ink'>{terms.interestRate}%</div>
-              </div>
-              <div className='bg-ink/[0.02] rounded-xl p-4'>
-                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Min Investment</div>
-                <div className='text-sm text-ink'>{formatAmount(terms.minInvestment)}</div>
-              </div>
-              <div className='bg-ink/[0.02] rounded-xl p-4'>
-                <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-1'>Expiry</div>
-                <div className='text-sm text-ink'>{terms.expiryDays} days</div>
-              </div>
-            </div>
-          </div>
-
-          <div className='mt-4 bg-ink/[0.02] rounded-xl p-4'>
-            <div className='text-[10px] text-ink/40 uppercase tracking-wider mb-2'>Selected Proofs ({getSelectedProofs().length})</div>
-            <div className='space-y-1'>
-              {getSelectedProofs().map(p => (
-                <div key={p.id} className='flex items-center justify-between text-xs'>
-                  <span className='text-ink/60'>{p.docName} — {p.from} → {p.to}</span>
-                  <span className='font-mono text-ink/40'>{p.merkleRoot.slice(0, 14)}...</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className='mt-4 bg-amber-50 rounded-xl p-4 flex items-center gap-3'>
-            <div className='text-sm text-amber-700'>
-              <span className='font-medium'>Platform Fee:</span> 1 USDC
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      <div className='flex items-center justify-between mt-6'>
-        <button
-          onClick={() => setStep(Math.max(1, step - 1))}
-          disabled={step === 1}
-          className='flex items-center gap-2 px-4 py-2 text-sm text-ink/40 hover:text-ink/60 disabled:opacity-30 transition-colors'
-        >
-          <ArrowLeft className='w-4 h-4' />
-          Back
-        </button>
-
-        {step < 3 ? (
-          <button
-            onClick={() => setStep(step + 1)}
-            disabled={(step === 1 && getSelectedProofs().length === 0) || (step === 2 && (!terms.name || !terms.amount))}
-            className='flex items-center gap-2 px-4 py-2 bg-ink text-lavender text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-30 transition-opacity'
-          >
-            Next
-            <ArrowRight className='w-4 h-4' />
-          </button>
-        ) : (
-          <button
-            onClick={handleCreate}
-            disabled={creating}
-            className='flex items-center gap-2 px-6 py-2 bg-mint text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-30 transition-opacity'
-          >
-            {creating ? (
-              <>
-                <Loader2 className='w-4 h-4 animate-spin' />
-                Creating...
-              </>
-            ) : (
-              'Create Receivable'
-            )}
-          </button>
-        )}
-      </div>
     </div>
   )
 }

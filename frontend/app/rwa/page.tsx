@@ -112,6 +112,11 @@ export default function RWAPage() {
     return Math.ceil((Number(expiresAt) - Number(issuedAt)) / 86400)
   }
 
+  const getFundingPercent = (funded: bigint, total: bigint) => {
+    if (total === 0n) return 0
+    return Number((funded * 100n) / total)
+  }
+
   const filtered = tokens.filter(t => {
     if (filterType !== 'all' && t.type !== filterType) return false
     if (filterStatus !== 'all') {
@@ -184,9 +189,8 @@ export default function RWAPage() {
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Type</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Interest</th>
-                <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Term</th>
+                <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Funded</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Status</th>
-                <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Issuer</th>
                 <th className='px-6 py-3 text-[10px] text-ink/40 uppercase tracking-wider font-medium'></th>
               </tr>
             </thead>
@@ -197,14 +201,25 @@ export default function RWAPage() {
                   <td className='px-6 py-4 text-ink/50 text-xs capitalize'>{token.type}</td>
                   <td className='px-6 py-4 font-mono text-ink/60 text-sm'>{formatAmount(token.amount)}</td>
                   <td className='px-6 py-4 text-ink/60 text-sm'>{Number(token.interestRate) / 100}%</td>
-                  <td className='px-6 py-4 text-ink/50 text-xs'>{getTermDays(token.issuedAt, token.expiresAt)} days</td>
+                  <td className='px-6 py-4'>
+                    <div className='flex items-center gap-2'>
+                      <div className='w-16 h-1.5 bg-ink/10 rounded-full overflow-hidden'>
+                        <div
+                          className='h-full bg-mint rounded-full'
+                          style={{ width: `${getFundingPercent(token.fundedAmount, token.amount)}%` }}
+                        />
+                      </div>
+                      <span className='text-[10px] text-ink/40 font-mono'>
+                        {getFundingPercent(token.fundedAmount, token.amount)}%
+                      </span>
+                    </div>
+                  </td>
                   <td className='px-6 py-4'>
                     {token.status === 0 && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700'>Active</span>}
                     {token.status === 1 && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Funded</span>}
                     {token.status === 2 && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700'>Expired</span>}
                     {token.status === 3 && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Redeemed</span>}
                   </td>
-                  <td className='px-6 py-4 text-ink/40 text-xs font-mono'>{shortenAddress(token.issuer)}</td>
                   <td className='px-6 py-4'>
                     <Link
                       href={`/rwa/${token.address}`}

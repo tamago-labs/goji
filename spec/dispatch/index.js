@@ -33,8 +33,11 @@ class Router {
     this._handler22 = null
     this._handler23 = null
     this._handler24 = null
+    this._handler25 = null
+    this._handler26 = null
+    this._handler27 = null
 
-    this._missing = 25
+    this._missing = 28
   }
 
   add (name, handler) {
@@ -114,6 +117,15 @@ class Router {
       case '@goji/remove-receivable':
         this._handler24 = handler
         break
+      case '@goji/add-knowledge-document':
+        this._handler25 = handler
+        break
+      case '@goji/rag-search':
+        this._handler26 = handler
+        break
+      case '@goji/rag-search-result':
+        this._handler27 = handler
+        break
       default:
         throw DispatchError.NONEXISTENT_ROUTE(name)
     }
@@ -146,6 +158,9 @@ class Router {
     assert(this._handler22 !== null, 'Missing handler for "@goji/add-receivable"')
     assert(this._handler23 !== null, 'Missing handler for "@goji/update-receivable"')
     assert(this._handler24 !== null, 'Missing handler for "@goji/remove-receivable"')
+    assert(this._handler25 !== null, 'Missing handler for "@goji/add-knowledge-document"')
+    assert(this._handler26 !== null, 'Missing handler for "@goji/rag-search"')
+    assert(this._handler27 !== null, 'Missing handler for "@goji/rag-search-result"')
   }
 
   async dispatch (message, context) {
@@ -208,6 +223,12 @@ class Router {
         return this._handler23(op.value, context)
       case 24:
         return this._handler24(op.value, context)
+      case 25:
+        return this._handler25(op.value, context)
+      case 26:
+        return this._handler26(op.value, context)
+      case 27:
+        return this._handler27(op.value, context)
       default:
         throw DispatchError.HANDLER_NOT_FOUND_BY_ID(op.id)
     }
@@ -391,6 +412,24 @@ const route24 = {
   enc: getEncoding('@goji/receivable-remove')
 }
 
+const route25 = {
+  name: '@goji/add-knowledge-document',
+  id: 25,
+  enc: getEncoding('@goji/knowledge-document')
+}
+
+const route26 = {
+  name: '@goji/rag-search',
+  id: 26,
+  enc: getEncoding('@goji/rag-search')
+}
+
+const route27 = {
+  name: '@goji/rag-search-result',
+  id: 27,
+  enc: getEncoding('@goji/rag-search-result')
+}
+
 function getRouteByName (name) {
   switch (name) {
     case '@goji/add-writer':
@@ -443,6 +482,12 @@ function getRouteByName (name) {
       return route23
     case '@goji/remove-receivable':
       return route24
+    case '@goji/add-knowledge-document':
+      return route25
+    case '@goji/rag-search':
+      return route26
+    case '@goji/rag-search-result':
+      return route27
     default:
       throw DispatchError.ROUTE_NOT_FOUND_BY_NAME(name)
   }
@@ -500,6 +545,12 @@ function getRouteById (id) {
       return route23
     case 24:
       return route24
+    case 25:
+      return route25
+    case 26:
+      return route26
+    case 27:
+      return route27
     default:
       throw DispatchError.HANDLER_NOT_FOUND_BY_ID(id)
   }

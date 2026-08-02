@@ -1,6 +1,6 @@
 {
   "name": "@tamago-labs/goji",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Arc-native P2P origination layer. Turn verified USDC payments into real-world assets with cryptographic proof.",
   "main": "src/index.js",
   "bin": {
@@ -42,6 +42,7 @@
     "hyperdispatch": "^1.6.0",
     "hyperschema": "^1.21.0",
     "hyperswarm": "^4.17.0",
+    "@qvac/sdk": "^0.13.5",
     "keet-identity-key": "^3.2.0",
     "ready-resource": "^1.2.0",
     "ws": "^8.18.0",

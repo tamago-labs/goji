@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "offset": 0,
   "schema": [
     {
@@ -151,6 +151,24 @@
       "name": "@goji/remove-receivable",
       "requestType": "@goji/receivable-remove",
       "version": 2
+    },
+    {
+      "id": 25,
+      "name": "@goji/add-knowledge-document",
+      "requestType": "@goji/knowledge-document",
+      "version": 3
+    },
+    {
+      "id": 26,
+      "name": "@goji/rag-search",
+      "requestType": "@goji/rag-search",
+      "version": 3
+    },
+    {
+      "id": 27,
+      "name": "@goji/rag-search-result",
+      "requestType": "@goji/rag-search-result",
+      "version": 3
     }
   ]
 }

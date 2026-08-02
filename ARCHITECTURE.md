@@ -27,6 +27,7 @@ Goji transforms verified payment records into real-world assets (RWAs). Companie
 │                    Node.js Terminal                             │
 ├─────────────────────────────────────────────────────────────────┤
 │  Express API  │  WebSocket  │  Autobase  │  Hyperschema        │
+│  Local QVAC embeddings + private RAG index                     │
 └─────────────────────────────┬───────────────────────────────────┘
                               │
 ┌─────────────────────────────┼───────────────────────────────────┐
@@ -35,6 +36,14 @@ Goji transforms verified payment records into real-world assets (RWAs). Companie
 │  GojiProof  │  ReceivableFactory  │  ReceivableToken            │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Private Knowledge Base
+
+The company CLI is the knowledge host. It stores document metadata and QVAC embeddings locally under its Goji storage directory. Text and URLs are ingested only by the employer. Other authorized peers submit `rag-search` requests through the encrypted Autobase room and receive bounded `rag-search-result` snippets; full documents and embeddings are never replicated.
+
+The frontend exposes document/model management under `/start/organization/ai-assistant` for the employer and search under `/start/knowledge` for all assigned workspace roles.
 
 ---
 
@@ -226,6 +235,8 @@ Expired  Defaulted
 | `/start/receivables/*` | Company | Create/manage receivables |
 | `/start/available-receivables/*` | Partner | Browse and invest |
 | `/start/proof` | All | Verify merkle roots |
+| `/start/knowledge` | All assigned roles | Search private P2P knowledge |
+| `/start/organization/ai-assistant` | Company | Manage local model and documents |
 
 ### Data Sources
 

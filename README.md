@@ -14,6 +14,7 @@ Private P2P workspace for business payments that anchors cryptographic proof on 
 - **Live App:** https://goji-testnet.vercel.app/
 - **Demo Video:** https://www.youtube.com/watch?v=YfxArY9uQQo
 - **Presentation:** https://canva.link/7z2iw3keeii3uwc
+- **Architecture:** [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 Goji is a P2P payment origination layer built on Arc.
 
@@ -48,148 +49,228 @@ Goji is a private payment workspace built on Arc where businesses, counterpartie
 
 ---
 
-## Who It's For
-
-- **Businesses** — Create and settle payroll, contractor payments, invoices, and vendor payments.
-- **Counterparties** — Receive payments, verify records, and access permissioned documents.
-- **Financial Partners** — Verify cryptographic proof, evaluate payment history, and fund real-world assets.
-
----
-
 ## How It Works
 
-### Run the Terminal
+Goji runs as a local terminal that hosts a private workspace. The frontend connects to the terminal over HTTP and WebSocket, while authorized workspace data replicates through an encrypted Pear P2P room.
 
-```
+### Host a Workspace
+
+Run the company terminal:
+
+```bash
 npx @tamago-labs/goji
 ```
 
+The host terminal prints an invite code. Share it with the people who should join the workspace.
+
+### Join a Workspace
+
+Run:
+
+```bash
+npx @tamago-labs/goji --join
+```
+
+Goji prompts for the invite code and connects the terminal to the existing workspace.
+
+After joining, the company administrator assigns each participant a role from **Organization → Members**.
+
 ### Workspace Roles
 
-| Role | Description |
-|------|-------------|
-| Company | Creates payment workflows, manages participants |
-| Payee | Receives payments, views documents |
-| Payer | Approves and sends payments |
-| Financial Partner | Verifies proof, provides financing |
+| Role              | Access                                                 |
+| ----------------- | ------------------------------------------------------ |
+| Company           | Manages members, workflows, documents, and receivables |
+| Payee             | Receives payments and views permitted documents        |
+| Payer             | Reviews and approves payment flows                     |
+| Financial Partner | Verifies proofs and funds receivables                  |
 
-### Invoice Flow
+## P2P Identity
 
-1. **Create** — Draft invoice, add documents, send P2P
-2. **Fund & Approve** — Payer tops up Unified Balance, reviews and approves
-3. **Settle on Arc** — USDC payment executed, proof anchored on-chain
-4. **Originate & Finance** — Receivable asset created, financial partners evaluate and fund
+On first launch, Goji creates a Keet identity using a 24-word mnemonic. Save this mnemonic securely because it is the portable identity for the P2P workspace.
 
-### Payment Flow
+This identity is:
 
-1. **Create** — Company draws wallet → recipient flow on canvas
-2. **Configure** — Set payment amount, attach documents
-3. **Sign** — Payer approves, Circle Unified Balance executes
-4. **Settle** — USDC sent, proof anchored on GojiProof
+- Not a wallet
+- Not used for payment funds
+- Used to identify the participant to workspace peers
+- Used to associate messages and records with the real sender
 
-### RWA System
+The identity and room use encrypted Pear P2P communication over Hyperswarm. Only authorized members added to the workspace can participate.
 
-- **Company View:** Create receivables from pending flows, set terms, invite financial partners
-- **Partner View:** Browse receivables, verify proofs, invest with pro-rata interest
-- **Public Explorer:** View all assets on Arc at `/rwa` (no wallet required)
+A first host launch looks like this:
 
-### Proof Explorer
+```text
+goji v0.1.0
+mode: host
+port: 3001
 
-- Search any merkle root hash to verify on-chain via GojiProof contract
-- Your Proofs table shows Date, Document, From, To, Amount, Status
-- Click Verify to open modal with on-chain verification result
-- Document preview iframe for anchored payments
+No identity found
+1. Generate new identity
+2. Import existing mnemonic
 
----
+Choose (1 or 2): 1
 
-## Tech Stack
+New identity generated
+Save this mnemonic: <24-word mnemonic>
+
+Enter display name: <name>
+Identity saved to ~/.goji/host/identity.json
+
+invite: <invite-code>
+share: npx @tamago-labs/goji --join <invite-code>
+```
+
+Never publish your mnemonic or an active invite code in documentation, logs, screenshots, or issue reports.
+
+## Smart Contracts
+
+Goji uses Arc smart contracts to anchor payment proofs and create receivable assets from verified payment history.
+
+### GojiProof
+
+GojiProof anchors Merkle roots for payment documents on Arc. The private document stays inside the P2P workspace; only its cryptographic root, connection reference, and timestamp are stored on-chain.
+
+- `anchorRoot(bytes32 merkleRoot, bytes32 connectionId)` stores a proof
+- `isAnchored(bytes32 merkleRoot)` verifies that a root exists
+- `getDocument(bytes32 merkleRoot)` returns the on-chain proof record
+
+### ReceivableFactory
+
+ReceivableFactory creates and tracks receivable token contracts for company issuers.
+
+- Creates receivables with amount, interest rate, minimum investment, expiry, and proof hashes
+- Charges a configurable flat creation fee of 1 USDC by default
+- Tracks receivables and total value by issuer
+- Allows the administrator to configure the treasury and withdraw platform fees
+
+### ReceivableToken
+
+Each receivable has an ERC-20 token representing fractional ownership of the financed payment.
+
+- References multiple GojiProof hashes to demonstrate the company’s verified payment history.
+- Partners finance receivables with native USDC on Arc
+- Tokens are issued according to each partner's investment
+- Interest is calculated pro rata using investment amount and time funded
+- The company repays principal plus interest at expiry
+- Token holders redeem their share after repayment
+
+#### Default Receivable Parameters
+
+| Parameter          | Default            | Description                        |
+| ------------------ | ------------------ | ---------------------------------- |
+| Token supply       | 1,000,000          | Maximum token units per receivable |
+| Interest rate      | 20% APR            | Configured by the company          |
+| Minimum investment | 1 USDC             | Configured by the company          |
+| Term options       | 30, 60, or 90 days | Configured at creation             |
+| Creation fee       | 1 USDC             | Paid by the company issuer         |
+
+Interest is calculated from the invested amount, the number of days funded, the receivable term, and the configured interest rate. The contract lifecycle is:
+
+## Private Knowledge Base
+
+Goji includes a private knowledge base for company documents. The employer terminal runs GTE-Large locally and keeps the vector index on the host. Authorized members search policies, invoices, and procedures through encrypted P2P requests.
+
+- Employer management: `/start/organization/ai-assistant`
+- Member search: `/start/knowledge`
+- Sources: pasted text and website URLs
+- Current model: GTE-Large embeddings and vector search
+
+Source documents and embeddings are never replicated. Members receive only relevant search snippets while the employer host is online. The employer controls model lifecycle and document management.
+
+## Architecture
+
+```text
+Next.js frontend
+        |
+HTTP / WebSocket
+        |
+Goji terminal
+  Express | WebSocket | Local RAG | Autobase | HyperDB
+        |
+Encrypted Pear P2P room
+        |
+Authorized workspace peers
+        |
+Arc contracts for proofs and receivables
+```
+
+| Component            | Responsibility                                                 |
+| -------------------- | -------------------------------------------------------------- |
+| `src/index.js`       | Terminal entrypoint, API, WebSocket, P2P room, and role checks |
+| `src/ragStore.js`    | Local document metadata, embeddings, and vector search         |
+| `schema.js`          | HyperSchema records, HyperDB collections, and dispatch routes  |
+| `spec/`              | Generated schema, database, and dispatch specifications        |
+| `frontend/app/start` | Workspace application and role-based pages                     |
+| `contracts/src`      | GojiProof and receivable contracts                             |
+
+## API Surface
+
+| Endpoint                                        | Purpose                                    |
+| ----------------------------------------------- | ------------------------------------------ |
+| `GET /api/health`                               | Terminal status, identity, role, and peers |
+| `/api/boards`, `/api/cards`, `/api/connections` | Visual workflow data                       |
+| `/api/flow-status`                              | Payment execution status                   |
+| `/api/chat`                                     | P2P workspace chat                         |
+| `/api/wallets`                                  | Wallet registration and balances           |
+| `/api/templates`, `/api/invoices`               | Document and invoice workflows             |
+| `/api/knowledge/documents`                      | Employer document management               |
+| `/api/knowledge/model`                          | Embedding model status and lifecycle       |
+| `POST /api/knowledge/url`                       | Fetch website text for ingestion           |
+| `POST /api/knowledge/search`                    | Local or P2P knowledge search              |
+| `/api/members`                                  | Employer member and role management        |
+| `ws://localhost:3001`                           | Live browser updates for the visual payment workspace |
+
+## Getting Started
+
+### Terminal
+
+```bash
+npm install
+npm run build:specs
+npm start
+```
+
+To join an existing workspace:
+
+```bash
+npm start -- --join <invite-code>
+```
 
 ### Frontend
-- Next.js 16 + React 19 + TypeScript
-- Tailwind CSS v4
-- RainbowKit + Wagmi + Viem
-- Circle AppKit + Unified Balance Kit
-- Framer Motion (animations)
 
-### Backend
-- Node.js CLI with P2P rooms
-- Autobase + Hyperswarm + BlindPairing
-- Express HTTP API + WebSocket
-- Keet Identity (portable P2P identities)
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### Blockchain
-- Arc Testnet, Base Sepolia, Ethereum Sepolia
-- Circle Unified Balance (cross-chain USDC)
-- Circle Gateway (settlement)
-- GojiProof contract (merkle root anchoring)
-- ReceivableToken + ReceivableFactory (RWA issuance)
-- PriceOracle (custom + Pyth)
+The frontend runs on port `3000` and connects to `http://localhost:3001` by default. The terminal and frontend are independent npm projects.
 
-### Protocols
-- Pear P2P (real-time sync)
-- Hyperschema (schema-driven storage)
+### Operational Notes
 
----
+- Hyperswarm peer discovery requires UDP access.
+- Keep the employer terminal online for member knowledge searches.
+- Frontend scripts use `--webpack` because of the RainbowKit integration.
+- The first terminal run may create a Keet identity in the Goji storage directory.
+- Use `npm run clean:storage` only when intentionally resetting local P2P state.
 
-## API Endpoints
+## Arc Testnet Contracts
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | /api/health | Server status, peer info, role |
-| GET/POST | /api/boards | List/create boards |
-| PUT/DELETE | /api/boards/:id | Rename/delete board |
-| GET/POST/PUT/DELETE | /api/cards | Card CRUD |
-| GET/POST/PUT/DELETE | /api/connections | Connection CRUD |
-| GET/POST/PUT/DELETE | /api/flow-status | Flow execution status |
-| GET/POST | /api/chat | Chat messages |
-| GET/POST/DELETE | /api/wallets | Wallet registration |
-| GET/POST/PUT/DELETE | /api/templates | Invoice templates |
-| GET/PUT/DELETE | /api/invoices | Invoice management |
-| POST | /api/members/assign | Role assignment |
-| GET | /api/members | List members |
-| WebSocket | ws://localhost:3001 | Real-time sync |
-
----
-
-## Canvas System
-
-- **Wallet Card** — Company wallet (Arc settlement)
-- **Recipient Card** — Payment target with chain selector
-- **Deposit Wallet Card** — Payer's Unified Balance wallet
-- **Connection Lines** — Click to configure payment/document/template
-- **Invoice Flow** — Deposit Wallet → Company Wallet (delegation-based)
-
----
-
-## Gotchas
-
-- **`--webpack` flag**: Frontend scripts use `--webpack` because RainbowKit has Turbopack compatibility issues.
-- **Lockfile warning**: Next.js warns about multiple lockfiles (root + frontend). This is cosmetic — ignore it.
-- **P2P requires UDP**: Hyperswarm uses UDP for peer discovery. Cloud servers need UDP open.
-- **Keet identity**: First run prompts for identity setup (generate/import mnemonic). Saved to `identity.json` in storage folder.
-- **No monorepo tooling**: Two separate npm projects. Run `npm install` independently in each directory.
-
----
-
-## Deployment (Arc Testnet)
-
-| Contract | Address |
-|----------|---------|
-| GojiProof | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
+| Contract          | Address                                      |
+| ----------------- | -------------------------------------------- |
+| GojiProof         | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
 | ReceivableFactory | `0x5646647B48b5458D8352764F1b697195454D52Bf` |
 
-**Chain:** Arc Testnet (Chain ID: 5042002)
+- Chain: Arc Testnet, chain ID `5042002`
+- Receivable creation fee: 1 USDC, configurable by the administrator
+- Receivable funding uses native USDC on Arc
 
-**Deployer:** `0x36bBb997235Fc965a854e132976fC8461B9392F5`
+## Roadmap
 
-### Platform Fees
-
-- **Flat Fee:** 1 USDC per receivable created
-- **Fee Payer:** Company (issuer)
-- **Treasury:** Configurable by admin
-- **Withdrawal:** Admin calls `withdrawFees()` to collect
-
----
+- Local Qwen and Gemma assistant models grounded in private workspace knowledge
+- Multi-currency payment support beyond USDC
+- Arc mainnet deployment
+- Safe multisignature wallet support
 
 ## License
 

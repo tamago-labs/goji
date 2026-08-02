@@ -10,7 +10,7 @@ import UserMenuPopover from '../components/start/UserMenuPopover'
 import UsernameModal from '../components/start/UsernameModal'
 import DepositSpendModal from '../components/start/DepositSpendModal'
 import { StartProvider, useStart } from '../components/start/StartProvider'
-import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileText, FileCheck, Settings, Bot, TrendingUp, Package } from 'lucide-react'
+import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileCheck, Settings, TrendingUp, Package, BookOpen } from 'lucide-react'
 
 const NAV_ITEMS = [
   // All roles
@@ -25,6 +25,7 @@ const NAV_ITEMS = [
   { href: '/start/invoices', label: 'Invoices', icon: FileCheck, roles: ['employer', 'payee', 'payer'] },
   // All roles
   { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['employer', 'payee', 'payer', 'partner'] },
+  { href: '/start/knowledge', label: 'Knowledge Base', icon: BookOpen, roles: ['employer', 'payee', 'payer', 'partner'] },
   // Company only
   { href: '/start/receivables', label: 'Receivables', icon: TrendingUp, roles: ['employer'] },
   // Admin

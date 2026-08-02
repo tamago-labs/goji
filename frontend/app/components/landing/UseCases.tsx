@@ -9,19 +9,19 @@ const useCases = [
     subtitle: 'Manage payroll, contractors, and invoices from one single visual workspace.',
     bullets: [
       'Manage employees, contractors, and vendors',
-      'Draw payment flows on a visual canvas',
-      'Configure payments and documents on each connection',
-      'Unified Balance for instant USDC payments'
+      'Send instant USDC payments through Unified Balance',
+      'Merkle proofs anchor every payment and document on Arc',
+      'Verify records without exposing private business data'
     ]
   },
   {
-    title: 'Collaborate Privately, AI-Assisted',
-    subtitle: 'Work together in a private P2P workspace with local AI assistance and Merkle proof verification on Arc.',
+    title: 'Team Collaboration, AI-Assisted',
+    subtitle: 'Work together without sending company knowledge to a cloud service.',
     bullets: [
-      'Merkle proof anchors every payment and document',
-      'P2P syncs records between partners and contractors',
-      'Private AI knowledge base with Qwen, Google Gemma',
-      'Local RAG powers answers from your business data'
+      'Direct P2P sync for records and documents',
+      'GTE-Large private knowledge search',
+      'Qwen and Gemma-ready AI assistants',
+      'Designed for sensitive business workflows'
     ]
   },
   {

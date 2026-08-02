@@ -23,6 +23,8 @@ const NAME = process.argv.find((a, i) => process.argv[i - 1] === '--name') || nu
 const STORAGE = isGuest
   ? require('path').join(require('os').homedir(), '.goji', 'guest')
   : require('path').join(require('os').homedir(), '.goji', 'host')
+process.env.GOJI_STORAGE = STORAGE
+const ragStore = require('./ragStore')
 
 class GojiRoom {
   constructor(store, swarm, invite) {
@@ -265,6 +267,16 @@ class GojiRoom {
     this.router.add('@goji/remove-receivable', async (data, ctx) => {
       await ctx.view.delete('@goji/receivables', { id: data.id })
     })
+    this.router.add('@goji/add-knowledge-document', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/knowledgeDocuments', { id: data.id })
+      if (!existing) await ctx.view.insert('@goji/knowledgeDocuments', data)
+    })
+    this.router.add('@goji/rag-search', async (data) => {
+      if (typeof this.onRagSearch === 'function') await this.onRagSearch(data)
+    })
+    this.router.add('@goji/rag-search-result', async (data) => {
+      if (typeof this.onRagSearchResult === 'function') await this.onRagSearchResult(data)
+    })
   }
 
   get view() {
@@ -340,6 +352,36 @@ class GojiRoom {
   async addMessage(text, info, proof) {
     const id = Math.random().toString(16).slice(2)
     await this.base.append(GojiDispatch.encode('@goji/add-chat', { id, text, info, proof: proof || null }))
+  }
+
+  async addKnowledgeDocument(document) {
+    await this.base.append(GojiDispatch.encode('@goji/add-knowledge-document', document))
+  }
+
+  async appendRagSearch({ requestId, fromKey, toKey, query, topK }) {
+    await this.base.append(GojiDispatch.encode('@goji/rag-search', {
+      requestId,
+      fromKey: b4a.isBuffer(fromKey) ? fromKey : b4a.from(fromKey, 'hex'),
+      toKey: b4a.isBuffer(toKey) ? toKey : b4a.from(toKey, 'hex'),
+      query,
+      topK: topK || 5,
+      createdAt: Date.now()
+    }))
+  }
+
+  async appendRagSearchResult({ requestId, fromKey, toKey, results, error }) {
+    await this.base.append(GojiDispatch.encode('@goji/rag-search-result', {
+      requestId,
+      fromKey: b4a.isBuffer(fromKey) ? fromKey : b4a.from(fromKey, 'hex'),
+      toKey: b4a.isBuffer(toKey) ? toKey : b4a.from(toKey, 'hex'),
+      results: results || [],
+      error: error || null,
+      createdAt: Date.now()
+    }))
+  }
+
+  async getKnowledgeDocuments() {
+    return await this.view.find('@goji/knowledgeDocuments', {}).toArray()
   }
 
   async appendIdentity({ displayName, role, assignedBy, assignedAt }) {
@@ -590,6 +632,60 @@ async function main() {
   console.log(`\n  invite: ${inviteCode}`)
   console.log(`  share: npm start -- --join ${inviteCode}\n`)
 
+  const ragRequests = new Map()
+  room.onRagSearchResult = (data) => {
+    const pending = ragRequests.get(data.requestId)
+    if (!pending) return
+    clearTimeout(pending.timeout)
+    ragRequests.delete(data.requestId)
+    if (data.error) pending.reject(new Error(data.error))
+    else pending.resolve(data.results || [])
+  }
+  if (!isGuest) {
+    room.onRagSearch = async (data) => {
+      try {
+        const result = await ragStore.searchDocuments(data.query, data.topK || 5)
+        await room.appendRagSearchResult({
+          requestId: data.requestId,
+          fromKey: room.localBase.key,
+          toKey: data.fromKey,
+          results: result.results,
+          error: null
+        })
+      } catch (error) {
+        await room.appendRagSearchResult({
+          requestId: data.requestId,
+          fromKey: room.localBase.key,
+          toKey: data.fromKey,
+          results: [],
+          error: error.message
+        })
+      }
+    }
+  }
+
+  function relayRagSearch(query, topK) {
+    const requestId = `rag_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        ragRequests.delete(requestId)
+        reject(new Error('Knowledge search timed out. The company host may be offline.'))
+      }, 15000)
+      ragRequests.set(requestId, { resolve, reject, timeout })
+      room.appendRagSearch({
+        requestId,
+        fromKey: room.localBase.key,
+        toKey: room.localBase.key,
+        query,
+        topK
+      }).catch((error) => {
+        clearTimeout(timeout)
+        ragRequests.delete(requestId)
+        reject(error)
+      })
+    })
+  }
+
   // Auto-create default templates if none exist (host only)
   if (!isGuest) {
     const existingTemplates = await room.view.find('@goji/templates', {}).toArray()
@@ -702,6 +798,80 @@ async function main() {
   })
 
   app.get('/api/username', (req, res) => res.json({ name: identityName }))
+
+  function isEmployer() {
+    return !isGuest && role === 'employer'
+  }
+
+  app.get('/api/knowledge/model', (_req, res) => {
+    res.json(ragStore.getModelStatus())
+  })
+
+  app.post('/api/knowledge/model/load', async (_req, res) => {
+    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    try {
+      await ragStore.ensureEmbeddingModel()
+      res.json(ragStore.getModelStatus())
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
+  })
+
+  app.post('/api/knowledge/model/unload', async (_req, res) => {
+    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    await ragStore.unloadEmbeddingModel()
+    res.json(ragStore.getModelStatus())
+  })
+
+  app.get('/api/knowledge/documents', (_req, res) => {
+    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can list managed documents' })
+    res.json(ragStore.listDocuments().map(({ qvacIds, ...document }) => document))
+  })
+
+  app.post('/api/knowledge/documents', async (req, res) => {
+    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can add documents' })
+    const { name, content, source = 'text' } = req.body || {}
+    if (!name?.trim() || !content?.trim()) return res.status(400).json({ error: 'name and content are required' })
+    try {
+      const result = await ragStore.ingestDocument(name.trim(), content.trim(), source)
+      await room.addKnowledgeDocument({ ...result.document, qvacIds: null })
+      res.json(result)
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
+  })
+
+  app.post('/api/knowledge/url', async (req, res) => {
+    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can import websites' })
+    const { url } = req.body || {}
+    if (!url?.trim()) return res.status(400).json({ error: 'url is required' })
+    const result = await ragStore.fetchUrlContent(url.trim())
+    if (!result.success) return res.status(400).json({ error: result.error })
+    res.json(result)
+  })
+
+  app.delete('/api/knowledge/documents/:id', async (req, res) => {
+    if (!isEmployer()) return res.status(403).json({ error: 'Only the employer can delete documents' })
+    try {
+      res.json(await ragStore.deleteDocument(req.params.id))
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
+  })
+
+  app.post('/api/knowledge/search', async (req, res) => {
+    if (role === 'pending') return res.status(403).json({ error: 'Your workspace role is not assigned yet' })
+    const { query, topK = 5 } = req.body || {}
+    if (!query?.trim()) return res.status(400).json({ error: 'query is required' })
+    try {
+      const results = isEmployer()
+        ? (await ragStore.searchDocuments(query.trim(), topK)).results
+        : await relayRagSearch(query.trim(), topK)
+      res.json({ success: true, results })
+    } catch (error) {
+      res.status(502).json({ error: error.message })
+    }
+  })
 
   app.get('/api/boards', async (req, res) => {
     const boards = await room.getBoards()

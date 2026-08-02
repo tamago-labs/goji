@@ -4,7 +4,7 @@
 const { IndexEncoder, c, b4a } = require('hyperdb/runtime')
 const { version, getEncoding, setVersion } = require('./messages.js')
 
-const versions = { schema: version, db: 2 }
+const versions = { schema: version, db: 3 }
 
 // '@goji/boards' collection key
 const collection0_key = new IndexEncoder([
@@ -676,6 +676,207 @@ const collection9 = {
   decodedVersion: 0
 }
 
+// '@goji/knowledgeDocuments' collection key
+const collection10_key = new IndexEncoder([
+  IndexEncoder.STRING
+], { prefix: 10 })
+
+function collection10_indexify (record) {
+  const a = record.id
+  return a === undefined ? [] : [a]
+}
+
+// '@goji/knowledgeDocuments' value encoding
+const collection10_enc = getEncoding('@goji/knowledge-document/hyperdb#10')
+
+// '@goji/knowledgeDocuments' reconstruction function
+function collection10_reconstruct (schemaVersion, keyBuf, valueBuf) {
+  const key = collection10_key.decode(keyBuf)
+  setVersion(schemaVersion)
+  const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
+  const type = c.uint.decode(state)
+  if (type !== 0) throw new Error('Unknown collection type: ' + type)
+  collection10.decodedVersion = c.uint.decode(state)
+  const record = collection10_enc.decode(state)
+  record.id = key[0]
+  return record
+}
+// '@goji/knowledgeDocuments' key reconstruction function
+function collection10_reconstruct_key (keyBuf) {
+  const key = collection10_key.decode(keyBuf)
+  return {
+    id: key[0]
+  }
+}
+
+// '@goji/knowledgeDocuments'
+const collection10 = {
+  name: '@goji/knowledgeDocuments',
+  id: 10,
+  version: 3,
+  encodeKey (record) {
+    const key = [record.id]
+    return collection10_key.encode(key)
+  },
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
+    return collection10_key.encodeRange({
+      gt: gt ? collection10_indexify(gt) : null,
+      lt: lt ? collection10_indexify(lt) : null,
+      gte: gte ? collection10_indexify(gte) : null,
+      lte: lte ? collection10_indexify(lte) : null
+    })
+  },
+  encodeValue (schemaVersion, collectionVersion, record) {
+    setVersion(schemaVersion)
+    const state = { start: 0, end: 2, buffer: null }
+    collection10_enc.preencode(state, record)
+    state.buffer = b4a.allocUnsafe(state.end)
+    state.buffer[state.start++] = 0
+    state.buffer[state.start++] = collectionVersion
+    collection10_enc.encode(state, record)
+    return state.buffer
+  },
+  trigger: null,
+  reconstruct: collection10_reconstruct,
+  reconstructKey: collection10_reconstruct_key,
+  indexes: [],
+  decodedVersion: 0
+}
+
+// '@goji/ragSearches' collection key
+const collection11_key = new IndexEncoder([
+  IndexEncoder.STRING
+], { prefix: 11 })
+
+function collection11_indexify (record) {
+  const a = record.requestId
+  return a === undefined ? [] : [a]
+}
+
+// '@goji/ragSearches' value encoding
+const collection11_enc = getEncoding('@goji/rag-search/hyperdb#11')
+
+// '@goji/ragSearches' reconstruction function
+function collection11_reconstruct (schemaVersion, keyBuf, valueBuf) {
+  const key = collection11_key.decode(keyBuf)
+  setVersion(schemaVersion)
+  const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
+  const type = c.uint.decode(state)
+  if (type !== 0) throw new Error('Unknown collection type: ' + type)
+  collection11.decodedVersion = c.uint.decode(state)
+  const record = collection11_enc.decode(state)
+  record.requestId = key[0]
+  return record
+}
+// '@goji/ragSearches' key reconstruction function
+function collection11_reconstruct_key (keyBuf) {
+  const key = collection11_key.decode(keyBuf)
+  return {
+    requestId: key[0]
+  }
+}
+
+// '@goji/ragSearches'
+const collection11 = {
+  name: '@goji/ragSearches',
+  id: 11,
+  version: 3,
+  encodeKey (record) {
+    const key = [record.requestId]
+    return collection11_key.encode(key)
+  },
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
+    return collection11_key.encodeRange({
+      gt: gt ? collection11_indexify(gt) : null,
+      lt: lt ? collection11_indexify(lt) : null,
+      gte: gte ? collection11_indexify(gte) : null,
+      lte: lte ? collection11_indexify(lte) : null
+    })
+  },
+  encodeValue (schemaVersion, collectionVersion, record) {
+    setVersion(schemaVersion)
+    const state = { start: 0, end: 2, buffer: null }
+    collection11_enc.preencode(state, record)
+    state.buffer = b4a.allocUnsafe(state.end)
+    state.buffer[state.start++] = 0
+    state.buffer[state.start++] = collectionVersion
+    collection11_enc.encode(state, record)
+    return state.buffer
+  },
+  trigger: null,
+  reconstruct: collection11_reconstruct,
+  reconstructKey: collection11_reconstruct_key,
+  indexes: [],
+  decodedVersion: 0
+}
+
+// '@goji/ragSearchResults' collection key
+const collection12_key = new IndexEncoder([
+  IndexEncoder.STRING
+], { prefix: 12 })
+
+function collection12_indexify (record) {
+  const a = record.requestId
+  return a === undefined ? [] : [a]
+}
+
+// '@goji/ragSearchResults' value encoding
+const collection12_enc = getEncoding('@goji/rag-search-result/hyperdb#12')
+
+// '@goji/ragSearchResults' reconstruction function
+function collection12_reconstruct (schemaVersion, keyBuf, valueBuf) {
+  const key = collection12_key.decode(keyBuf)
+  setVersion(schemaVersion)
+  const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
+  const type = c.uint.decode(state)
+  if (type !== 0) throw new Error('Unknown collection type: ' + type)
+  collection12.decodedVersion = c.uint.decode(state)
+  const record = collection12_enc.decode(state)
+  record.requestId = key[0]
+  return record
+}
+// '@goji/ragSearchResults' key reconstruction function
+function collection12_reconstruct_key (keyBuf) {
+  const key = collection12_key.decode(keyBuf)
+  return {
+    requestId: key[0]
+  }
+}
+
+// '@goji/ragSearchResults'
+const collection12 = {
+  name: '@goji/ragSearchResults',
+  id: 12,
+  version: 3,
+  encodeKey (record) {
+    const key = [record.requestId]
+    return collection12_key.encode(key)
+  },
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
+    return collection12_key.encodeRange({
+      gt: gt ? collection12_indexify(gt) : null,
+      lt: lt ? collection12_indexify(lt) : null,
+      gte: gte ? collection12_indexify(gte) : null,
+      lte: lte ? collection12_indexify(lte) : null
+    })
+  },
+  encodeValue (schemaVersion, collectionVersion, record) {
+    setVersion(schemaVersion)
+    const state = { start: 0, end: 2, buffer: null }
+    collection12_enc.preencode(state, record)
+    state.buffer = b4a.allocUnsafe(state.end)
+    state.buffer[state.start++] = 0
+    state.buffer[state.start++] = collectionVersion
+    collection12_enc.encode(state, record)
+    return state.buffer
+  },
+  trigger: null,
+  reconstruct: collection12_reconstruct,
+  reconstructKey: collection12_reconstruct_key,
+  indexes: [],
+  decodedVersion: 0
+}
+
 const collections = [
   collection0,
   collection1,
@@ -686,7 +887,10 @@ const collections = [
   collection6,
   collection7,
   collection8,
-  collection9
+  collection9,
+  collection10,
+  collection11,
+  collection12
 ]
 
 const indexes = [
@@ -706,6 +910,9 @@ function resolveCollection (name) {
     case '@goji/flowStatuses': return collection7
     case '@goji/templates': return collection8
     case '@goji/receivables': return collection9
+    case '@goji/knowledgeDocuments': return collection10
+    case '@goji/ragSearches': return collection11
+    case '@goji/ragSearchResults': return collection12
     default: return null
   }
 }

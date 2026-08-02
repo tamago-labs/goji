@@ -38,6 +38,7 @@ npm run lint             # eslint
 - `schema.js` — Hyperschema + HyperDB collections (boards, cards, connections, chat, invites, identity, wallets, flow-statuses, templates, invoices)
 - `spec/` — Generated schema/dispatch/db specs
 - Keet identity key integration for portable P2P identities and wallet verification
+- `src/ragStore.js` — host-local QVAC embedding/vector search and document metadata
 
 ### Contracts
 
@@ -79,6 +80,10 @@ npm run lint             # eslint
 | GET/POST/PUT/DELETE | /api/templates | Invoice templates |
 | GET/POST/PUT/DELETE | /api/receivables | P2P receivable records |
 | GET/PUT/DELETE | /api/invoices | Invoice management |
+| GET/POST/DELETE | /api/knowledge/documents | Employer knowledge documents |
+| GET/POST | /api/knowledge/model | Local embedding model status/control |
+| POST | /api/knowledge/url | Fetch website text for ingestion |
+| POST | /api/knowledge/search | P2P knowledge search |
 | POST | /api/members/assign | Role assignment (employer only) |
 | GET | /api/members | List members (employer only) |
 | WebSocket | ws://localhost:3001 | Real-time sync |

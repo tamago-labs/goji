@@ -240,6 +240,41 @@ schema.register({
   fields: [{ name: 'id', type: 'buffer', required: true }]
 })
 
+schema.register({
+  name: 'knowledge-document',
+  fields: [
+    { name: 'id', type: 'string', required: true },
+    { name: 'name', type: 'string', required: true },
+    { name: 'source', type: 'string', required: true },
+    { name: 'createdAt', type: 'string', required: true },
+    { name: 'chunkCount', type: 'int', required: false }
+  ]
+})
+
+schema.register({
+  name: 'rag-search',
+  fields: [
+    { name: 'requestId', type: 'string', required: true },
+    { name: 'fromKey', type: 'buffer', required: true },
+    { name: 'toKey', type: 'buffer', required: true },
+    { name: 'query', type: 'string', required: true },
+    { name: 'topK', type: 'int', required: false },
+    { name: 'createdAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'rag-search-result',
+  fields: [
+    { name: 'requestId', type: 'string', required: true },
+    { name: 'fromKey', type: 'buffer', required: true },
+    { name: 'toKey', type: 'buffer', required: true },
+    { name: 'results', type: 'json', required: true },
+    { name: 'error', type: 'string' },
+    { name: 'createdAt', type: 'int', required: true }
+  ]
+})
+
 Hyperschema.toDisk(hyperSchema)
 
 const hyperdb = HyperdbBuilder.from(SCHEMA_DIR, DB_DIR)
@@ -255,6 +290,9 @@ db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] }
 db.collections.register({ name: 'flowStatuses', schema: '@goji/flow-status', key: ['id'] })
 db.collections.register({ name: 'templates', schema: '@goji/template', key: ['id'] })
 db.collections.register({ name: 'receivables', schema: '@goji/receivable', key: ['id'] })
+db.collections.register({ name: 'knowledgeDocuments', schema: '@goji/knowledge-document', key: ['id'] })
+db.collections.register({ name: 'ragSearches', schema: '@goji/rag-search', key: ['requestId'] })
+db.collections.register({ name: 'ragSearchResults', schema: '@goji/rag-search-result', key: ['requestId'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -286,6 +324,9 @@ dispatch.register({ name: 'remove-template', requestType: '@goji/template-remove
 dispatch.register({ name: 'add-receivable', requestType: '@goji/receivable' })
 dispatch.register({ name: 'update-receivable', requestType: '@goji/receivable' })
 dispatch.register({ name: 'remove-receivable', requestType: '@goji/receivable-remove' })
+dispatch.register({ name: 'add-knowledge-document', requestType: '@goji/knowledge-document' })
+dispatch.register({ name: 'rag-search', requestType: '@goji/rag-search' })
+dispatch.register({ name: 'rag-search-result', requestType: '@goji/rag-search-result' })
 
 Hyperdispatch.toDisk(hyperdispatch)
 

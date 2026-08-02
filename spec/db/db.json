@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "offset": 0,
   "schema": [
     {
@@ -149,6 +149,51 @@
       "derived": false,
       "key": [
         "id"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "knowledgeDocuments",
+      "namespace": "goji",
+      "id": 10,
+      "type": 1,
+      "version": 3,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/knowledge-document",
+      "derived": false,
+      "key": [
+        "id"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "ragSearches",
+      "namespace": "goji",
+      "id": 11,
+      "type": 1,
+      "version": 3,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/rag-search",
+      "derived": false,
+      "key": [
+        "requestId"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "ragSearchResults",
+      "namespace": "goji",
+      "id": 12,
+      "type": 1,
+      "version": 3,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/rag-search-result",
+      "derived": false,
+      "key": [
+        "requestId"
       ],
       "trigger": null
     }

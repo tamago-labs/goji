@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "schema": [
     {
       "name": "writer",
@@ -811,6 +811,131 @@
           "required": true,
           "type": "buffer",
           "version": 2
+        }
+      ]
+    },
+    {
+      "name": "knowledge-document",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 4,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "name",
+          "required": true,
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "source",
+          "required": true,
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "chunkCount",
+          "required": false,
+          "type": "int",
+          "version": 3
+        }
+      ]
+    },
+    {
+      "name": "rag-search",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 4,
+      "fields": [
+        {
+          "name": "requestId",
+          "required": true,
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "fromKey",
+          "required": true,
+          "type": "buffer",
+          "version": 3
+        },
+        {
+          "name": "toKey",
+          "required": true,
+          "type": "buffer",
+          "version": 3
+        },
+        {
+          "name": "query",
+          "required": true,
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "topK",
+          "required": false,
+          "type": "int",
+          "version": 3
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 3
+        }
+      ]
+    },
+    {
+      "name": "rag-search-result",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 4,
+      "fields": [
+        {
+          "name": "requestId",
+          "required": true,
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "fromKey",
+          "required": true,
+          "type": "buffer",
+          "version": 3
+        },
+        {
+          "name": "toKey",
+          "required": true,
+          "type": "buffer",
+          "version": 3
+        },
+        {
+          "name": "results",
+          "required": true,
+          "type": "json",
+          "version": 3
+        },
+        {
+          "name": "error",
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 3
         }
       ]
     }

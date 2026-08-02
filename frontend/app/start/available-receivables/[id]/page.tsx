@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import { usePublicClient, useWalletClient } from 'wagmi'
-import { ArrowLeft, ExternalLink, Loader2, CheckCircle, Shield } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Loader2, CheckCircle, Shield, FileText, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
 import { RECEIVABLE_TOKEN_ABI, getTokenStatusLabel, getTokenStatusColor } from '../../../../lib/receivableToken'
 import { GOJIPROOF_ABI } from '../../../../lib/gojiProof'
+import { useStart } from '../../../components/start/StartProvider'
 
 interface TokenInfo {
   name: string
@@ -32,6 +33,20 @@ interface ProofVerification {
   loading: boolean
 }
 
+interface PendingFlow {
+  id: string
+  boardId: string
+  boardName: string
+  routeId: string
+  from: string
+  to: string
+  amount: string
+  docName: string
+  template: string | null
+  customDoc: string | null
+  updatedAt: number
+}
+
 export default function AssetDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -39,12 +54,17 @@ export default function AssetDetailPage() {
   const { address } = useAccount()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
+  const { apiUrl } = useStart()
 
   const [token, setToken] = useState<TokenInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [proofs, setProofs] = useState<ProofVerification[]>([])
   const [investAmount, setInvestAmount] = useState('')
   const [investing, setInvesting] = useState(false)
+  const [pendingFlows, setPendingFlows] = useState<PendingFlow[]>([])
+  const [loadingFlows, setLoadingFlows] = useState(true)
+  const [expandedFlow, setExpandedFlow] = useState<string | null>(null)
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null)
 
   useEffect(() => {
     if (!publicClient || !tokenAddress) {
@@ -86,19 +106,17 @@ export default function AssetDetailPage() {
           }) as bigint
 
           if (userBalance > 0n) {
-            userShare = await publicClient!.readContract({
-              address: tokenAddress as `0x${string}`,
-              abi: RECEIVABLE_TOKEN_ABI,
-              functionName: 'calculateShare',
-              args: [address]
-            }) as bigint
-
             userInterest = await publicClient!.readContract({
               address: tokenAddress as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'calculateInvestorInterest',
               args: [address]
             }) as bigint
+
+            // Calculate projected share manually (calculateShare returns 0 before repayment)
+            const totalReceivable = info[2]
+            const projectedPrincipal = (userBalance * totalReceivable) / 1_000_000_000_000n
+            userShare = projectedPrincipal + userInterest
           }
         }
 
@@ -128,6 +146,65 @@ export default function AssetDetailPage() {
 
     load()
   }, [publicClient, tokenAddress])
+
+  // Fetch pending flows from P2P
+  useEffect(() => {
+    async function loadPendingFlows() {
+      try {
+        const boardsRes = await fetch(`${apiUrl}/api/boards`)
+        if (!boardsRes.ok) { setLoadingFlows(false); return }
+        const boards = await boardsRes.json()
+
+        const allFlows: PendingFlow[] = []
+        for (const board of boards) {
+          const [statusRes, connRes, cardsRes] = await Promise.all([
+            fetch(`${apiUrl}/api/flow-status?flowId=${board.id}`),
+            fetch(`${apiUrl}/api/connections?boardId=${board.id}`),
+            fetch(`${apiUrl}/api/cards?boardId=${board.id}`)
+          ])
+
+          if (!statusRes.ok) continue
+          const statuses = await statusRes.json()
+          const connections = connRes.ok ? await connRes.json() : []
+          const cards = cardsRes.ok ? await cardsRes.json() : []
+
+          const connMap = new Map(connections.map((c: any) => [c.id, c]))
+          const cardMap = new Map(cards.map((c: any) => [c.id, c]))
+
+          for (const s of statuses) {
+            if (s.status !== 'pending') continue
+
+            const conn = connMap.get(s.routeId)
+            if (!conn) continue
+
+            const fromCard = cardMap.get(conn.from)
+            const toCard = cardMap.get(conn.to)
+
+            allFlows.push({
+              id: s.id,
+              boardId: board.id,
+              boardName: board.name,
+              routeId: s.routeId,
+              from: fromCard?.title || 'Unknown',
+              to: toCard?.title || 'Unknown',
+              amount: conn.amount || '0',
+              docName: conn.docName || 'Document',
+              template: conn.template || null,
+              customDoc: conn.customDoc || null,
+              updatedAt: s.updatedAt
+            })
+          }
+        }
+
+        setPendingFlows(allFlows)
+      } catch (e) {
+        console.error('Failed to load pending flows:', e)
+      }
+      setLoadingFlows(false)
+    }
+
+    loadPendingFlows()
+  }, [apiUrl])
 
   const verifyProof = async (index: number) => {
     if (!publicClient || !token) return
@@ -350,6 +427,105 @@ export default function AssetDetailPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Pending Flows */}
+          <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
+            <h3 className='text-sm font-semibold text-ink mb-4'>Pending Flows ({pendingFlows.length})</h3>
+            
+            {loadingFlows ? (
+              <div className='flex items-center justify-center py-4'>
+                <Loader2 className='w-5 h-5 text-ink/40 animate-spin' />
+              </div>
+            ) : pendingFlows.length === 0 ? (
+              <div className='text-center py-4'>
+                <p className='text-ink/40 text-xs'>No pending flows found</p>
+              </div>
+            ) : (
+              <div className='space-y-2'>
+                {pendingFlows.map((flow) => (
+                  <div key={flow.id} className='bg-ink/[0.02] rounded-xl overflow-hidden'>
+                    {/* Flow Header */}
+                    <div
+                      onClick={() => setExpandedFlow(expandedFlow === flow.id ? null : flow.id)}
+                      className='flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-ink/3 transition-colors'
+                    >
+                      <div className='flex items-center gap-3'>
+                        <FileText className='w-4 h-4 text-ink/30' />
+                        <div>
+                          <div className='text-sm text-ink/70 font-medium'>{flow.boardName}</div>
+                          <div className='text-[10px] text-ink/40'>{flow.docName}</div>
+                        </div>
+                      </div>
+                      <div className='flex items-center gap-4'>
+                        <span className='text-xs text-ink/60 font-mono'>{flow.amount} USDC</span>
+                        {expandedFlow === flow.id ? (
+                          <ChevronUp className='w-4 h-4 text-ink/30' />
+                        ) : (
+                          <ChevronDown className='w-4 h-4 text-ink/30' />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expanded Details */}
+                    {expandedFlow === flow.id && (
+                      <div className='px-4 pb-3 border-t border-ink/5'>
+                        <div className='grid grid-cols-2 gap-3 py-3 text-xs'>
+                          <div>
+                            <span className='text-ink/40'>From: </span>
+                            <span className='text-ink/60'>{flow.from}</span>
+                          </div>
+                          <div>
+                            <span className='text-ink/40'>To: </span>
+                            <span className='text-ink/60'>{flow.to}</span>
+                          </div>
+                          <div>
+                            <span className='text-ink/40'>Amount: </span>
+                            <span className='text-ink/60'>{flow.amount} USDC</span>
+                          </div>
+                          <div>
+                            <span className='text-ink/40'>Document: </span>
+                            <span className='text-ink/60'>{flow.docName}</span>
+                          </div>
+                        </div>
+
+                        {/* View Document Button */}
+                        <button
+                          onClick={() => setSelectedDocument(selectedDocument === flow.id ? null : flow.id)}
+                          className='text-xs text-mint hover:text-[#1B7A50] font-medium transition-colors'
+                        >
+                          {selectedDocument === flow.id ? 'Hide Document' : 'View Document'}
+                        </button>
+
+                        {/* Document Preview */}
+                        {selectedDocument === flow.id && flow.customDoc && (
+                          <div className='mt-3 bg-white rounded-xl border border-ink/10 overflow-hidden'>
+                            <div className='p-4 text-xs text-ink/60'>
+                              <div className='font-medium text-ink/70 mb-2'>{flow.docName}</div>
+                              <pre className='whitespace-pre-wrap font-mono text-[10px] bg-ink/5 p-3 rounded-lg'>
+                                {(() => {
+                                  try {
+                                    const data = JSON.parse(flow.customDoc)
+                                    return Object.entries(data).map(([key, value]) => (
+                                      <div key={key} className='flex justify-between py-1 border-b border-ink/5 last:border-0'>
+                                        <span className='text-ink/40'>{key}</span>
+                                        <span className='text-ink/60'>{String(value)}</span>
+                                      </div>
+                                    ))
+                                  } catch {
+                                    return flow.customDoc
+                                  }
+                                })()}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

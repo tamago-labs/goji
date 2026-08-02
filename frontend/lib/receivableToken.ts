@@ -1,5 +1,6 @@
-// ReceivableToken ABI - from contracts/out/ReceivableToken.sol/ReceivableToken.json
+// ReceivableToken ABI - from contracts/src/ReceivableToken.sol
 export const RECEIVABLE_TOKEN_ABI = [
+  // Write functions
   {
     "type": "function",
     "name": "finance",
@@ -21,6 +22,171 @@ export const RECEIVABLE_TOKEN_ABI = [
     "outputs": [],
     "stateMutability": "nonpayable"
   },
+  // View functions - Token info
+  {
+    "type": "function",
+    "name": "name",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "symbol",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalSupply",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [{ "name": "account", "type": "address" }],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  // View functions - Receivable info
+  {
+    "type": "function",
+    "name": "receivableType",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "issuer",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalReceivable",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "interestRate",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "minInvestment",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxSupply",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "issuedAt",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "expiresAt",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fundedAmount",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalRedeemable",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "status",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint8" }],
+    "stateMutability": "view"
+  },
+  // View functions - Pro-rata interest
+  {
+    "type": "function",
+    "name": "fundingDate",
+    "inputs": [{ "name": "", "type": "address" }],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "investedAmount",
+    "inputs": [{ "name": "", "type": "address" }],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  // View functions - Calculations
+  {
+    "type": "function",
+    "name": "calculateShare",
+    "inputs": [{ "name": "investor", "type": "address" }],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "calculateInvestorInterest",
+    "inputs": [{ "name": "investor", "type": "address" }],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTotalInterest",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTotalRepayment",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getProofCount",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getProofHashes",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "bytes32[]" }],
+    "stateMutability": "view"
+  },
   {
     "type": "function",
     "name": "getReceivableInfo",
@@ -38,181 +204,7 @@ export const RECEIVABLE_TOKEN_ABI = [
     ],
     "stateMutability": "view"
   },
-  {
-    "type": "function",
-    "name": "getRepaymentAmount",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getShare",
-    "inputs": [
-      { "name": "investor", "type": "address" }
-    ],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getProofCount",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getProofHashes",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "bytes32[]" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "balanceOf",
-    "inputs": [
-      { "name": "account", "type": "address" }
-    ],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "totalSupply",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "name",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "string" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "symbol",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "string" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "receivableType",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "string" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "issuer",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "address" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "totalReceivable",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "interestRate",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "minInvestment",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "maxSupply",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "fundedAmount",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "expiresAt",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "issuedAt",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "status",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint8" }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "totalRedeemable",
-    "inputs": [],
-    "outputs": [
-      { "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view"
-  },
+  // Events
   {
     "type": "event",
     "name": "ReceivableFunded",

@@ -8,6 +8,7 @@ export default function Nav() {
         {[
           { label: 'Product', href: '#use-cases' },
           { label: 'How to run', href: '#how-it-works' },
+          { label: 'RWA Explorer', href: '/rwa' },
           { label: 'Supported chains', href: '#supported-chains' },
           { label: 'GitHub', href: 'https://github.com/tamago-labs/goji' }
         ].map((item) => (

@@ -201,9 +201,9 @@ Logic:
   3. Check msg.value >= minInvestment
   4. Calculate tokens: (msg.value / totalReceivable) * totalSupply
      - 5000 / 10000 * 1,000,000 = 500,000 tokens
-  5. USDC stays in contract (native on Arc)
+  5. USDC sent directly to issuer (company receives funds)
   6. Update fundedAmount
-  7. Update tokenBalances[partner]
+  7. Mint tokens to investor
   8. If fundedAmount >= totalReceivable → status = Funded
 ```
 
@@ -236,6 +236,7 @@ Logic:
   3. Calculate share:
      - (tokenBalance / totalSupply) * contractBalance
      - (500,000 / 1,000,000) * 12,000 = 6,000 USDC
+     - Note: Contract only holds repayment (12k), not original investment
   4. Transfer USDC to partner (native on Arc)
   5. Burn tokens
   6. Status = Defaulted if company doesn't pay
@@ -293,12 +294,17 @@ USDC sent to treasury address
 
 ### Example: $10,000 Invoice at 20% Interest
 
-| Investor | Funded | Tokens | % | At Expiry (12k) |
-|----------|--------|--------|---|-----------------|
+| Investor | Funded | Tokens | % | At Expiry (Company Repays 12k) |
+|----------|--------|--------|---|----------------|
 | Partner A | $5,000 | 500,000 | 50% | $6,000 |
 | Partner B | $3,000 | 300,000 | 30% | $3,600 |
 | Partner C | $2,000 | 200,000 | 20% | $2,400 |
 | **Total** | **$10,000** | **1,000,000** | **100%** | **$12,000** |
+
+**Flow:**
+1. Company receives $10,000 upfront when investors fund
+2. At expiry, company repays $12,000 (principal + 20% interest)
+3. Investors redeem tokens for their proportional share
 
 ---
 

@@ -78,6 +78,7 @@ contract ReceivableTokenTest is Test {
 
     function test_finance() public {
         uint256 investAmt = 5000 * 1e6;
+        uint256 issuerBalBefore = issuer.balance;
         vm.prank(investor1);
         token.finance{value: investAmt}();
 
@@ -86,6 +87,8 @@ contract ReceivableTokenTest is Test {
         uint256 expectedTokens = (investAmt * MAX_SUPPLY) / TOTAL;
         assertEq(token.balanceOf(investor1), expectedTokens);
         assertEq(uint8(token.status()), uint8(ReceivableToken.Status.Active));
+        // Issuer receives the funds
+        assertEq(issuer.balance - issuerBalBefore, investAmt);
     }
 
     function test_finance_multipleInvestors() public {
@@ -163,9 +166,9 @@ contract ReceivableTokenTest is Test {
         token.redeem();
         uint256 balAfter = address(investor1).balance;
 
-        // investor1 has 100% of tokens → gets 100% of contract balance
-        // contract has: 10k (funded) + 12k (repayment) = 22k
-        assertEq(balAfter - balBefore, 22_000 * 1e6);
+        // investor1 has 100% of tokens → gets 100% of repayment
+        // Contract only has: 12k (repayment), funds were sent to issuer
+        assertEq(balAfter - balBefore, REPAYMENT);
         assertEq(token.balanceOf(investor1), 0);
     }
 
@@ -191,10 +194,10 @@ contract ReceivableTokenTest is Test {
         token.redeem();
         uint256 bal2After = address(investor2).balance;
 
-        // contract has: 10k (funded) + 12k (repayment) = 22k
-        // Each has 50% → gets 11k each
-        assertEq(bal1After - bal1Before, 11_000 * 1e6);
-        assertEq(bal2After - bal2Before, 11_000 * 1e6);
+        // Contract has: 12k (repayment only)
+        // Each has 50% → gets 6k each
+        assertEq(bal1After - bal1Before, 6_000 * 1e6);
+        assertEq(bal2After - bal2Before, 6_000 * 1e6);
     }
 
     function test_redeem_notReady() public {
@@ -233,8 +236,8 @@ contract ReceivableTokenTest is Test {
         _repay();
 
         uint256 tokens = token.balanceOf(investor1);
-        // totalRedeemable = 5k (funded) + 12k (repayment) = 17k
-        uint256 totalRedeemable = 17_000 * 1e6;
+        // totalRedeemable = 12k (repayment only, funds sent to issuer)
+        uint256 totalRedeemable = REPAYMENT;
         uint256 expected = (tokens * totalRedeemable) / MAX_SUPPLY;
         assertEq(token.getShare(investor1), expected);
     }

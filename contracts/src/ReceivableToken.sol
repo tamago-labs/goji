@@ -66,6 +66,7 @@ contract ReceivableToken is ERC20, Ownable {
     // ──────────────────────────── Core Functions ────────────────────────
 
     /// @notice Finance this receivable (investor sends native USDC on Arc)
+    /// @dev Funds are sent directly to the issuer (company)
     function finance() external payable {
         require(status == Status.Active, "Not active");
         require(block.timestamp < expiresAt, "Receivable expired");
@@ -80,6 +81,10 @@ contract ReceivableToken is ERC20, Ownable {
         if (fundedAmount >= totalReceivable) {
             status = Status.Funded;
         }
+
+        // Send funds to issuer (company receives the money)
+        (bool success, ) = payable(issuer).call{value: msg.value}("");
+        require(success, "Transfer to issuer failed");
 
         emit ReceivableFunded(msg.sender, msg.value, tokens);
     }

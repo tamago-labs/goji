@@ -379,7 +379,7 @@ Expired  Defaulted (if no repayment)
 | Contract | Address |
 |----------|---------|
 | GojiProof | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
-| ReceivableFactory | `0x6F2979De8B541840E2E91321D6772D94Ed91d700` |
+| ReceivableFactory | `0x439D373aFbdAA001d80A0383AAF27F9fa350B176` |
 | PriceOracle | TBD |
 
 ### Scripts

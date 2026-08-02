@@ -26,21 +26,32 @@ export default function ReceivablesListPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!address || !publicClient) return
+    if (!address || !publicClient) {
+      setLoading(false)
+      return
+    }
 
     async function load() {
       try {
         // Get token addresses from factory
-        const tokenAddresses = await publicClient!.readContract({
-          address: RECEIVABLE_FACTORY_ADDRESS,
-          abi: RECEIVABLE_FACTORY_ABI,
-          functionName: 'getReceivables',
-          args: [address!]
-        }) as string[]
+        let tokenAddresses: string[] = []
+        try {
+          tokenAddresses = await publicClient!.readContract({
+            address: RECEIVABLE_FACTORY_ADDRESS,
+            abi: RECEIVABLE_FACTORY_ABI,
+            functionName: 'getReceivables',
+            args: [address!]
+          }) as string[]
+        } catch (e) {
+          console.error('Failed to get receivables from factory:', e)
+          setLoading(false)
+          return
+        }
 
         // Get info from each token
         const infos: ReceivableInfo[] = []
         for (const tokenAddr of tokenAddresses) {
+          if (!tokenAddr || tokenAddr === '0x0000000000000000000000000000000000000000') continue
           try {
             const info = await publicClient!.readContract({
               address: tokenAddr,

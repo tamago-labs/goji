@@ -210,8 +210,8 @@ export default function CreateReceivablePage() {
 
   const formatAmount = (amount: string) => {
     const num = parseFloat(amount)
-    if (isNaN(num)) return '$0'
-    return `$${num.toLocaleString()}`
+    if (isNaN(num)) return '0 USDC'
+    return `${num.toLocaleString()} USDC`
   }
 
   const filteredPending = pendingFlows.filter(f =>

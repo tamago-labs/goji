@@ -272,7 +272,6 @@ export default function CreateReceivablePage() {
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>From</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>To</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
-                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Status</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'></th>
               </tr>
             </thead>
@@ -287,11 +286,6 @@ export default function CreateReceivablePage() {
                   <td className='px-6 py-3 text-ink/60 text-xs max-w-[120px] truncate'>{flow.from}</td>
                   <td className='px-6 py-3 text-ink/60 text-xs max-w-[120px] truncate'>{flow.to}</td>
                   <td className='px-6 py-3 font-mono text-ink/60 text-sm'>{formatAmount(flow.amount)}</td>
-                  <td className='px-6 py-3'>
-                    <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700'>
-                      Pending
-                    </span>
-                  </td>
                   <td className='px-6 py-3'>
                     <button
                       onClick={() => openModal(flow)}

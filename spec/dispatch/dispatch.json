@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "offset": 0,
   "schema": [
     {
@@ -88,27 +88,69 @@
     },
     {
       "id": 14,
+      "name": "@goji/assign-role",
+      "requestType": "@goji/identity",
+      "version": 1
+    },
+    {
+      "id": 15,
       "name": "@goji/set-flow-status",
       "requestType": "@goji/flow-status",
       "version": 1
     },
     {
-      "id": 15,
+      "id": 16,
       "name": "@goji/remove-flow-statuses",
       "requestType": "@goji/flow-status-remove",
       "version": 1
     },
     {
-      "id": 16,
+      "id": 17,
       "name": "@goji/add-wallet",
       "requestType": "@goji/wallet",
       "version": 1
     },
     {
-      "id": 17,
+      "id": 18,
       "name": "@goji/remove-wallet",
       "requestType": "@goji/wallet-remove",
       "version": 1
+    },
+    {
+      "id": 19,
+      "name": "@goji/add-template",
+      "requestType": "@goji/template",
+      "version": 1
+    },
+    {
+      "id": 20,
+      "name": "@goji/update-template",
+      "requestType": "@goji/template",
+      "version": 1
+    },
+    {
+      "id": 21,
+      "name": "@goji/remove-template",
+      "requestType": "@goji/template-remove",
+      "version": 1
+    },
+    {
+      "id": 22,
+      "name": "@goji/add-receivable",
+      "requestType": "@goji/receivable",
+      "version": 2
+    },
+    {
+      "id": 23,
+      "name": "@goji/update-receivable",
+      "requestType": "@goji/receivable",
+      "version": 2
+    },
+    {
+      "id": 24,
+      "name": "@goji/remove-receivable",
+      "requestType": "@goji/receivable-remove",
+      "version": 2
     }
   ]
 }

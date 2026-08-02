@@ -143,8 +143,8 @@ export default function StartPage() {
         <div className='flex items-center gap-2'>
           {health && (
             <>
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'host' ? 'bg-mint/15 text-[#1B7A50]' : 'bg-violet/15 text-[#5A4FB8]'}`}>
-                {health.role === 'host' ? 'HOST' : 'GUEST'}
+              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'employer' ? 'bg-mint/15 text-[#1B7A50]' : health.role === 'employee' ? 'bg-blue-100 text-blue-700' : health.role === 'finance' ? 'bg-violet/15 text-[#5A4FB8]' : 'bg-ink/10 text-ink/50'}`}>
+                {health.role === 'employer' ? 'EMPLOYER' : health.role === 'employee' ? 'EMPLOYEE' : health.role === 'finance' ? 'FINANCE' : 'PENDING'}
               </span>
               <span className='text-[11px] text-ink/30'>{health.peers} peer{health.peers !== 1 ? 's' : ''}</span>
               <span className='w-px h-3 bg-ink/10' />

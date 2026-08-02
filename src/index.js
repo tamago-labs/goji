@@ -169,6 +169,9 @@ class GojiRoom {
       const next = {
         writerKey,
         displayName: data.displayName,
+        role: data.role || 'pending',
+        assignedBy: data.assignedBy || null,
+        assignedAt: data.assignedAt || null,
         updatedAt: data.updatedAt || Date.now()
       }
       const existing = await ctx.view.get('@goji/identity', { writerKey })
@@ -181,6 +184,31 @@ class GojiRoom {
       this.identities.set(b4a.toString(writerKey, 'hex'), {
         key: b4a.toString(writerKey, 'hex'),
         name: data.displayName,
+        role: data.role || 'pending',
+        updatedAt: next.updatedAt
+      })
+    })
+    this.router.add('@goji/assign-role', async (data, ctx) => {
+      const writerKey = b4a.isBuffer(data.writerKey) ? data.writerKey : b4a.from(data.writerKey)
+      const next = {
+        writerKey,
+        displayName: data.displayName,
+        role: data.role || 'pending',
+        assignedBy: data.assignedBy || null,
+        assignedAt: data.assignedAt || null,
+        updatedAt: data.updatedAt || Date.now()
+      }
+      const existing = await ctx.view.get('@goji/identity', { writerKey })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/identity', { writerKey }, () => next)
+      } else {
+        await ctx.view.insert('@goji/identity', next)
+      }
+      // Cache for peers endpoint
+      this.identities.set(b4a.toString(writerKey, 'hex'), {
+        key: b4a.toString(writerKey, 'hex'),
+        name: data.displayName,
+        role: data.role || 'pending',
         updatedAt: next.updatedAt
       })
     })
@@ -207,6 +235,35 @@ class GojiRoom {
           await ctx.view.delete('@goji/flowStatuses', { id: r.id })
         }
       }
+    })
+    this.router.add('@goji/add-template', async (data, ctx) => {
+      await ctx.view.insert('@goji/templates', data)
+    })
+    this.router.add('@goji/update-template', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/templates', { id: data.id })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/templates', { id: data.id }, () => data)
+      } else {
+        await ctx.view.insert('@goji/templates', data)
+      }
+    })
+    this.router.add('@goji/remove-template', async (data, ctx) => {
+      await ctx.view.delete('@goji/templates', { id: data.id })
+    })
+
+    this.router.add('@goji/add-receivable', async (data, ctx) => {
+      await ctx.view.insert('@goji/receivables', data)
+    })
+    this.router.add('@goji/update-receivable', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/receivables', { id: data.id })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/receivables', { id: data.id }, () => data)
+      } else {
+        await ctx.view.insert('@goji/receivables', data)
+      }
+    })
+    this.router.add('@goji/remove-receivable', async (data, ctx) => {
+      await ctx.view.delete('@goji/receivables', { id: data.id })
     })
   }
 
@@ -255,6 +312,9 @@ class GojiRoom {
     return rows.map((r) => ({
       writerKey: b4a.toString(r.writerKey, 'hex'),
       displayName: r.displayName,
+      role: r.role || 'pending',
+      assignedBy: r.assignedBy ? b4a.toString(r.assignedBy, 'hex') : null,
+      assignedAt: r.assignedAt || null,
       updatedAt: r.updatedAt
     }))
   }
@@ -282,14 +342,38 @@ class GojiRoom {
     await this.base.append(GojiDispatch.encode('@goji/add-chat', { id, text, info, proof: proof || null }))
   }
 
-  async appendIdentity({ displayName }) {
+  async appendIdentity({ displayName, role, assignedBy, assignedAt }) {
     await this.base.append(
       GojiDispatch.encode('@goji/update-identity', {
         writerKey: this.localBase.key,
         displayName,
+        role: role || 'pending',
+        assignedBy: assignedBy || null,
+        assignedAt: assignedAt || null,
         updatedAt: Date.now()
       })
     )
+  }
+
+  async assignRole(writerKeyHex, role, assignedByKey) {
+    const writerKey = b4a.from(writerKeyHex, 'hex')
+    const existing = await this.view.get('@goji/identity', { writerKey })
+    if (!existing) return null
+
+    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
+    if (!validRoles.includes(role)) return null
+
+    const next = {
+      writerKey,
+      displayName: existing.displayName,
+      role,
+      assignedBy: assignedByKey || this.localBase.key,
+      assignedAt: Date.now(),
+      updatedAt: Date.now()
+    }
+    await applyUpdate(this.view, '@goji/identity', { writerKey }, () => next)
+    await this.base.append(GojiDispatch.encode('@goji/assign-role', next))
+    return next
   }
 
   async appendBoard(action) {
@@ -349,6 +433,7 @@ class GojiRoom {
 }
 
 function hexId(s) {
+  if (b4a.isBuffer(s)) return s
   return b4a.from(String(s).replace(/-/g, ''), 'hex')
 }
 
@@ -423,7 +508,8 @@ function decodeConnection(raw) {
     template: raw.template || null,
     customDoc: raw.customDoc || null,
     docName: raw.docName || null,
-    txHash: raw.txHash || null
+    txHash: raw.txHash || null,
+    delegationEnabled: raw.delegationEnabled || null
   }
 }
 
@@ -456,7 +542,8 @@ async function main() {
   swarm.on('connection', (conn) => {
     store.replicate(conn)
     peers++
-    console.log(`[peer] connected (total: ${peers})`)
+    const peerKey = conn.remotePublicKey?.toString('hex')?.slice(0, 16) || 'unknown'
+    console.log(`[peer] connected (total: ${peers}) — ${peerKey}...`)
     conn.once('close', () => {
       peers--
       console.log(`[peer] disconnected (total: ${peers})`)
@@ -478,7 +565,11 @@ async function main() {
   const identityPath = require('path').join(STORAGE, 'identity.json')
   const identityData = await setupIdentity(STORAGE)
   let identityName = NAME || (identityData ? identityData.name : null) || `User-${room.localBase.key.toString('hex').slice(-4)}`
-  await room.appendIdentity({ displayName: identityName })
+
+  // Check if identity already exists in view (guest may have been assigned a role)
+  const existingIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+  const role = isGuest ? (existingIdentity?.role || 'pending') : 'employer'
+  await room.appendIdentity({ displayName: identityName, role })
 
   // Set up Keet identity for message signing
   let keetIdentity = null
@@ -499,6 +590,71 @@ async function main() {
   console.log(`\n  invite: ${inviteCode}`)
   console.log(`  share: npm start -- --join ${inviteCode}\n`)
 
+  // Auto-create default templates if none exist (host only)
+  if (!isGuest) {
+    const existingTemplates = await room.view.find('@goji/templates', {}).toArray()
+    if (existingTemplates.length === 0) {
+      console.log('[templates] Creating default templates...')
+      const defaultTemplates = [
+        {
+          name: 'Payment Receipt',
+          companyName: identityName,
+          fields: [
+            { key: 'recipient', label: 'To', type: 'text', autoFill: true, position: 'body' },
+            { key: 'amount', label: 'Amount', type: 'number', autoFill: true, position: 'body' },
+            { key: 'date', label: 'Date', type: 'date', autoFill: true, position: 'body' },
+            { key: 'txHash', label: 'Transaction', type: 'text', autoFill: true, position: 'footer' }
+          ],
+          html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;color:#333}h1{border-bottom:2px solid #7FD9B0;padding-bottom:10px;margin-bottom:5px}.subtitle{color:#666;margin-bottom:30px}.section{margin:20px 0}.section-title{font-size:12px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px}.field{margin:12px 0}.label{color:#666;font-size:12px}.value{font-size:16px;color:#333}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:11px}</style></head><body><h1>${identityName}</h1><div class="subtitle">Payment Receipt</div><div class="section"><div class="section-title">Details</div><div class="field"><div class="label">To</div><div class="value">{{recipient}}</div></div><div class="field"><div class="label">Amount</div><div class="value">{{amount}} USDC</div></div><div class="field"><div class="label">Date</div><div class="value">{{date}}</div></div></div><div class="footer"><div class="field"><div class="label">Transaction</div><div class="value" style="font-family:monospace;font-size:12px">{{txHash}}</div></div>Generated by Goji</div></body></html>`
+        },
+        {
+          name: 'Invoice',
+          companyName: identityName,
+          fields: [
+            { key: 'recipient', label: 'Bill To', type: 'text', autoFill: true, position: 'body' },
+            { key: 'amount', label: 'Amount', type: 'number', autoFill: true, position: 'body' },
+            { key: 'invoiceNumber', label: 'Invoice Number', type: 'text', autoFill: false, position: 'header' },
+            { key: 'dueDate', label: 'Due Date', type: 'date', autoFill: false, position: 'header' },
+            { key: 'date', label: 'Date', type: 'date', autoFill: true, position: 'header' },
+            { key: 'txHash', label: 'Transaction', type: 'text', autoFill: true, position: 'footer' }
+          ],
+          html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;color:#333}h1{border-bottom:2px solid #8B7FD6;padding-bottom:10px;margin-bottom:5px}.invoice-header{display:flex;justify-content:space-between;margin-bottom:30px}.subtitle{color:#666}.section{margin:20px 0}.section-title{font-size:12px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px}.field{margin:12px 0}.label{color:#666;font-size:12px}.value{font-size:16px;color:#333}.total{font-size:20px;font-weight:bold;margin-top:20px;padding-top:20px;border-top:2px solid #8B7FD6}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:11px}</style></head><body><div class="invoice-header"><div><h1>${identityName}</h1><div class="subtitle">Invoice</div></div><div style="text-align:right"><div class="label">Invoice #</div><div class="value">{{invoiceNumber}}</div><div class="label">Date</div><div class="value">{{date}}</div><div class="label">Due Date</div><div class="value">{{dueDate}}</div></div></div><div class="section"><div class="section-title">Details</div><div class="field"><div class="label">Bill To</div><div class="value">{{recipient}}</div></div><div class="total"><div class="label">Total Amount</div><div class="value">{{amount}} USDC</div></div></div><div class="footer"><div class="field"><div class="label">Transaction</div><div class="value" style="font-family:monospace;font-size:12px">{{txHash}}</div></div>Generated by Goji</div></body></html>`
+        },
+        {
+          name: 'Service Agreement',
+          companyName: identityName,
+          fields: [
+            { key: 'recipient', label: 'Client', type: 'text', autoFill: true, position: 'body' },
+            { key: 'amount', label: 'Amount', type: 'number', autoFill: true, position: 'body' },
+            { key: 'serviceDate', label: 'Service Date', type: 'date', autoFill: false, position: 'header' },
+            { key: 'terms', label: 'Terms', type: 'textarea', autoFill: false, position: 'body' },
+            { key: 'date', label: 'Date', type: 'date', autoFill: true, position: 'header' },
+            { key: 'txHash', label: 'Transaction', type: 'text', autoFill: true, position: 'footer' }
+          ],
+          html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;color:#333}h1{border-bottom:2px solid #ccc;padding-bottom:10px;margin-bottom:5px}.subtitle{color:#666;margin-bottom:30px}.section{margin:20px 0}.section-title{font-size:12px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px}.field{margin:12px 0}.label{color:#666;font-size:12px}.value{font-size:16px;color:#333}.textarea{background:#f9f9f9;padding:12px;border-radius:6px;min-height:60px}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:11px}</style></head><body><h1>${identityName}</h1><div class="subtitle">Service Agreement</div><div class="section"><div class="section-title">Details</div><div class="field"><div class="label">Service Date</div><div class="value">{{serviceDate}}</div></div><div class="field"><div class="label">Client</div><div class="value">{{recipient}}</div></div><div class="field"><div class="label">Agreed Amount</div><div class="value">{{amount}} USDC</div></div><div class="field"><div class="label">Terms & Conditions</div><div class="textarea">{{terms}}</div></div></div><div class="footer"><div class="field"><div class="label">Transaction</div><div class="value" style="font-family:monospace;font-size:12px">{{txHash}}</div></div>Generated by Goji</div></body></html>`
+        }
+      ]
+
+      for (const tmpl of defaultTemplates) {
+        const now = Date.now()
+        const id = require('crypto').randomBytes(16).toString('hex')
+        const template = {
+          id: b4a.from(id, 'hex'),
+          name: tmpl.name,
+          companyName: tmpl.companyName,
+          fields: tmpl.fields,
+          html: tmpl.html,
+          isDefault: 1,
+          createdBy: room.localBase.key,
+          createdAt: now,
+          updatedAt: now
+        }
+        await room.base.append(GojiDispatch.encode('@goji/add-template', template))
+      }
+      console.log('[templates] Default templates created')
+    }
+  }
+
 
   const app = express()
   app.use(express.json())
@@ -510,19 +666,40 @@ async function main() {
     next()
   })
 
-  app.get('/api/health', (req, res) =>
+  app.get('/api/health', async (req, res) => {
+    // Look up actual role from identity in view
+    let identity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    
+    // Debug: log what we find
+    if (isGuest) {
+      console.log(`[health] guest identity lookup: role=${identity?.role || 'not found'}`)
+    }
+    
+    // If role is still pending, wait and retry (role may be syncing from host)
+    if (identity && identity.role === 'pending' && isGuest) {
+      // Try up to 3 times with increasing delay
+      for (let i = 0; i < 3; i++) {
+        await new Promise(r => setTimeout(r, 300))
+        identity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+        console.log(`[health] retry ${i + 1}: role=${identity?.role || 'not found'}`)
+        if (identity && identity.role !== 'pending') break
+      }
+    }
+    
+    const role = identity?.role || (isGuest ? 'pending' : 'employer')
     res.json({
       status: 'ok',
       name: identityName,
       peerId: z32.encode(room.localBase.key),
-      role: isGuest ? 'guest' : 'host',
+      peerIdHex: b4a.toString(room.localBase.key, 'hex'),
+      role,
       writable: room.isWritable(),
       peers,
       port: PORT,
       storage: STORAGE,
       timestamp: Date.now()
     })
-  )
+  })
 
   app.get('/api/username', (req, res) => res.json({ name: identityName }))
 
@@ -610,16 +787,22 @@ async function main() {
   app.post('/api/connections', async (req, res) => {
     const { boardId, from, to, label, amount, payment, document, template, customDoc, docName, txHash } = req.body
     const now = Date.now()
-    const id = require('crypto').randomBytes(16).toString('hex')
+    const id = require('crypto').randomBytes(16)
     const connection = {
-      id, boardId, from, to, label: label || null, updatedAt: now,
-      amount: amount || null, payment: payment || null, document: document || null,
+      id, 
+      boardId: b4a.from(boardId, 'hex'), 
+      from, to, label: label || null, updatedAt: now,
+      amount: amount || null, 
+      payment: payment || null, 
+      document: document || null,
       template: template || null, customDoc: customDoc || null, docName: docName || null,
       txHash: txHash || null
     }
     await room.appendConnection({ type: 'add-connection', connection })
-    wsBroadcast({ type: 'connection:added', connection })
-    res.json(connection)
+    // Return connection with hex string ID
+    const response = { ...connection, id: b4a.toString(id, 'hex'), boardId: boardId }
+    wsBroadcast({ type: 'connection:added', connection: response })
+    res.json(response)
   })
 
   app.put('/api/connections/:id', async (req, res) => {
@@ -713,6 +896,12 @@ async function main() {
   })
 
   app.get('/api/wallets/all', async (req, res) => {
+    // Only employer can list all wallets
+    const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    if (!callerIdentity || callerIdentity.role !== 'employer') {
+      return res.status(403).json({ error: 'Only employer can list all wallets' })
+    }
+
     const rows = await room.view.find('@goji/wallets', {}).toArray()
     const identities = await room.view.find('@goji/identity', {}).toArray()
     const identityMap = new Map()
@@ -804,6 +993,7 @@ async function main() {
         txHash: r.txHash || null,
         error: r.error || null,
         payslipHtml: r.payslipHtml || null,
+        merkleRoot: r.merkleRoot || null,
         updatedAt: r.updatedAt
       }))
     res.json(statuses)
@@ -825,18 +1015,19 @@ async function main() {
 
     const now = Date.now()
     const id = require('crypto').randomBytes(16).toString('hex')
-    const flowStatus = { id: b4a.from(id, 'hex'), flowId: b4a.from(flowId, 'hex'), routeId, status, txHash: txHash || null, error: error || null, updatedAt: now }
+    // Ensure routeId is a string
+    const routeIdStr = typeof routeId === 'string' ? routeId : b4a.toString(routeId, 'hex')
     await room.base.append(GojiDispatch.encode('@goji/set-flow-status', {
       id: b4a.from(id, 'hex'),
       flowId: b4a.from(flowId, 'hex'),
-      routeId,
+      routeId: routeIdStr,
       status,
       txHash: txHash || null,
       error: error || null,
       updatedAt: now
     }))
-    wsBroadcast({ type: 'flow-status:updated', flowStatus: { id, flowId, routeId, status, txHash, error, updatedAt: now } })
-    res.json({ id, flowId, routeId, status, txHash, error, updatedAt: now })
+    wsBroadcast({ type: 'flow-status:updated', flowStatus: { id, flowId, routeId: routeIdStr, status, txHash, error, updatedAt: now } })
+    res.json({ id, flowId, routeId: routeIdStr, status, txHash, error, updatedAt: now })
   })
 
   app.put('/api/flow-status/:id', async (req, res) => {
@@ -852,6 +1043,7 @@ async function main() {
         txHash: patch.txHash || existing.txHash,
         error: patch.error || existing.error,
         payslipHtml: patch.payslipHtml || existing.payslipHtml || null,
+        merkleRoot: patch.merkleRoot || existing.merkleRoot || null,
         updatedAt: patch.updatedAt
       }))
       await room.base.append(GojiDispatch.encode('@goji/set-flow-status', {
@@ -862,6 +1054,7 @@ async function main() {
         txHash: patch.txHash || existing.txHash,
         error: patch.error || existing.error,
         payslipHtml: patch.payslipHtml || existing.payslipHtml || null,
+        merkleRoot: patch.merkleRoot || existing.merkleRoot || null,
         updatedAt: patch.updatedAt
       }))
     }
@@ -894,6 +1087,163 @@ async function main() {
     res.json({ ok: true, cleared: toRemove.length })
   })
 
+  // Template endpoints
+  app.get('/api/templates', async (req, res) => {
+    const templates = await room.view.find('@goji/templates', {}).toArray()
+    const result = templates.map((t) => ({
+      id: b4a.toString(t.id, 'hex'),
+      name: t.name,
+      companyName: t.companyName || null,
+      fields: t.fields || [],
+      html: t.html,
+      isDefault: !!t.isDefault,
+      createdBy: t.createdBy ? b4a.toString(t.createdBy, 'hex') : null,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt
+    }))
+    res.json(result)
+  })
+
+  app.post('/api/templates', async (req, res) => {
+    const { name, companyName, fields, html } = req.body
+    if (!name || !html) return res.status(400).json({ error: 'name and html required' })
+    const now = Date.now()
+    const id = require('crypto').randomBytes(16).toString('hex')
+    const template = {
+      id: b4a.from(id, 'hex'),
+      name,
+      companyName: companyName || null,
+      fields: fields || [],
+      html,
+      isDefault: 0,
+      createdBy: room.localBase.key,
+      createdAt: now,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/add-template', template))
+    wsBroadcast({ type: 'template:added', template: { ...template, id } })
+    res.json({ id, name, companyName, fields, html, isDefault: false, createdAt: now })
+  })
+
+  app.put('/api/templates/:id', async (req, res) => {
+    const { name, companyName, fields, html } = req.body
+    const id = b4a.from(req.params.id, 'hex')
+    const existing = await room.view.get('@goji/templates', { id })
+    if (!existing) return res.status(404).json({ error: 'template not found' })
+    const now = Date.now()
+    const next = {
+      ...existing,
+      name: name || existing.name,
+      companyName: companyName !== undefined ? companyName : existing.companyName,
+      fields: fields || existing.fields,
+      html: html || existing.html,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/update-template', next))
+    wsBroadcast({ type: 'template:updated', template: { ...next, id: req.params.id } })
+    res.json({ ok: true })
+  })
+
+  app.delete('/api/templates/:id', async (req, res) => {
+    const id = b4a.from(req.params.id, 'hex')
+    await room.base.append(GojiDispatch.encode('@goji/remove-template', { id }))
+    wsBroadcast({ type: 'template:deleted', id: req.params.id })
+    res.json({ ok: true })
+  })
+
+  // ── Receivables ──────────────────────────────────────────
+
+  app.get('/api/receivables', async (req, res) => {
+    const rows = await room.view.find('@goji/receivables', {}).toArray()
+    const result = rows.map((r) => ({
+      id: b4a.toString(r.id, 'hex'),
+      tokenAddress: r.tokenAddress,
+      name: r.name,
+      type: r.type,
+      amount: r.amount,
+      interestRate: r.interestRate,
+      minInvestment: r.minInvestment,
+      expiryDays: r.expiryDays,
+      proofs: r.proofs || [],
+      status: r.status,
+      issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }))
+    res.json(result)
+  })
+
+  app.get('/api/receivables/:id', async (req, res) => {
+    const id = b4a.from(req.params.id, 'hex')
+    const r = await room.view.get('@goji/receivables', { id })
+    if (!r) return res.status(404).json({ error: 'receivable not found' })
+    res.json({
+      id: b4a.toString(r.id, 'hex'),
+      tokenAddress: r.tokenAddress,
+      name: r.name,
+      type: r.type,
+      amount: r.amount,
+      interestRate: r.interestRate,
+      minInvestment: r.minInvestment,
+      expiryDays: r.expiryDays,
+      proofs: r.proofs || [],
+      status: r.status,
+      issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    })
+  })
+
+  app.post('/api/receivables', async (req, res) => {
+    const { tokenAddress, name, type, amount, interestRate, minInvestment, expiryDays, proofs, status } = req.body
+    if (!tokenAddress || !name || !type || !amount) {
+      return res.status(400).json({ error: 'tokenAddress, name, type, amount required' })
+    }
+    const now = Date.now()
+    const id = require('crypto').randomBytes(16).toString('hex')
+    const receivable = {
+      id: b4a.from(id, 'hex'),
+      tokenAddress,
+      name,
+      type,
+      amount: String(amount),
+      interestRate: String(interestRate || '2000'),
+      minInvestment: String(minInvestment || '1000000000000000000'),
+      expiryDays: String(expiryDays || '90'),
+      proofs: proofs || [],
+      status: status || 'active',
+      issuer: room.localBase.key,
+      createdAt: now,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/add-receivable', receivable))
+    wsBroadcast({ type: 'receivable:added', receivable: { ...receivable, id } })
+    res.json({ id, ...receivable })
+  })
+
+  app.put('/api/receivables/:id', async (req, res) => {
+    const { status } = req.body
+    const id = b4a.from(req.params.id, 'hex')
+    const existing = await room.view.get('@goji/receivables', { id })
+    if (!existing) return res.status(404).json({ error: 'receivable not found' })
+    const now = Date.now()
+    const next = {
+      ...existing,
+      status: status || existing.status,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/update-receivable', next))
+    wsBroadcast({ type: 'receivable:updated', receivable: { ...next, id: req.params.id } })
+    res.json({ ok: true })
+  })
+
+  app.delete('/api/receivables/:id', async (req, res) => {
+    const id = b4a.from(req.params.id, 'hex')
+    await room.base.append(GojiDispatch.encode('@goji/remove-receivable', { id }))
+    wsBroadcast({ type: 'receivable:deleted', id: req.params.id })
+    res.json({ ok: true })
+  })
+
   app.get('/api/peers', async (req, res) => {
     // Load from view to get all identities including remote peers
     const rows = await room.view.find('@goji/identity', {}).toArray()
@@ -903,10 +1253,55 @@ async function main() {
       const key = b4a.toString(r.writerKey, 'hex')
       if (!seen.has(key)) {
         seen.add(key)
-        peers.push({ key, name: r.displayName, updatedAt: r.updatedAt })
+        peers.push({
+          key,
+          name: r.displayName,
+          role: r.role || 'pending',
+          assignedBy: r.assignedBy ? b4a.toString(r.assignedBy, 'hex') : null,
+          assignedAt: r.assignedAt || null,
+          updatedAt: r.updatedAt
+        })
       }
     }
     res.json(peers)
+  })
+
+  app.get('/api/members', async (req, res) => {
+    // Only employer can list members
+    const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    if (!callerIdentity || callerIdentity.role !== 'employer') {
+      return res.status(403).json({ error: 'Only employer can list members' })
+    }
+
+    const identities = await room.getIdentities()
+    res.json(identities)
+  })
+
+  app.post('/api/members/assign', async (req, res) => {
+    // Only employer can assign roles
+    const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    if (!callerIdentity || callerIdentity.role !== 'employer') {
+      return res.status(403).json({ error: 'Only employer can assign roles' })
+    }
+
+    const { writerKey, role } = req.body
+    if (!writerKey || !role) {
+      return res.status(400).json({ error: 'writerKey and role required' })
+    }
+
+    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` })
+    }
+
+    const assigned = await room.assignRole(writerKey, role, room.localBase.key)
+    if (!assigned) {
+      return res.status(404).json({ error: 'Member not found' })
+    }
+
+    console.log(`[role] assigned ${role} to ${assigned.displayName} (${writerKey.slice(0, 8)}...)`)
+    wsBroadcast({ type: 'role:assigned', writerKey, role })
+    res.json({ ok: true, writerKey, role })
   })
 
   app.put('/api/username', async (req, res) => {

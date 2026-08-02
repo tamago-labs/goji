@@ -4,7 +4,7 @@
 const { IndexEncoder, c, b4a } = require('hyperdb/runtime')
 const { version, getEncoding, setVersion } = require('./messages.js')
 
-const versions = { schema: version, db: 1 }
+const versions = { schema: version, db: 2 }
 
 // '@goji/boards' collection key
 const collection0_key = new IndexEncoder([
@@ -542,6 +542,140 @@ const collection7 = {
   decodedVersion: 0
 }
 
+// '@goji/templates' collection key
+const collection8_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 8 })
+
+function collection8_indexify (record) {
+  const a = record.id
+  return a === undefined ? [] : [a]
+}
+
+// '@goji/templates' value encoding
+const collection8_enc = getEncoding('@goji/template/hyperdb#8')
+
+// '@goji/templates' reconstruction function
+function collection8_reconstruct (schemaVersion, keyBuf, valueBuf) {
+  const key = collection8_key.decode(keyBuf)
+  setVersion(schemaVersion)
+  const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
+  const type = c.uint.decode(state)
+  if (type !== 0) throw new Error('Unknown collection type: ' + type)
+  collection8.decodedVersion = c.uint.decode(state)
+  const record = collection8_enc.decode(state)
+  record.id = key[0]
+  return record
+}
+// '@goji/templates' key reconstruction function
+function collection8_reconstruct_key (keyBuf) {
+  const key = collection8_key.decode(keyBuf)
+  return {
+    id: key[0]
+  }
+}
+
+// '@goji/templates'
+const collection8 = {
+  name: '@goji/templates',
+  id: 8,
+  version: 1,
+  encodeKey (record) {
+    const key = [record.id]
+    return collection8_key.encode(key)
+  },
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
+    return collection8_key.encodeRange({
+      gt: gt ? collection8_indexify(gt) : null,
+      lt: lt ? collection8_indexify(lt) : null,
+      gte: gte ? collection8_indexify(gte) : null,
+      lte: lte ? collection8_indexify(lte) : null
+    })
+  },
+  encodeValue (schemaVersion, collectionVersion, record) {
+    setVersion(schemaVersion)
+    const state = { start: 0, end: 2, buffer: null }
+    collection8_enc.preencode(state, record)
+    state.buffer = b4a.allocUnsafe(state.end)
+    state.buffer[state.start++] = 0
+    state.buffer[state.start++] = collectionVersion
+    collection8_enc.encode(state, record)
+    return state.buffer
+  },
+  trigger: null,
+  reconstruct: collection8_reconstruct,
+  reconstructKey: collection8_reconstruct_key,
+  indexes: [],
+  decodedVersion: 0
+}
+
+// '@goji/receivables' collection key
+const collection9_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 9 })
+
+function collection9_indexify (record) {
+  const a = record.id
+  return a === undefined ? [] : [a]
+}
+
+// '@goji/receivables' value encoding
+const collection9_enc = getEncoding('@goji/receivable/hyperdb#9')
+
+// '@goji/receivables' reconstruction function
+function collection9_reconstruct (schemaVersion, keyBuf, valueBuf) {
+  const key = collection9_key.decode(keyBuf)
+  setVersion(schemaVersion)
+  const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
+  const type = c.uint.decode(state)
+  if (type !== 0) throw new Error('Unknown collection type: ' + type)
+  collection9.decodedVersion = c.uint.decode(state)
+  const record = collection9_enc.decode(state)
+  record.id = key[0]
+  return record
+}
+// '@goji/receivables' key reconstruction function
+function collection9_reconstruct_key (keyBuf) {
+  const key = collection9_key.decode(keyBuf)
+  return {
+    id: key[0]
+  }
+}
+
+// '@goji/receivables'
+const collection9 = {
+  name: '@goji/receivables',
+  id: 9,
+  version: 2,
+  encodeKey (record) {
+    const key = [record.id]
+    return collection9_key.encode(key)
+  },
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
+    return collection9_key.encodeRange({
+      gt: gt ? collection9_indexify(gt) : null,
+      lt: lt ? collection9_indexify(lt) : null,
+      gte: gte ? collection9_indexify(gte) : null,
+      lte: lte ? collection9_indexify(lte) : null
+    })
+  },
+  encodeValue (schemaVersion, collectionVersion, record) {
+    setVersion(schemaVersion)
+    const state = { start: 0, end: 2, buffer: null }
+    collection9_enc.preencode(state, record)
+    state.buffer = b4a.allocUnsafe(state.end)
+    state.buffer[state.start++] = 0
+    state.buffer[state.start++] = collectionVersion
+    collection9_enc.encode(state, record)
+    return state.buffer
+  },
+  trigger: null,
+  reconstruct: collection9_reconstruct,
+  reconstructKey: collection9_reconstruct_key,
+  indexes: [],
+  decodedVersion: 0
+}
+
 const collections = [
   collection0,
   collection1,
@@ -550,7 +684,9 @@ const collections = [
   collection4,
   collection5,
   collection6,
-  collection7
+  collection7,
+  collection8,
+  collection9
 ]
 
 const indexes = [
@@ -568,6 +704,8 @@ function resolveCollection (name) {
     case '@goji/identity': return collection5
     case '@goji/wallets': return collection6
     case '@goji/flowStatuses': return collection7
+    case '@goji/templates': return collection8
+    case '@goji/receivables': return collection9
     default: return null
   }
 }

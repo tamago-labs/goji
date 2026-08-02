@@ -9,6 +9,7 @@ import CanvasCard from './CanvasCard'
 import CanvasLines from './CanvasLines'
 import Toolbar from './Toolbar'
 import ConnectionDrawer from './ConnectionDrawer'
+import InvoiceDrawer from './InvoiceDrawer'
 import PreviewRoutesModal from './PreviewRoutesModal'
 import FlowOverlay, { type RouteStatus } from './FlowOverlay'
 import FloatingChatButton from '../chat/FloatingChatButton'
@@ -324,6 +325,40 @@ export default function FlowBuilder({
     [boardId, API]
   )
 
+  const addDeposit = useCallback(
+    async (deposit: { id: string; address: string; chain: string; name: string | null }) => {
+      const title = deposit.name || 'Deposit Wallet'
+      if (boardId) {
+        try {
+          await fetch(`${API}/api/cards`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: genId(),
+              category: 'deposit',
+              title,
+              x: 200 + Math.random() * 100,
+              y: 150 + Math.random() * 100,
+              fields: { address: deposit.address, chain: deposit.chain, balance: '', walletId: deposit.id },
+              boardId
+            })
+          })
+        } catch {}
+      } else {
+        const card: FlowCard = {
+          id: genId(),
+          category: 'deposit',
+          title,
+          x: 200 + Math.random() * 100,
+          y: 150 + Math.random() * 100,
+          fields: { address: deposit.address, chain: deposit.chain, balance: '', walletId: deposit.id }
+        }
+        setCards((prev) => [...prev, card])
+      }
+    },
+    [boardId, API]
+  )
+
   const deleteCard = useCallback(
     (id: string) => {
       setCards((prev) => prev.filter((c) => c.id !== id))
@@ -349,13 +384,20 @@ export default function FlowBuilder({
         }
 
         const valid =
-          (fromCard.category === 'wallet' &&
-            (toCard.category === 'gate' || toCard.category === 'recipient')) ||
+          // Pay flow: wallet → recipient
+          (fromCard.category === 'wallet' && toCard.category === 'recipient') ||
+          // Invoice flow: deposit → wallet
+          (fromCard.category === 'deposit' && toCard.category === 'wallet') ||
+          // Gate flows
+          (fromCard.category === 'wallet' && toCard.category === 'gate') ||
           (fromCard.category === 'gate' && toCard.category === 'recipient')
 
         if (valid) {
           const exists = connections.some((c) => c.from === connectFrom && c.to === cardId)
           if (!exists) {
+            // Invoice flow: deposit → wallet should have document=1
+            const isInvoiceFlow = fromCard.category === 'deposit' && toCard.category === 'wallet'
+            
             if (boardId) {
               // Let API + WebSocket handle adding
               fetch(`${API}/api/connections`, {
@@ -367,7 +409,8 @@ export default function FlowBuilder({
                   fromPort: 'output',
                   to: cardId,
                   toPort: 'input',
-                  boardId
+                  boardId,
+                  document: isInvoiceFlow ? 1 : undefined
                 })
               }).catch(() => {})
             } else {
@@ -377,7 +420,8 @@ export default function FlowBuilder({
                 from: connectFrom,
                 fromPort: 'output',
                 to: cardId,
-                toPort: 'input'
+                toPort: 'input',
+                document: isInvoiceFlow ? 1 : undefined
               }
               setConnections((prev) => [...prev, conn])
             }
@@ -515,6 +559,7 @@ export default function FlowBuilder({
           onNameChange={handleNameChange}
           onAddWallet={addWallet}
           onAddRecipient={addRecipient}
+          onAddDeposit={addDeposit}
           onStart={async () => { await loadFlowStatuses(); setShowPreview(true) }}
           onStop={stopFlow}
           flowActive={flowActive}
@@ -639,13 +684,37 @@ export default function FlowBuilder({
 
       <FloatingChatButton />
 
-      <ConnectionDrawer
-        isOpen={selectedConnection !== null}
-        connection={selectedConnection}
-        cards={cards}
-        onClose={() => setSelectedConnection(null)}
-        onSave={updateConnection}
-      />
+      {/* Check if connection involves deposit wallet */}
+      {selectedConnection && (() => {
+        const fromCard = cards.find((c) => c.id === selectedConnection.from)
+        const toCard = cards.find((c) => c.id === selectedConnection.to)
+        // Invoice flow: deposit → wallet
+        const isInvoiceConnection = fromCard?.category === 'deposit' && toCard?.category === 'wallet'
+
+        if (isInvoiceConnection) {
+          return (
+            <InvoiceDrawer
+              isOpen={true}
+              connection={selectedConnection}
+              cards={cards}
+              apiUrl={API}
+              onClose={() => setSelectedConnection(null)}
+              onSave={updateConnection}
+            />
+          )
+        }
+
+        return (
+          <ConnectionDrawer
+            isOpen={selectedConnection !== null}
+            connection={selectedConnection}
+            cards={cards}
+            apiUrl={API}
+            onClose={() => setSelectedConnection(null)}
+            onSave={updateConnection}
+          />
+        )
+      })()}
 
       <PreviewRoutesModal
         isOpen={showPreview}

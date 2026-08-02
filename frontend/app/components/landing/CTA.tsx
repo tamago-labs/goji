@@ -14,10 +14,13 @@ export default function CTA() {
         className='text-center'
       >
         <h2 className='font-display text-4xl md:text-5xl font-semibold mb-6'>
-          Goji is Figma for<br />programmable payments.
+          From Every Payment<br />
+          <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
+            to Real-World Assets
+          </span>
         </h2>
-        <p className='text-ink/50 text-lg mb-8 max-w-[440px] mx-auto'>
-          Built on Arc, connected to every chain. Visual, collaborative, and made for teams.
+        <p className='text-ink/50 text-lg mb-8 max-w-[560px] mx-auto'>
+          Settle invoices, payroll, and contractor payments. Each creates verifiable proof for RWA origination.
         </p>
         <Link
           href='/start'

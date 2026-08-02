@@ -59,10 +59,10 @@ export const DEFAULT_TEMPLATES: PayslipTemplate[] = [
   }
 ]
 
-export function renderTemplate(template: PayslipTemplate, vars: Record<string, string>): string {
-  let html = template.html
+export function renderTemplate(html: string, vars: Record<string, string>): string {
+  let result = html || ''
   for (const [key, value] of Object.entries(vars)) {
-    html = html.replace(new RegExp(`{{${key}}}`, 'g'), value)
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value)
   }
-  return html
+  return result
 }

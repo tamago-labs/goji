@@ -9,10 +9,22 @@ interface CanvasLinesProps {
   onClickConnection: (conn: Connection) => void
 }
 
-function getLabel(conn: Connection): string {
+function getLabel(conn: Connection, cards: FlowCard[]): string {
   const hasPayment = conn.payment
   const hasDoc = conn.document
   const docName = conn.docName || 'document'
+
+  // Check connection type
+  const cardMap = new Map(cards.map((c) => [c.id, c]))
+  const fromCard = cardMap.get(conn.from)
+  const toCard = cardMap.get(conn.to)
+  
+  // Invoice flow: deposit → wallet
+  const isInvoice = fromCard?.category === 'deposit' && toCard?.category === 'wallet'
+
+  if (isInvoice && conn.amount) {
+    return `${conn.amount} USDC + ${docName}`
+  }
 
   if (hasPayment && hasDoc) {
     return conn.amount ? `${conn.amount} USDC + ${docName}` : docName
@@ -59,7 +71,7 @@ export default function CanvasLines({ cards, connections, onDeleteConnection, on
         const midX = (x1 + x2) / 2
         const midY = (y1 + y2) / 2
 
-        const label = getLabel(conn)
+        const label = getLabel(conn, cards)
 
         return (
           <g key={conn.id}>

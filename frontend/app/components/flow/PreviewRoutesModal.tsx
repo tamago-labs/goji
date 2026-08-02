@@ -14,10 +14,21 @@ interface PreviewRoutesModalProps {
   flowActive: boolean
 }
 
-function getActionLabel(conn: Connection): string {
+function getActionLabel(conn: Connection, cards: FlowCard[]): string {
   const parts: string[] = []
-  if (conn.payment) parts.push('Payment')
-  if (conn.document) parts.push(conn.docName || 'Document')
+  
+  // Check connection type
+  const cardMap = new Map(cards.map((c) => [c.id, c]))
+  const fromCard = cardMap.get(conn.from)
+  const toCard = cardMap.get(conn.to)
+  const isInvoice = fromCard?.category === 'deposit' && toCard?.category === 'wallet'
+  
+  if (isInvoice) {
+    parts.push('Receive Payment')
+  } else {
+    if (conn.payment) parts.push('Send Payment')
+  }
+  
   return parts.join(' + ') || '—'
 }
 
@@ -25,7 +36,14 @@ export default function PreviewRoutesModal({ isOpen, onClose, onStart, cards, co
   const cardMap = new Map(cards.map((c) => [c.id, c]))
 
   const routes = connections
-    .filter((c) => c.payment || c.document)
+    .filter((c) => {
+      const from = cardMap.get(c.from)
+      const to = cardMap.get(c.to)
+      // Include any connection that has payment, document, or is wallet -> deposit
+      if (c.payment || c.document) return true
+      if (from?.category === 'wallet' && to?.category === 'deposit') return true
+      return false
+    })
     .map((conn) => {
       const from = cardMap.get(conn.from)
       const to = cardMap.get(conn.to)
@@ -122,7 +140,7 @@ export default function PreviewRoutesModal({ isOpen, onClose, onStart, cards, co
                           {route.conn.amount ? `${route.conn.amount} USDC` : '—'}
                         </td>
                         <td className='px-6 py-3 text-ink/50 text-xs'>
-                          {getActionLabel(route.conn)}
+                          {getActionLabel(route.conn, cards)}
                         </td>
                         <td className='px-6 py-3'>
                           {getStatusPill(route.status?.status)}

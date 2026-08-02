@@ -18,37 +18,37 @@ export default function Hero() {
           {...fadeUp(0)}
           className='inline-block bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
         >
-          for DAOs &amp; small web3 teams
+          📊 Connecting USDC Payments to Capital
         </motion.span>
         <motion.h1
           {...fadeUp(0.1)}
           className='font-display text-[50px] font-semibold leading-[1.12] mb-[22px]'
         >
-          Payments,
+          Arc-Native P2P
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            made together
+            Origination Layer
           </span>
         </motion.h1>
         <motion.p
           {...fadeUp(0.2)}
           className='text-[17px] leading-[1.6] text-ink/70 max-w-[420px] mb-[34px]'
         >
-         Goji keeps every USDC payment and its contracts, payslips, and approvals together in a shared P2P workspace across supported chains.
+         Run invoices, payroll, and contractor payments peer-to-peer. Every settlement creates verifiable proof on Arc, enabling businesses to originate receivables and other real-world assets for financial partners.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5'>
           <Link
             href='/start'
             className='bg-ink text-lavender px-[26px] py-[15px] rounded-3xl text-[15px] font-medium hover:opacity-90 transition-opacity'
           >
-            Create a flow
+            Get started now
           </Link>
-          <a
-            href='#'
+          <Link
+            href='/rwa'
             className='text-ink text-[15px] font-medium py-[15px] px-2.5 hover:opacity-70 transition-opacity'
           >
-            See an example →
-          </a>
+            Explore Assets →
+          </Link>
         </motion.div>
       </div>
 

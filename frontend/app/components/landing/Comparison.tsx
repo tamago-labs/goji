@@ -3,13 +3,13 @@
 import { motion } from 'framer-motion'
 
 const rows = [
-  { traditional: 'Spreadsheet rows', goji: 'Visual payment canvas' },
-  { traditional: 'Copy-paste wallet addresses', goji: 'Connected payment flows' },
-  { traditional: 'Separate invoices & contracts', goji: 'Documents attached to payments' },
-  { traditional: 'Manual payment review', goji: 'Collaborative flow review' },
-  { traditional: 'Third-party data risk', goji: 'GDPR-clean by design' },
-  { traditional: 'Single-chain transfers', goji: 'Cross-chain USDC settlement' },
-  { traditional: 'Manual receipts', goji: 'Auto-generated payslips' }
+  { traditional: 'Disconnected payroll tools', goji: 'Visual payroll canvas' },
+  { traditional: 'Cloud-based payroll database', goji: 'Private P2P workspace' },
+  { traditional: 'Employee records in silos', goji: 'Connected people, contracts & payslips' },
+  { traditional: 'Manual approval workflows', goji: 'Real-time collaborative reviews' },
+  { traditional: 'Separate documents & receipts', goji: 'Payroll, documents & proof together' },
+  { traditional: 'Manual audit preparation', goji: 'Cryptographic proof on Arc' },
+  { traditional: 'Payroll ends after payment', goji: 'Connected financial partners' }
 ]
 
 export default function Comparison() {
@@ -23,11 +23,10 @@ export default function Comparison() {
         className='text-center mb-12'
       >
         <h2 className='font-display text-3xl md:text-4xl font-semibold mb-3'>
-          Programmable money, made visual
+          Payroll, Verified End-to-End
         </h2>
         <p className='text-ink/50 text-[17px] max-w-[520px] mx-auto leading-relaxed'>
-          Build, review, and execute programmable payment flows instead of
-          managing disconnected spreadsheets and dashboards.
+          A shared canvas where payroll, approvals, documents, and settlement stay connected from origin to proof.
         </p>
       </motion.div>
 
@@ -39,7 +38,7 @@ export default function Comparison() {
         className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden'
       >
         <div className='grid grid-cols-2 border-b border-ink/8'>
-          <div className='px-6 py-4 text-sm font-medium text-ink/40'>Traditional</div>
+          <div className='px-6 py-4 text-sm font-medium text-ink/40'>Traditional Payroll</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70'>Goji</div>
         </div>
         {rows.map((row, i) => (
@@ -49,7 +48,7 @@ export default function Comparison() {
               i < rows.length - 1 ? 'border-b border-ink/5' : ''
             }`}
           >
-            <div className='px-6 py-4 text-sm text-ink/40'>{row.traditional}</div>
+            <div className='px-6 py-4 text-sm text-ink/50'>{row.traditional}</div>
             <div className='px-6 py-4 text-sm text-ink font-medium'>{row.goji}</div>
           </div>
         ))}

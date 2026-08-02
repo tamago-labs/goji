@@ -63,7 +63,8 @@ schema.register({
     { name: 'template', type: 'string' },
     { name: 'customDoc', type: 'string' },
     { name: 'docName', type: 'string' },
-    { name: 'txHash', type: 'string' }
+    { name: 'txHash', type: 'string' },
+    { name: 'delegationEnabled', type: 'int' }
   ]
 })
 
@@ -130,12 +131,13 @@ schema.register({
     { name: 'label', type: 'string' },
     { name: 'updatedAt', type: 'int', required: true },
     { name: 'amount', type: 'string' },
-    { name: 'payment', type: 'buffer' },
-    { name: 'document', type: 'buffer' },
+    { name: 'payment', type: 'int' },
+    { name: 'document', type: 'int' },
     { name: 'template', type: 'string' },
     { name: 'customDoc', type: 'string' },
     { name: 'docName', type: 'string' },
-    { name: 'txHash', type: 'string' }
+    { name: 'txHash', type: 'string' },
+    { name: 'delegationEnabled', type: 'int' }
   ]
 })
 
@@ -167,6 +169,9 @@ schema.register({
   fields: [
     { name: 'writerKey', type: 'buffer', required: true },
     { name: 'displayName', type: 'string', required: true },
+    { name: 'role', type: 'string', default: 'pending' },
+    { name: 'assignedBy', type: 'buffer' },
+    { name: 'assignedAt', type: 'int' },
     { name: 'updatedAt', type: 'int', required: true }
   ]
 })
@@ -181,6 +186,7 @@ schema.register({
     { name: 'txHash', type: 'string' },
     { name: 'error', type: 'string' },
     { name: 'payslipHtml', type: 'string' },
+    { name: 'merkleRoot', type: 'string' },
     { name: 'updatedAt', type: 'int', required: true }
   ]
 })
@@ -188,6 +194,50 @@ schema.register({
 schema.register({
   name: 'flow-status-remove',
   fields: [{ name: 'flowId', type: 'buffer', required: true }]
+})
+
+schema.register({
+  name: 'template',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'name', type: 'string', required: true },
+    { name: 'companyName', type: 'string' },
+    { name: 'fields', type: 'json' },
+    { name: 'html', type: 'string', required: true },
+    { name: 'isDefault', type: 'int' },
+    { name: 'createdBy', type: 'buffer' },
+    { name: 'createdAt', type: 'int', required: true },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'template-remove',
+  fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
+schema.register({
+  name: 'receivable',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'tokenAddress', type: 'string', required: true },
+    { name: 'name', type: 'string', required: true },
+    { name: 'type', type: 'string', required: true },
+    { name: 'amount', type: 'string', required: true },
+    { name: 'interestRate', type: 'string', required: true },
+    { name: 'minInvestment', type: 'string', required: true },
+    { name: 'expiryDays', type: 'string', required: true },
+    { name: 'proofs', type: 'json', required: true },
+    { name: 'status', type: 'string', required: true },
+    { name: 'issuer', type: 'buffer', required: true },
+    { name: 'createdAt', type: 'int', required: true },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'receivable-remove',
+  fields: [{ name: 'id', type: 'buffer', required: true }]
 })
 
 Hyperschema.toDisk(hyperSchema)
@@ -203,6 +253,8 @@ db.collections.register({ name: 'invites', schema: '@goji/invite', key: ['id'] }
 db.collections.register({ name: 'identity', schema: '@goji/identity', key: ['writerKey'] })
 db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] })
 db.collections.register({ name: 'flowStatuses', schema: '@goji/flow-status', key: ['id'] })
+db.collections.register({ name: 'templates', schema: '@goji/template', key: ['id'] })
+db.collections.register({ name: 'receivables', schema: '@goji/receivable', key: ['id'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -223,10 +275,17 @@ dispatch.register({ name: 'update-connection', requestType: '@goji/connection-up
 dispatch.register({ name: 'add-chat', requestType: '@goji/chat-msg' })
 dispatch.register({ name: 'remove-chats', requestType: '@goji/chats-remove' })
 dispatch.register({ name: 'update-identity', requestType: '@goji/identity' })
+dispatch.register({ name: 'assign-role', requestType: '@goji/identity' })
 dispatch.register({ name: 'set-flow-status', requestType: '@goji/flow-status' })
 dispatch.register({ name: 'remove-flow-statuses', requestType: '@goji/flow-status-remove' })
 dispatch.register({ name: 'add-wallet', requestType: '@goji/wallet' })
 dispatch.register({ name: 'remove-wallet', requestType: '@goji/wallet-remove' })
+dispatch.register({ name: 'add-template', requestType: '@goji/template' })
+dispatch.register({ name: 'update-template', requestType: '@goji/template' })
+dispatch.register({ name: 'remove-template', requestType: '@goji/template-remove' })
+dispatch.register({ name: 'add-receivable', requestType: '@goji/receivable' })
+dispatch.register({ name: 'update-receivable', requestType: '@goji/receivable' })
+dispatch.register({ name: 'remove-receivable', requestType: '@goji/receivable-remove' })
 
 Hyperdispatch.toDisk(hyperdispatch)
 

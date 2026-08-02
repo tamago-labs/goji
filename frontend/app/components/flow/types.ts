@@ -1,4 +1,4 @@
-export type CardCategory = 'wallet' | 'recipient' | 'gate'
+export type CardCategory = 'wallet' | 'recipient' | 'gate' | 'deposit'
 
 export interface FlowCard {
   id: string
@@ -40,7 +40,8 @@ export const CARD_WIDTH = 220
 export const CARD_HEIGHTS: Record<CardCategory, number> = {
   wallet: 130,
   recipient: 140,
-  gate: 120
+  gate: 120,
+  deposit: 140
 }
 
 export const CATEGORY_COLORS: Record<
@@ -54,11 +55,13 @@ export const CATEGORY_COLORS: Record<
     badge: 'bg-violet/20',
     badgeText: 'text-[#5A4FB8]'
   },
-  gate: { border: '#FF8A73', bg: 'bg-coral/10', badge: 'bg-coral/20', badgeText: 'text-[#C24E33]' }
+  gate: { border: '#FF8A73', bg: 'bg-coral/10', badge: 'bg-coral/20', badgeText: 'text-[#C24E33]' },
+  deposit: { border: '#374151', bg: 'bg-gray-100', badge: 'bg-gray-200', badgeText: 'text-gray-700' }
 }
 
 export const CARD_TEMPLATES: CardTemplate[] = [
   { category: 'wallet', title: 'Wallet', fields: { address: '', balance: '' } },
   { category: 'recipient', title: 'Recipient', fields: { address: '', chain: '', type: '', name: '', amount: '', doc: '' } },
-  { category: 'gate', title: 'Multisig Gate', fields: { required: '2', total: '3' } }
+  { category: 'gate', title: 'Multisig Gate', fields: { required: '2', total: '3' } },
+  { category: 'deposit', title: 'Deposit Wallet', fields: { address: '', chain: '', balance: '' } }
 ]

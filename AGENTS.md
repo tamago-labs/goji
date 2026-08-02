@@ -1,6 +1,6 @@
 # Goji
 
-Visual payment flows for DAOs and teams. Two independent stacks in one repo:
+P2P payment origination layer for verifiable payroll and invoicing. Two independent stacks in one repo:
 
 - **Root** (`/`) — Node.js CLI with P2P rooms (Autobase + Hyperswarm + BlindPairing). Express HTTP API + WebSocket for frontend communication.
 - **`frontend/`** — Next.js 16 + React 19 + Tailwind v4 + RainbowKit app (TypeScript). Completely separate `package.json` and `node_modules`.
@@ -35,52 +35,123 @@ npm run lint             # eslint
 ### Root (Terminal)
 
 - `src/index.js` — Main entry: Express server, WebSocket, P2P room, flow status endpoints
-- `schema.js` — Hyperschema + HyperDB collections (boards, cards, connections, chat, invites, identity, wallets, flow-statuses)
+- `schema.js` — Hyperschema + HyperDB collections (boards, cards, connections, chat, invites, identity, wallets, flow-statuses, templates, invoices)
 - `spec/` — Generated schema/dispatch/db specs
 - Keet identity key integration for portable P2P identities and wallet verification
 
+### Contracts
+
+- `contracts/src/GojiProof.sol` — Merkle root storage for document verification
+- `contracts/src/ReceivableToken.sol` — ERC-20 for receivable assets (multiple proofs, configurable terms)
+- `contracts/src/ReceivableFactory.sol` — Factory for creating receivable tokens (flat fee system)
+- `contracts/src/PriceOracle.sol` — Custom + Pyth price oracle
+- `contracts/script/` — Deploy scripts (1-DeployTokens, 2-DeployOracles, 3-DeployProof, 4-DeployReceivable)
+
 ### Frontend
 
-- `app/components/landing/` — Landing page (Nav, Hero, UseCases, CardCanvas, HowItWorks)
-- `app/components/start/` — Start page (Overview, Offers, Boards, Wallets, History tabs)
-- `app/components/flow/` — Canvas/flow builder (Canvas, CanvasCard, CanvasLines, FlowBuilder, Toolbar, FlowOverlay, ConnectionDrawer, PreviewRoutesModal)
+- `app/components/landing/` — Landing page (Nav, Hero, UseCases, CardCanvas, HowItWorks, InvoiceFlow, SupportedChains, CTA)
+- `app/components/start/` — Start page (Overview, Wallets, Payments, Invoices, Proof Explorer, Templates, Members, Portfolio)
+- `app/components/flow/` — Canvas/flow builder (Canvas, CanvasCard, CanvasLines, FlowBuilder, Toolbar, FlowOverlay, ConnectionDrawer, InvoiceDrawer, PreviewRoutesModal)
 - `app/components/chat/` — Chat panel with Keet identity verification
 - `app/providers/` — WalletProvider (Circle Unified Balance adapter)
 - `app/providers.tsx` — RainbowKit + wagmi + React Query providers
+- `app/rwa/` — Public RWA Explorer (no auth required)
 - `lib/wagmi.ts` — Wagmi config with injected wallet (no MetaMask SDK)
-- `lib/unified-balance.ts` — Circle Unified Balance API (deposit, spend, fetch)
-- `lib/payslipTemplates.ts` — 3 default payslip templates (Standard Receipt, Invoice, Service Agreement)
+- `lib/unified-balance.ts` — Circle Unified Balance API (deposit, spend, fetch, delegate)
+- `lib/payslipTemplates.ts` — 3 default templates (Standard Receipt, Invoice, Service Agreement)
+- `lib/gojiProof.ts` — GojiProof ABI for on-chain merkle root verification
+- `lib/merkle.ts` — Merkle tree generation with viem + merkletreejs
+- `lib/receivableFactory.ts` — ReceivableFactory ABI
+- `lib/receivableToken.ts` — ReceivableToken ABI with status helpers
 
 ## API Endpoints
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | /api/health | Server status, peer info, name |
+| GET | /api/health | Server status, peer info, role |
 | GET/POST | /api/boards | List/create boards |
 | PUT/DELETE | /api/boards/:id | Rename/delete board |
 | GET/POST/PUT/DELETE | /api/cards | Card CRUD |
-| GET/POST/PUT/DELETE | /api/connections | Connection CRUD + payment route data |
-| GET/POST/PUT/DELETE | /api/flow-status | Flow execution status tracking |
+| GET/POST/PUT/DELETE | /api/connections | Connection CRUD |
+| GET/POST/PUT/DELETE | /api/flow-status | Flow execution status |
 | GET/POST | /api/chat | Chat messages |
-| GET/POST/DELETE | /api/wallets | Wallet registration + verification |
-| PUT | /api/username | Update display name |
+| GET/POST/DELETE | /api/wallets | Wallet registration |
+| GET/POST/PUT/DELETE | /api/templates | Invoice templates |
+| GET/POST/PUT/DELETE | /api/receivables | P2P receivable records |
+| GET/PUT/DELETE | /api/invoices | Invoice management |
+| POST | /api/members/assign | Role assignment (employer only) |
+| GET | /api/members | List members (employer only) |
 | WebSocket | ws://localhost:3001 | Real-time sync |
 
 ## Canvas System
 
-- **Wallet Card** — Represents a connected wallet, shows verified badge
-- **Recipient Card** — Payment target with chain selector, shows verified/custom badge
-- **Gate Card** — Multisig gate (M-of-N signatures required)
-- **Connection Lines** — Click to open ConnectionDrawer for payment/document settings
-- **Flow Overlay** — Shows route status, Sign button for your wallets
+- **Wallet Card** — Company wallet (Arc settlement)
+- **Recipient Card** — Payment target with chain selector
+- **Deposit Wallet Card** — Payer's Unified Balance wallet
+- **Connection Lines** — Click to configure payment/document/template
+- **Invoice Flow** — Deposit Wallet → Company Wallet (delegation-based)
 
 ## Flow Execution
 
 1. Click Start → Preview modal with all routes and real statuses
 2. Click "Start Flow" → Canvas locks, overlay panel appears
 3. Sign routes → Uses Circle Unified Balance spend
-4. Status persists via P2P → Survives page navigation
-5. Stop → Only clears pending routes, preserves settled
+4. Merkle root generated from document values, anchored on GojiProof contract
+5. Status persists via P2P → Survives page navigation
+6. Stop → Only clears pending routes, preserves settled
+
+## Proof Explorer
+
+- Table shows Date, Document, From, To, Amount, Status columns
+- Resolves card titles for from/to names (not raw IDs)
+- Search bar accepts any merkle root hash
+- Verification calls GojiProof.isAnchored() on Arc Testnet
+- Modal shows document info, merkle root, timestamp, contract address
+- Document preview iframe for anchored payments
+
+## RWA System
+
+### Smart Contracts (Arc Testnet)
+
+| Contract | Address |
+|----------|---------|
+| GojiProof | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
+| ReceivableFactory | `0x5646647B48b5458D8352764F1b697195454D52Bf` |
+
+### ReceivableToken
+
+- ERC-20 fractional ownership token for receivables
+- Multiple proof hashes as collateral (not single proof)
+- Configurable: interest rate (bps), min investment, expiry (timestamp)
+- Max supply: 1M tokens per receivable
+- Finance: Investors send native USDC, receive tokens proportionally
+- Repayment: Company deposits principal + interest at expiry
+- Redemption: Investors burn tokens for proportional share
+
+### ReceivableFactory
+
+- Creates ReceivableToken contracts
+- Flat fee system: 1 USDC per creation (admin configurable)
+- Fee collection in factory, admin withdraws to treasury
+- Tracks issuers, token addresses, total value per issuer
+
+### Platform Fees
+
+- **Fee Type:** Flat fee at creation
+- **Fee Amount:** 1 USDC (18 decimals on Arc, configurable by admin)
+- **Fee Payer:** Company (issuer)
+- **Treasury:** Configurable by admin
+- **Withdrawal:** Admin calls `withdrawFees()`
+
+## Roles
+
+| Role | Description |
+|------|-------------|
+| Company (employer) | Creates workflows, manages participants |
+| Payee | Receives payments, views documents |
+| Payer | Approves and sends payments |
+| Financial Partner | Verifies proof, provides financing |
+| Pending | Awaiting role assignment |
 
 ## Gotchas
 
@@ -90,3 +161,4 @@ npm run lint             # eslint
 - **Keet identity**: First run prompts for identity setup (generate/import mnemonic). Saved to `identity.json` in storage folder.
 - **No monorepo tooling**: Two separate npm projects. Run `npm install` independently in each directory.
 - **`frontend/AGENTS.md`**: Next.js 16 has breaking changes from training data. Read `node_modules/next/dist/docs/` before modifying frontend code.
+- **Forge/Git Bash**: Use Git Bash for forge commands on Windows.

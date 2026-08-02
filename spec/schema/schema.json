@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "name": "writer",
@@ -208,6 +208,11 @@
         {
           "name": "txHash",
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "delegationEnabled",
+          "type": "int",
           "version": 1
         }
       ]
@@ -427,12 +432,12 @@
         },
         {
           "name": "payment",
-          "type": "buffer",
+          "type": "int",
           "version": 1
         },
         {
           "name": "document",
-          "type": "buffer",
+          "type": "int",
           "version": 1
         },
         {
@@ -453,6 +458,11 @@
         {
           "name": "txHash",
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "delegationEnabled",
+          "type": "int",
           "version": 1
         }
       ]
@@ -523,7 +533,7 @@
       "name": "identity",
       "namespace": "goji",
       "compact": false,
-      "flagsPosition": -1,
+      "flagsPosition": 2,
       "fields": [
         {
           "name": "writerKey",
@@ -535,6 +545,21 @@
           "name": "displayName",
           "required": true,
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "assignedBy",
+          "type": "buffer",
+          "version": 1
+        },
+        {
+          "name": "assignedAt",
+          "type": "int",
           "version": 1
         },
         {
@@ -591,6 +616,11 @@
           "version": 1
         },
         {
+          "name": "merkleRoot",
+          "type": "string",
+          "version": 1
+        },
+        {
           "name": "updatedAt",
           "required": true,
           "type": "int",
@@ -609,6 +639,178 @@
           "required": true,
           "type": "buffer",
           "version": 1
+        }
+      ]
+    },
+    {
+      "name": "template",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 2,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 1
+        },
+        {
+          "name": "name",
+          "required": true,
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "companyName",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "fields",
+          "type": "json",
+          "version": 1
+        },
+        {
+          "name": "html",
+          "required": true,
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "isDefault",
+          "type": "int",
+          "version": 1
+        },
+        {
+          "name": "createdBy",
+          "type": "buffer",
+          "version": 1
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 1
+        },
+        {
+          "name": "updatedAt",
+          "required": true,
+          "type": "int",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "template-remove",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "receivable",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 2
+        },
+        {
+          "name": "tokenAddress",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "name",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "type",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "amount",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "interestRate",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "minInvestment",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "expiryDays",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "proofs",
+          "required": true,
+          "type": "json",
+          "version": 2
+        },
+        {
+          "name": "status",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "issuer",
+          "required": true,
+          "type": "buffer",
+          "version": 2
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 2
+        },
+        {
+          "name": "updatedAt",
+          "required": true,
+          "type": "int",
+          "version": 2
+        }
+      ]
+    },
+    {
+      "name": "receivable-remove",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 2
         }
       ]
     }

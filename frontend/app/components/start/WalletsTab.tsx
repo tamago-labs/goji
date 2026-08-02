@@ -38,8 +38,10 @@ export default function WalletsTab({ apiUrl }: WalletsTabProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`${apiUrl}/api/wallets/${id}`, { method: 'DELETE' })
-      setWallets((prev) => prev.filter((w) => w.id !== id))
+      const res = await fetch(`${apiUrl}/api/wallets/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setWallets((prev) => prev.filter((w) => w.id !== id))
+      }
     } catch {}
   }
 

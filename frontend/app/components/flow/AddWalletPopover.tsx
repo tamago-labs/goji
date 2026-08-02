@@ -64,13 +64,16 @@ export default function AddWalletPopover({ isOpen, onClose, apiUrl, onSelect }: 
       className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 w-[300px] z-50 overflow-hidden'
     >
       <div className='px-4 py-3 border-b border-ink/8'>
-        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>Add Wallet</p>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder='Search wallets...'
           className='w-full text-xs text-ink bg-ink/5 border border-ink/10 rounded-lg px-3 py-1.5 focus:outline-none focus:border-ink/20'
         />
+      </div>
+
+      <div className='px-4 py-2 border-b border-ink/8'>
+        <p className='text-[10px] text-ink/40'>All payments settle on Arc with proof</p>
       </div>
 
       <div className='max-h-[250px] overflow-y-auto p-2'>

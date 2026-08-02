@@ -415,6 +415,18 @@ export default function ReceivableDetailPage() {
             </div>
           )}
 
+          {/* Debug Info (remove in production) */}
+          <div className='bg-amber-50 rounded-2xl p-4 text-xs space-y-1'>
+            <div className='font-medium text-amber-700 mb-2'>Debug Info</div>
+            <div>Status: {token.status} ({getTokenStatusLabel(token.status)})</div>
+            <div>Is Issuer: {isIssuer() ? 'Yes' : 'No'}</div>
+            <div>Is Expired: {isExpired() ? 'Yes' : 'No'}</div>
+            <div>Expires: {new Date(Number(token.expiresAt) * 1000).toLocaleString()}</div>
+            <div>Now: {new Date().toLocaleString()}</div>
+            <div>Issuer: {token.issuer}</div>
+            <div>Your Address: {address || 'Not connected'}</div>
+          </div>
+
           {/* Actions */}
           {isIssuer() && (token.status === 0 || token.status === 1) && isExpired() && (
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>

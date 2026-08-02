@@ -38,7 +38,8 @@ contract ReceivableTokenTest is Test {
             RATE,
             MIN_INV,
             block.timestamp + TERM,
-            proofHashes
+            proofHashes,
+            issuer
         );
     }
 

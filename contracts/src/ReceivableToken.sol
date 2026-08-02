@@ -49,14 +49,16 @@ contract ReceivableToken is ERC20, Ownable {
         uint256 _interestRate,
         uint256 _minInvestment,
         uint256 _expiresAt,
-        bytes32[] memory _proofHashes
+        bytes32[] memory _proofHashes,
+        address _issuer
     ) ERC20(_name, _generateSymbol(_receivableType)) Ownable(msg.sender) {
         require(_totalReceivable > 0, "Zero amount");
         require(_interestRate <= 5000, "Interest too high");
         require(_expiresAt > block.timestamp, "Invalid expiry");
         require(_proofHashes.length > 0, "No proofs");
+        require(_issuer != address(0), "Zero issuer");
 
-        issuer = msg.sender;
+        issuer = _issuer;
         receivableType = _receivableType;
         totalReceivable = _totalReceivable;
         interestRate = _interestRate;

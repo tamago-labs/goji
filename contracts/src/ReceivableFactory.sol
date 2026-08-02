@@ -68,7 +68,8 @@ contract ReceivableFactory {
             interestRate,
             minInvestment,
             expiresAt,
-            proofs
+            proofs,
+            msg.sender  // Pass company address as issuer
         );
 
         address tokenAddress = address(token);

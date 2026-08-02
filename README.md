@@ -73,6 +73,12 @@ npx @tamago-labs/goji
 3. **Settle on Arc** — USDC payment executed, proof anchored on-chain
 4. **Originate & Finance** — Receivable asset created, financial partners evaluate and fund
 
+### RWA System
+
+- **Company View:** Create receivables from pending flows, set terms, invite financial partners
+- **Partner View:** Browse receivables, verify proofs, invest with pro-rata interest
+- **Public Explorer:** View all assets on Arc at `/rwa` (no wallet required)
+
 ### Proof Explorer
 
 - Search any merkle root hash to verify on-chain via GojiProof contract

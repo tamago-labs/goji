@@ -50,16 +50,19 @@ npm run lint             # eslint
 ### Frontend
 
 - `app/components/landing/` — Landing page (Nav, Hero, UseCases, CardCanvas, HowItWorks, InvoiceFlow, SupportedChains, CTA)
-- `app/components/start/` — Start page (Overview, Wallets, Payments, Invoices, Proof Explorer, Templates, Members, AI Assistant)
+- `app/components/start/` — Start page (Overview, Wallets, Payments, Invoices, Proof Explorer, Templates, Members, Portfolio)
 - `app/components/flow/` — Canvas/flow builder (Canvas, CanvasCard, CanvasLines, FlowBuilder, Toolbar, FlowOverlay, ConnectionDrawer, InvoiceDrawer, PreviewRoutesModal)
 - `app/components/chat/` — Chat panel with Keet identity verification
 - `app/providers/` — WalletProvider (Circle Unified Balance adapter)
 - `app/providers.tsx` — RainbowKit + wagmi + React Query providers
+- `app/rwa/` — Public RWA Explorer (no auth required)
 - `lib/wagmi.ts` — Wagmi config with injected wallet (no MetaMask SDK)
 - `lib/unified-balance.ts` — Circle Unified Balance API (deposit, spend, fetch, delegate)
 - `lib/payslipTemplates.ts` — 3 default templates (Standard Receipt, Invoice, Service Agreement)
 - `lib/gojiProof.ts` — GojiProof ABI for on-chain merkle root verification
 - `lib/merkle.ts` — Merkle tree generation with viem + merkletreejs
+- `lib/receivableFactory.ts` — ReceivableFactory ABI
+- `lib/receivableToken.ts` — ReceivableToken ABI with status helpers
 
 ## API Endpoints
 
@@ -74,6 +77,7 @@ npm run lint             # eslint
 | GET/POST | /api/chat | Chat messages |
 | GET/POST/DELETE | /api/wallets | Wallet registration |
 | GET/POST/PUT/DELETE | /api/templates | Invoice templates |
+| GET/POST/PUT/DELETE | /api/receivables | P2P receivable records |
 | GET/PUT/DELETE | /api/invoices | Invoice management |
 | POST | /api/members/assign | Role assignment (employer only) |
 | GET | /api/members | List members (employer only) |

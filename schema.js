@@ -216,6 +216,30 @@ schema.register({
   fields: [{ name: 'id', type: 'buffer', required: true }]
 })
 
+schema.register({
+  name: 'receivable',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'tokenAddress', type: 'string', required: true },
+    { name: 'name', type: 'string', required: true },
+    { name: 'type', type: 'string', required: true },
+    { name: 'amount', type: 'string', required: true },
+    { name: 'interestRate', type: 'string', required: true },
+    { name: 'minInvestment', type: 'string', required: true },
+    { name: 'expiryDays', type: 'string', required: true },
+    { name: 'proofs', type: 'json', required: true },
+    { name: 'status', type: 'string', required: true },
+    { name: 'issuer', type: 'buffer', required: true },
+    { name: 'createdAt', type: 'int', required: true },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'receivable-remove',
+  fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
 Hyperschema.toDisk(hyperSchema)
 
 const hyperdb = HyperdbBuilder.from(SCHEMA_DIR, DB_DIR)
@@ -230,6 +254,7 @@ db.collections.register({ name: 'identity', schema: '@goji/identity', key: ['wri
 db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] })
 db.collections.register({ name: 'flowStatuses', schema: '@goji/flow-status', key: ['id'] })
 db.collections.register({ name: 'templates', schema: '@goji/template', key: ['id'] })
+db.collections.register({ name: 'receivables', schema: '@goji/receivable', key: ['id'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -258,6 +283,9 @@ dispatch.register({ name: 'remove-wallet', requestType: '@goji/wallet-remove' })
 dispatch.register({ name: 'add-template', requestType: '@goji/template' })
 dispatch.register({ name: 'update-template', requestType: '@goji/template' })
 dispatch.register({ name: 'remove-template', requestType: '@goji/template-remove' })
+dispatch.register({ name: 'add-receivable', requestType: '@goji/receivable' })
+dispatch.register({ name: 'update-receivable', requestType: '@goji/receivable' })
+dispatch.register({ name: 'remove-receivable', requestType: '@goji/receivable-remove' })
 
 Hyperdispatch.toDisk(hyperdispatch)
 

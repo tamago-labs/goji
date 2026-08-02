@@ -1136,6 +1136,99 @@ async function main() {
     res.json({ ok: true })
   })
 
+  // ── Receivables ──────────────────────────────────────────
+
+  app.get('/api/receivables', async (req, res) => {
+    const rows = await room.view.find('@goji/receivables', {}).toArray()
+    const result = rows.map((r) => ({
+      id: b4a.toString(r.id, 'hex'),
+      tokenAddress: r.tokenAddress,
+      name: r.name,
+      type: r.type,
+      amount: r.amount,
+      interestRate: r.interestRate,
+      minInvestment: r.minInvestment,
+      expiryDays: r.expiryDays,
+      proofs: r.proofs || [],
+      status: r.status,
+      issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }))
+    res.json(result)
+  })
+
+  app.get('/api/receivables/:id', async (req, res) => {
+    const id = b4a.from(req.params.id, 'hex')
+    const r = await room.view.get('@goji/receivables', { id })
+    if (!r) return res.status(404).json({ error: 'receivable not found' })
+    res.json({
+      id: b4a.toString(r.id, 'hex'),
+      tokenAddress: r.tokenAddress,
+      name: r.name,
+      type: r.type,
+      amount: r.amount,
+      interestRate: r.interestRate,
+      minInvestment: r.minInvestment,
+      expiryDays: r.expiryDays,
+      proofs: r.proofs || [],
+      status: r.status,
+      issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    })
+  })
+
+  app.post('/api/receivables', async (req, res) => {
+    const { tokenAddress, name, type, amount, interestRate, minInvestment, expiryDays, proofs, status } = req.body
+    if (!tokenAddress || !name || !type || !amount) {
+      return res.status(400).json({ error: 'tokenAddress, name, type, amount required' })
+    }
+    const now = Date.now()
+    const id = require('crypto').randomBytes(16).toString('hex')
+    const receivable = {
+      id: b4a.from(id, 'hex'),
+      tokenAddress,
+      name,
+      type,
+      amount: String(amount),
+      interestRate: String(interestRate || '2000'),
+      minInvestment: String(minInvestment || '1000000000000000000'),
+      expiryDays: String(expiryDays || '90'),
+      proofs: proofs || [],
+      status: status || 'active',
+      issuer: room.localBase.key,
+      createdAt: now,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/add-receivable', receivable))
+    wsBroadcast({ type: 'receivable:added', receivable: { ...receivable, id } })
+    res.json({ id, ...receivable })
+  })
+
+  app.put('/api/receivables/:id', async (req, res) => {
+    const { status } = req.body
+    const id = b4a.from(req.params.id, 'hex')
+    const existing = await room.view.get('@goji/receivables', { id })
+    if (!existing) return res.status(404).json({ error: 'receivable not found' })
+    const now = Date.now()
+    const next = {
+      ...existing,
+      status: status || existing.status,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/update-receivable', next))
+    wsBroadcast({ type: 'receivable:updated', receivable: { ...next, id: req.params.id } })
+    res.json({ ok: true })
+  })
+
+  app.delete('/api/receivables/:id', async (req, res) => {
+    const id = b4a.from(req.params.id, 'hex')
+    await room.base.append(GojiDispatch.encode('@goji/remove-receivable', { id }))
+    wsBroadcast({ type: 'receivable:deleted', id: req.params.id })
+    res.json({ ok: true })
+  })
+
   app.get('/api/peers', async (req, res) => {
     // Load from view to get all identities including remote peers
     const rows = await room.view.find('@goji/identity', {}).toArray()

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "offset": 0,
   "schema": [
     {
@@ -131,6 +131,21 @@
       "versionField": null,
       "indexes": [],
       "schema": "@goji/template",
+      "derived": false,
+      "key": [
+        "id"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "receivables",
+      "namespace": "goji",
+      "id": 9,
+      "type": 1,
+      "version": 2,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/receivable",
       "derived": false,
       "key": [
         "id"

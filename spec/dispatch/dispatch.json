@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "offset": 0,
   "schema": [
     {
@@ -133,6 +133,24 @@
       "name": "@goji/remove-template",
       "requestType": "@goji/template-remove",
       "version": 1
+    },
+    {
+      "id": 22,
+      "name": "@goji/add-receivable",
+      "requestType": "@goji/receivable",
+      "version": 2
+    },
+    {
+      "id": 23,
+      "name": "@goji/update-receivable",
+      "requestType": "@goji/receivable",
+      "version": 2
+    },
+    {
+      "id": 24,
+      "name": "@goji/remove-receivable",
+      "requestType": "@goji/receivable-remove",
+      "version": 2
     }
   ]
 }

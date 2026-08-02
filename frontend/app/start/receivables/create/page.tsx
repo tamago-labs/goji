@@ -183,7 +183,7 @@ export default function CreateReceivablePage() {
         functionName: 'feeAmount'
       }) as bigint
 
-      const { request } = await publicClient.simulateContract({
+      const { request, result } = await publicClient.simulateContract({
         address: RECEIVABLE_FACTORY_ADDRESS,
         abi: RECEIVABLE_FACTORY_ABI,
         functionName: 'createReceivable',
@@ -201,7 +201,27 @@ export default function CreateReceivablePage() {
       })
 
       const hash = await walletClient.writeContract(request)
-      await publicClient.waitForTransactionReceipt({ hash })
+      const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+      // Get token address from event logs
+      const tokenAddress = result as string
+
+      // Save to P2P
+      await fetch(`${apiUrl}/api/receivables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tokenAddress,
+          name: terms.name,
+          type: terms.type,
+          amount: terms.amount,
+          interestRate: terms.interestRate,
+          minInvestment: terms.minInvestment,
+          expiryDays: terms.expiryDays,
+          proofs: proofHashes,
+          status: 'active'
+        })
+      })
 
       setShowModal(false)
       router.push('/start/receivables/list')

@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   // Company only
   { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['employer'] },
   // Company & Payer
-  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['employer', 'payee', 'payer', 'partner'] },
+  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['employer', 'payee', 'payer'] },
   { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['employer', 'payee', 'payer'] },
   { href: '/start/invoices', label: 'Invoices', icon: FileCheck, roles: ['employer', 'payee', 'payer'] },
   // All roles

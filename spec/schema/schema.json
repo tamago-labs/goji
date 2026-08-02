@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "name": "writer",
@@ -711,6 +711,106 @@
           "required": true,
           "type": "buffer",
           "version": 1
+        }
+      ]
+    },
+    {
+      "name": "receivable",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 2
+        },
+        {
+          "name": "tokenAddress",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "name",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "type",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "amount",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "interestRate",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "minInvestment",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "expiryDays",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "proofs",
+          "required": true,
+          "type": "json",
+          "version": 2
+        },
+        {
+          "name": "status",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "issuer",
+          "required": true,
+          "type": "buffer",
+          "version": 2
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 2
+        },
+        {
+          "name": "updatedAt",
+          "required": true,
+          "type": "int",
+          "version": 2
+        }
+      ]
+    },
+    {
+      "name": "receivable-remove",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 2
         }
       ]
     }

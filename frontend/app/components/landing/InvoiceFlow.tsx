@@ -5,23 +5,28 @@ import { motion } from 'framer-motion'
 const steps = [
   {
     num: '01',
-    title: 'Create',
-    desc: 'Draft invoice, add documents, send P2P'
+    title: 'Receive Payments',
+    desc: 'Company uses Goji for regular USDC payments'
   },
   {
     num: '02',
-    title: 'Fund & Approve',
-    desc: 'Payer tops up Unified Balance, reviews and approves'
+    title: 'Build Proof History',
+    desc: 'Every payment creates verifiable proof on Arc'
   },
   {
     num: '03',
-    title: 'Settle on Arc',
-    desc: 'USDC payment executed, proof anchored on-chain'
+    title: 'Need Capital',
+    desc: 'Turn outstanding invoices into short-term funding'
   },
   {
     num: '04',
-    title: 'Originate & Finance',
-    desc: 'Receivable asset created, financial partners evaluate and fund'
+    title: 'Issue Receivable',
+    desc: 'Create token from payment history, set terms'
+  },
+  {
+    num: '05',
+    title: 'Get Funded',
+    desc: 'Financial partners invest and earn pro-rata returns'
   }
 ]
 
@@ -43,7 +48,7 @@ export default function InvoiceFlow() {
         </p>
       </motion.div>
 
-      <div className='grid grid-cols-1 md:grid-cols-4 gap-6'>
+      <div className='grid grid-cols-2 md:grid-cols-5 gap-6'>
         {steps.map((step, i) => (
           <motion.div
             key={step.num}

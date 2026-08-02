@@ -18,16 +18,16 @@ export default function Hero() {
           {...fadeUp(0)}
           className='inline-block bg-coral text-white text-xs font-medium px-3 py-[5px] rounded-[20px] mb-[22px]'
         >
-          P2P Workspace — From Payments to Capital
+          📊 Connecting USDC Payments to Capital
         </motion.span>
         <motion.h1
           {...fadeUp(0.1)}
           className='font-display text-[50px] font-semibold leading-[1.12] mb-[22px]'
         >
-          Private Payments.
+          Arc-Native P2P
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            Public Proof.
+            Origination Layer
           </span>
         </motion.h1>
         <motion.p

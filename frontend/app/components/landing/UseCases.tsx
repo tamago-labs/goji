@@ -10,28 +10,28 @@ const useCases = [
     bullets: [
       'Manage employees, contractors, and vendors',
       'Draw payment flows on a visual canvas',
-      'Click connections to set taxes, deductions & terms',
+      'Configure payments and documents on each connection',
       'Unified Balance for instant USDC payments'
     ]
   },
   {
-    title: 'Team Collaboration, AI-Assisted',
-    subtitle: 'Work together without exposing data to the cloud. AI empowers every step.',
+    title: 'Collaborate Privately, Verify Publicly',
+    subtitle: 'Work together in a private P2P workspace. Every document gets a Merkle proof for verification on Arc.',
     bullets: [
-      'P2P syncs payment records & documents directly',
-      'Private AI assistants with Qwen, Google Gemma',
-      'Local RAG powers answers from private docs',
-      'Zero cloud exposure'
+      'Merkle proof anchors every payment and document',
+      'P2P syncs records between partners and contractors',
+      'Private AI knowledge base with Qwen, Google Gemma',
+      'Local RAG powers answers from your business data'
     ]
   },
   {
-    title: 'Payments Meet Capital',
-    subtitle: 'Every payment becomes a verifiable financial asset that trusted partners can evaluate.',
+    title: 'RWA Issuance from Payments',
+    subtitle: 'Create receivable tokens from verified payment history. Financial partners fund and earn pro-rata returns.',
     bullets: [
-      'Merkle proof for every payment — payroll, contractor, invoice',
-      'Cryptographic signatures and audit trail',
-      'Permissioned verification of payment records',
-      'Connect employers with financing and credit partners'
+      'Create receivable assets from settled payments',
+      'Set terms: interest rate, min investment, expiry',
+      'Financial partners fund and receive tokens',
+      'Pro-rata interest based on investment duration'
     ]
   }
 ]

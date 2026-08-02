@@ -45,7 +45,7 @@ export default function SupportedChains() {
           Settle Anywhere with USDC
         </h2>
         <p className='text-ink/50 text-[17px] max-w-[600px] mx-auto leading-relaxed'>
-          Send and receive USDC payments across supported networks from one shared workspace, powered by Circle Gateway.
+          Send and receive USDC payments across supported networks for your team and partners, powered by Circle Gateway.
         </p>
       </motion.div>
 

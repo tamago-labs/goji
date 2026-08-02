@@ -4,13 +4,14 @@ import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 
 const permissions = [
-  { action: 'Manage participants', employer: true, employee: false, partner: false },
-  { action: 'Payment agreements', employer: 'View own', employee: 'Permissioned', partner: false },
-  { action: 'Payslips, invoices & documents', employer: true, employee: 'View own', partner: 'Permissioned' },
-  { action: 'Invoice / receivable submission', employer: 'Create', employee: 'Submit / Confirm', partner: 'Review' },
-  { action: 'Verify cryptographic proof', employer: true, employee: true, partner: true },
-  { action: 'On-chain privacy (APS)', employer: true, employee: true, partner: true, comingSoon: true },
-  { action: 'Receivable financing (invoice factoring)', employer: 'Connect', employee: false, partner: 'Finance' }
+  { action: 'Manage workspace & flows', company: true, counterparty: false, partner: false },
+  { action: 'Receive payments', company: true, counterparty: true, partner: false },
+  { action: 'Approve invoices', company: false, counterparty: true, partner: false },
+  { action: 'View documents', company: true, counterparty: 'View own', partner: 'Permissioned' },
+  { action: 'Verify proofs', company: true, counterparty: true, partner: true },
+  { action: 'Issue receivables', company: true, counterparty: false, partner: false },
+  { action: 'Fund receivables', company: false, counterparty: false, partner: true },
+  { action: 'On-chain privacy (APS)', company: true, counterparty: true, partner: true, comingSoon: true },
 ]
 
 function Cell({ value, comingSoon }: { value: boolean | string; comingSoon?: boolean }) {
@@ -54,9 +55,9 @@ export default function PayrollReceivables() {
         className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden'
       >
         <div className='grid grid-cols-4 border-b border-ink/8'>
-          <div className='px-6 py-4 text-sm font-medium text-ink/40'>Permission Matrix</div>
+          <div className='px-6 py-4 text-sm font-medium text-ink/40'>Permission</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Company</div>
-          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Payee / Payer</div>
+          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Counter-party</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Financial Partner</div>
         </div>
         {permissions.map((row, i) => (
@@ -67,8 +68,8 @@ export default function PayrollReceivables() {
             }`}
           >
             <div className='px-6 py-4 text-sm text-ink/60'>{row.action}</div>
-            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.employer} comingSoon={row.comingSoon} /></div>
-            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.employee} comingSoon={row.comingSoon} /></div>
+            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.company} comingSoon={row.comingSoon} /></div>
+            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.counterparty} comingSoon={row.comingSoon} /></div>
             <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.partner} comingSoon={row.comingSoon} /></div>
           </div>
         ))}

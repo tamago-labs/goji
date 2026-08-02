@@ -268,9 +268,7 @@ export default function CreateReceivablePage() {
               <tr className='border-b border-ink/5 text-left'>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Date</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Flow</th>
-                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Document</th>
-                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>From</th>
-                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>To</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Counter Party</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'></th>
               </tr>
@@ -282,9 +280,7 @@ export default function CreateReceivablePage() {
                     {new Date(flow.updatedAt).toLocaleDateString()}
                   </td>
                   <td className='px-6 py-3 text-ink/70 text-sm'>{flow.flowName}</td>
-                  <td className='px-6 py-3 text-ink/60 text-xs'>{flow.docName}</td>
                   <td className='px-6 py-3 text-ink/60 text-xs max-w-[120px] truncate'>{flow.from}</td>
-                  <td className='px-6 py-3 text-ink/60 text-xs max-w-[120px] truncate'>{flow.to}</td>
                   <td className='px-6 py-3 font-mono text-ink/60 text-sm'>{formatAmount(flow.amount)}</td>
                   <td className='px-6 py-3'>
                     <button

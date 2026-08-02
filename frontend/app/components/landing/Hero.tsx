@@ -24,10 +24,10 @@ export default function Hero() {
           {...fadeUp(0.1)}
           className='font-display text-[50px] font-semibold leading-[1.12] mb-[22px]'
         >
-          Arc-Native P2P
+          Private Payments.
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            Origination Layer
+            Public Proof.
           </span>
         </motion.h1>
         <motion.p

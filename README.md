@@ -1,6 +1,11 @@
-# Goji — The P2P Origination Layer Built on Arc
+# Goji — The P2P Payment Origination Layer Built on Arc
+
+[![npm version](https://img.shields.io/npm/v/@tamago-labs/goji.svg)](https://www.npmjs.com/package/@tamago-labs/goji)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 **Private Payments. Public Proof.**
+
+Private P2P workspace for business payments that anchors cryptographic proof on Arc, enabling receivables and other real-world assets to originate from verified payment history.
 
 <img width="886" height="408" alt="Goji" src="https://github.com/user-attachments/assets/c17d5a2c-1245-41dd-8625-52e4f4f13f53" />
 
@@ -10,42 +15,44 @@
 - **Demo Video:** https://www.youtube.com/watch?v=YfxArY9uQQo
 - **Presentation:** https://canva.link/7z2iw3keeii3uwc
 
-Goji is a P2P payment origination layer built on Arc. Businesses run payroll, contractor payments, and invoices in a private workspace. Every settlement creates verifiable proof on Arc, enabling them to originate receivables and other real-world assets for financial partners.
+Goji is a P2P payment origination layer built on Arc.
+
+Businesses run payroll, contractor payments, invoices, and other business settlements inside a private workspace. Every settlement automatically generates cryptographic proof anchored on Arc, creating verifiable payment history that can be used to originate receivables and other real-world assets for financial partners.
 
 ---
 
 ## The Problem
 
-Traditional businesses generate financial records through disconnected systems:
+Business payments are managed across disconnected systems that weren't designed to create verifiable financial history:
 
-- **Payroll software** — siloed from other payments
-- **Spreadsheets** — manual, error-prone, not verifiable
-- **Email approvals** — no audit trail
-- **Banking systems** — isolated, no proof of payment
+- **Payroll & accounting software** — isolated from other payment workflows
+- **Spreadsheets** — manual, error-prone, and difficult to audit
+- **Email approvals** — fragmented decisions with no shared history
+- **Banking systems** — settlement without reusable financial proof
 
-These records are difficult to verify and expensive to underwrite.
+The result is fragmented payment history that's difficult to verify, expensive to underwrite, and impossible to reuse as financial infrastructure.
 
 ---
 
 ## What Goji Does
 
-Goji creates a private payment workspace where businesses, counterparties, and financial partners collaborate through a permissioned P2P network.
+Goji is a private payment workspace built on Arc where businesses, counterparties, and financial partners collaborate through cryptographic proof instead of fragmented paperwork.
 
-**Private Layer:** Payroll, contractor payments, invoices, and vendor payments stay between authorized participants.
+**Private Layer:** Payroll, contractor payments, invoices, vendor payments, documents, and approvals remain between authorized participants.
 
-**Verification Layer:** Every payment generates cryptographic proof — Merkle roots, signatures, audit trails — without exposing sensitive data.
+**Verification Layer:** Every settlement automatically generates Merkle proofs, signatures, and audit records that can be independently verified without exposing sensitive business data.
 
-**Settlement Layer:** USDC payments settle on Arc with on-chain proof anchoring.
+**Settlement Layer:** Settle USDC from supported chains through Circle Unified Balance while anchoring cryptographic proof on Arc to create a permanent, verifiable payment history.
 
-**Financial Layer:** Verified payment records become real-world assets for receivable financing, treasury, and credit.
+**Financial Layer:** Verified payment history enables businesses to originate receivables and other real-world assets while connecting directly with financing, treasury, and credit partners.
 
 ---
 
 ## Who It's For
 
-- **Businesses:** Run payroll, pay contractors, and manage invoices in one private workspace
-- **Contractors & Vendors:** Receive payments, verify records, access documents
-- **Financial Partners:** Verify proof, evaluate receivables, provide financing
+- **Businesses** — Create and settle payroll, contractor payments, invoices, and vendor payments.
+- **Counterparties** — Receive payments, verify records, and access permissioned documents.
+- **Financial Partners** — Verify cryptographic proof, evaluate payment history, and fund real-world assets.
 
 ---
 
@@ -72,6 +79,13 @@ npx @tamago-labs/goji
 2. **Fund & Approve** — Payer tops up Unified Balance, reviews and approves
 3. **Settle on Arc** — USDC payment executed, proof anchored on-chain
 4. **Originate & Finance** — Receivable asset created, financial partners evaluate and fund
+
+### Payment Flow
+
+1. **Create** — Company draws wallet → recipient flow on canvas
+2. **Configure** — Set payment amount, attach documents
+3. **Sign** — Payer approves, Circle Unified Balance executes
+4. **Settle** — USDC sent, proof anchored on GojiProof
 
 ### RWA System
 
@@ -179,4 +193,4 @@ npx @tamago-labs/goji
 
 ## License
 
-TBD.
+Apache License 2.0

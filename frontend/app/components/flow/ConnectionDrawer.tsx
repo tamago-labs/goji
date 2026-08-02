@@ -111,7 +111,7 @@ export default function ConnectionDrawer({ isOpen, connection, cards, apiUrl, on
   const handleSave = () => {
     if (!connection) return
     
-    const customDocJson = Object.keys(fieldValues).length > 0 ? JSON.stringify(fieldValues) : null
+    const customDocJson = Object.keys(fieldValues).length > 0 ? JSON.stringify(fieldValues) : undefined
     
     const patch = {
       amount: amount || undefined,

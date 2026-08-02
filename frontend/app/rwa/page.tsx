@@ -62,19 +62,19 @@ export default function RWAPage() {
         for (const addr of tokenAddresses) {
           try {
             const info = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'getReceivableInfo'
             }) as [string, string, bigint, bigint, bigint, bigint, bigint, bigint, number]
 
             const name = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'name'
             }) as string
 
             tokenData.push({
-              address: addr,
+              address: addr as `0x${string}`,
               name,
               type: info[0],
               issuer: info[1],
@@ -113,8 +113,8 @@ export default function RWAPage() {
   }
 
   const getFundingPercent = (funded: bigint, total: bigint) => {
-    if (total === 0n) return 0
-    return Number((funded * 100n) / total)
+    if (total === BigInt(0)) return 0
+    return Number((funded * BigInt(100)) / total)
   }
 
   const filtered = tokens.filter(t => {

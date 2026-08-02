@@ -25,10 +25,11 @@ export interface RouteStatus {
   id: string
   flowId: string
   routeId: string
-  status: 'pending' | 'signing' | 'sending' | 'settled' | 'failed'
+  status: 'pending' | 'signing' | 'sending' | 'settled' | 'failed' | 'approved' | 'awaiting'
   txHash?: string
   error?: string
   payslipHtml?: string
+  merkleRoot?: string
   updatedAt: number
 }
 
@@ -220,14 +221,14 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
         }
 
         // Anchor Merkle root on GojiProof contract
-        if (publicClient && walletClient) {
+        if (publicClient && walletClient && merkleRoot) {
           try {
             const connectionId = keccak256(toBytes(route.conn.id))
             const { request } = await publicClient.simulateContract({
               address: GOJIPROOF_ADDRESS,
               abi: GOJIPROOF_ABI,
               functionName: 'anchorRoot',
-              args: [merkleRoot, connectionId],
+              args: [merkleRoot as `0x${string}`, connectionId],
               account: walletClient.account
             })
             await walletClient.writeContract(request)

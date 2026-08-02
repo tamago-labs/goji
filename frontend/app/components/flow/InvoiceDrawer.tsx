@@ -108,7 +108,7 @@ export default function InvoiceDrawer({ isOpen, connection, cards, apiUrl, onClo
     if (!connection) return
     
     // Save custom field values as JSON in customDoc
-    const customDocJson = Object.keys(fieldValues).length > 0 ? JSON.stringify(fieldValues) : null
+    const customDocJson = Object.keys(fieldValues).length > 0 ? JSON.stringify(fieldValues) : undefined
     
     console.log('[InvoiceDrawer] fieldValues:', fieldValues, 'customDocJson:', customDocJson)
     

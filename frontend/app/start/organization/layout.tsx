@@ -21,16 +21,7 @@ export default function OrganizationLayout({ children }: { children: React.React
         <nav className='space-y-1'>
           {ORG_ITEMS.map((item) => {
             const isActive = pathname === item.href
-            const isDisabled = item.disabled
-            return isDisabled ? (
-              <span
-                key={item.href}
-                className='w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-ink/30 cursor-not-allowed'
-              >
-                <item.icon className='w-4 h-4' />
-                {item.label}
-              </span>
-            ) : (
+            return (
               <Link
                 key={item.href}
                 href={item.href}

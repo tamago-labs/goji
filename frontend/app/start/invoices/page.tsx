@@ -29,6 +29,7 @@ interface Connection {
 interface Card {
   id: string
   title: string
+  category: string
   fields: Record<string, string | boolean>
 }
 

@@ -45,39 +45,39 @@ export default function Portfolio() {
 
           try {
             const myTokens = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'balanceOf',
               args: [address!]
             }) as bigint
 
-            if (myTokens === 0n) continue
+            if (myTokens === BigInt(0)) continue
 
             const info = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'getReceivableInfo'
             }) as [string, string, bigint, bigint, bigint, bigint, bigint, bigint, number]
 
             const name = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'name'
             }) as string
 
             const myInterest = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'calculateInvestorInterest',
               args: [address!]
             }) as bigint
 
             const totalReceivable = info[2]
-            const projectedPrincipal = (myTokens * totalReceivable) / 1_000_000_000_000n
+            const projectedPrincipal = (myTokens * totalReceivable) / BigInt(1_000_000_000_000)
             const projectedShare = projectedPrincipal + myInterest
 
             items.push({
-              address: addr,
+              address: addr as `0x${string}`,
               name,
               type: info[0],
               myTokens,

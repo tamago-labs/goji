@@ -220,7 +220,8 @@ export default function FlowBuilder({
       const templates: Record<CardCategory, { title: string; fields: Record<string, string> }> = {
         wallet: { title: 'Wallet', fields: { address: '', balance: '' } },
         recipient: { title: 'Recipient', fields: { address: '', amount: '', doc: '' } },
-        gate: { title: 'Multisig Gate', fields: { required: '2', total: '3' } }
+        gate: { title: 'Multisig Gate', fields: { required: '2', total: '3' } },
+        deposit: { title: 'Deposit Wallet', fields: { address: '', chain: '' } }
       }
       const t = templates[category]
 

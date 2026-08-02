@@ -9,7 +9,6 @@ import FloatingChatButton from '../chat/FloatingChatButton'
 import UserMenuPopover from './UserMenuPopover'
 import UsernameModal from './UsernameModal'
 import BoardsGrid from './BoardsList'
-import OffersSection from './OffersSection'
 import HistorySection from './HistorySection'
 import Overview from './Overview'
 import ErrorBanner from './ErrorBanner'
@@ -229,12 +228,7 @@ export default function StartPage() {
               <AnimatePresence mode='wait'>
                 {activeTab === 'overview' && (
                   <motion.div key='overview' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <Overview apiUrl={apiUrl} disabled={loading || !!error} />
-                  </motion.div>
-                )}
-                {activeTab === 'offers' && (
-                  <motion.div key='offers' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <OffersSection apiUrl={apiUrl} disabled={loading || !!error} />
+                    <Overview apiUrl={apiUrl} />
                   </motion.div>
                 )}
                 {activeTab === 'boards' && (
@@ -249,7 +243,7 @@ export default function StartPage() {
                 )}
                 {activeTab === 'history' && (
                   <motion.div key='history' initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                    <HistorySection apiUrl={apiUrl} disabled={loading || !!error} />
+                    <HistorySection apiUrl={apiUrl} />
                   </motion.div>
                 )}
               </AnimatePresence>

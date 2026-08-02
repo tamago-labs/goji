@@ -54,19 +54,19 @@ export default function ReceivablesListPage() {
           if (!tokenAddr || tokenAddr === '0x0000000000000000000000000000000000000000') continue
           try {
             const info = await publicClient!.readContract({
-              address: tokenAddr,
+              address: tokenAddr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'getReceivableInfo'
             }) as [string, string, bigint, bigint, bigint, bigint, bigint, bigint, number]
 
             const name = await publicClient!.readContract({
-              address: tokenAddr,
+              address: tokenAddr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'name'
             }) as string
 
             infos.push({
-              address: tokenAddr,
+              address: tokenAddr as `0x${string}`,
               name,
               type: info[0],
               totalReceivable: info[2],
@@ -99,8 +99,8 @@ export default function ReceivablesListPage() {
   }
 
   const getFundingPercent = (funded: bigint, total: bigint) => {
-    if (total === 0n) return 0
-    return Number((funded * 100n) / total)
+    if (total === BigInt(0)) return 0
+    return Number((funded * BigInt(100)) / total)
   }
 
   return (

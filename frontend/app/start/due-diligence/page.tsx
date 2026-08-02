@@ -149,8 +149,8 @@ export default function DueDiligencePage() {
   }
 
   const getFundingPercent = () => {
-    if (!token || token.totalReceivable === 0n) return 0
-    return Number((token.fundedAmount * 100n) / token.totalReceivable)
+    if (!token || token.totalReceivable === BigInt(0)) return 0
+    return Number((token.fundedAmount * BigInt(100)) / token.totalReceivable)
   }
 
   const isExpired = () => {

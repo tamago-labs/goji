@@ -23,6 +23,7 @@ export interface Connection {
   customDoc?: string
   docName?: string
   txHash?: string
+  delegationEnabled?: number
 }
 
 export interface CanvasState {

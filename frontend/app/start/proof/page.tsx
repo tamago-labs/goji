@@ -129,7 +129,7 @@ export default function ProofPage() {
               abi: GOJIPROOF_ABI,
               functionName: 'getDocument',
               args: [searchValue as `0x${string}`]
-            }) as { merkleRoot: string; connectionId: string; submitter: string; timestamp: number }
+            }) as { merkleRoot: string; connectionId: string; submitter: string; timestamp: bigint }
             timestamp = Number(doc.timestamp) * 1000
           }
         } catch (e) {

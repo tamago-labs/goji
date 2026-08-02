@@ -19,6 +19,8 @@ interface Template {
   fields: TemplateField[]
   html: string
   isDefault: boolean
+  createdAt?: number
+  updatedAt?: number
 }
 
 interface TemplateEditorProps {

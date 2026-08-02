@@ -15,8 +15,8 @@ const useCases = [
     ]
   },
   {
-    title: 'Collaborate Privately, Verify Publicly',
-    subtitle: 'Work together in a private P2P workspace. Every document gets a Merkle proof for verification on Arc.',
+    title: 'Collaborate Privately, AI-Assisted',
+    subtitle: 'Work together in a private P2P workspace with local AI assistance and Merkle proof verification on Arc.',
     bullets: [
       'Merkle proof anchors every payment and document',
       'P2P syncs records between partners and contractors',

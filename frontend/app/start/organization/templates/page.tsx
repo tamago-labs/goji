@@ -9,11 +9,11 @@ interface Template {
   id: string
   name: string
   companyName: string | null
-  fields: { key: string; label: string; type: string; autoFill: boolean }[]
+  fields: { key: string; label: string; type: 'text' | 'number' | 'date' | 'textarea'; autoFill: boolean; position: 'header' | 'body' | 'footer' }[]
   html: string
   isDefault: boolean
-  createdAt: number
-  updatedAt: number
+  createdAt?: number
+  updatedAt?: number
 }
 
 export default function TemplatesPage() {

@@ -83,9 +83,9 @@ export default function ReceivableDetailPage() {
         }) as bigint
 
         // Get user's token balance
-        let userBalance = 0n
-        let userShare = 0n
-        let userInterest = 0n
+        let userBalance = BigInt(0)
+        let userShare = BigInt(0)
+        let userInterest = BigInt(0)
 
         if (address) {
           userBalance = await publicClient!.readContract({
@@ -95,7 +95,7 @@ export default function ReceivableDetailPage() {
             args: [address]
           }) as bigint
 
-          if (userBalance > 0n) {
+          if (userBalance > BigInt(0)) {
             userShare = await publicClient!.readContract({
               address: tokenAddress as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
@@ -194,8 +194,8 @@ export default function ReceivableDetailPage() {
   }
 
   const getFundingPercent = () => {
-    if (!token || token.totalReceivable === 0n) return 0
-    return Number((token.fundedAmount * 100n) / token.totalReceivable)
+    if (!token || token.totalReceivable === BigInt(0)) return 0
+    return Number((token.fundedAmount * BigInt(100)) / token.totalReceivable)
   }
 
   const isExpired = () => {
@@ -392,7 +392,7 @@ export default function ReceivableDetailPage() {
           </div>
 
           {/* User Investment (if investor) */}
-          {token.userBalance > 0n && (
+          {token.userBalance > BigInt(0) && (
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
               <h3 className='text-sm font-semibold text-ink mb-3 flex items-center gap-2'>
                 <Wallet className='w-4 h-4' />

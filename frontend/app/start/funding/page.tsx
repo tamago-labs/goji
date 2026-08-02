@@ -103,35 +103,35 @@ export default function FundingPage() {
 
           try {
             const myTokens = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'balanceOf',
               args: [address!]
             }) as bigint
 
-            if (myTokens === 0n) continue
+            if (myTokens === BigInt(0)) continue
 
             const info = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'getReceivableInfo'
             }) as [string, string, bigint, bigint, bigint, bigint, bigint, bigint, number]
 
             const name = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'name'
             }) as string
 
             const myShare = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'calculateShare',
               args: [address!]
             }) as bigint
 
             const myInterest = await publicClient!.readContract({
-              address: addr,
+              address: addr as `0x${string}`,
               abi: RECEIVABLE_TOKEN_ABI,
               functionName: 'calculateInvestorInterest',
               args: [address!]
@@ -139,11 +139,11 @@ export default function FundingPage() {
 
             // Calculate projected share (principal + interest) since totalRedeemable is 0 before repayment
             const totalReceivable = info[2]
-            const projectedPrincipal = (myTokens * totalReceivable) / 1_000_000_000_000n
+            const projectedPrincipal = (myTokens * totalReceivable) / BigInt(1_000_000_000_000)
             const projectedShare = projectedPrincipal + myInterest
 
             items.push({
-              address: addr,
+              address: addr as `0x${string}`,
               name,
               type: info[0],
               myTokens,
@@ -222,8 +222,8 @@ export default function FundingPage() {
   }
 
   const getFundingPercent = (funded: bigint, total: bigint) => {
-    if (total === 0n) return 0
-    return Number((funded * 100n) / total)
+    if (total === BigInt(0)) return 0
+    return Number((funded * BigInt(100)) / total)
   }
 
   return (

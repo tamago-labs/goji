@@ -23,7 +23,7 @@ interface PendingFlow {
 
 interface SettledProof {
   id: string
-  flowName: string
+  boardName: string
   merkleRoot: string
   from: string
   to: string
@@ -95,15 +95,15 @@ export default function CreateReceivablePage() {
           const cardMap = new Map(cards.map((c: any) => [c.id, c]))
 
           for (const s of statuses) {
-            const conn = connMap.get(s.routeId)
+            const conn: any = connMap.get(s.routeId)
             if (!conn) continue
 
-            const fromCard = cardMap.get(conn.from)
-            const toCard = cardMap.get(conn.to)
+            const fromCard: any = cardMap.get(conn.from)
+            const toCard: any = cardMap.get(conn.to)
 
             const base = {
               id: s.id,
-              flowName: board.name,
+              boardName: board.name,
               from: fromCard?.title || 'Unknown',
               to: toCard?.title || 'Unknown',
               amount: conn.amount || '0',
@@ -240,7 +240,7 @@ export default function CreateReceivablePage() {
 
   const filteredPending = pendingFlows.filter(f =>
     !searchPending ||
-    f.flowName.toLowerCase().includes(searchPending.toLowerCase()) ||
+    f.boardName.toLowerCase().includes(searchPending.toLowerCase()) ||
     f.docName.toLowerCase().includes(searchPending.toLowerCase()) ||
     f.from.toLowerCase().includes(searchPending.toLowerCase()) ||
     f.to.toLowerCase().includes(searchPending.toLowerCase())
@@ -248,7 +248,7 @@ export default function CreateReceivablePage() {
 
   const filteredProofs = settledProofs.filter(p =>
     !searchProofs ||
-    p.flowName.toLowerCase().includes(searchProofs.toLowerCase()) ||
+    p.boardName.toLowerCase().includes(searchProofs.toLowerCase()) ||
     p.docName.toLowerCase().includes(searchProofs.toLowerCase()) ||
     p.merkleRoot.toLowerCase().includes(searchProofs.toLowerCase())
   )
@@ -303,7 +303,7 @@ export default function CreateReceivablePage() {
                   <td className='px-6 py-3 text-ink/50 text-xs'>
                     {new Date(flow.updatedAt).toLocaleDateString()}
                   </td>
-                  <td className='px-6 py-3 text-ink/70 text-sm'>{flow.flowName}</td>
+                  <td className='px-6 py-3 text-ink/70 text-sm'>{flow.boardName}</td>
                   <td className='px-6 py-3 text-ink/60 text-xs max-w-[120px] truncate'>{flow.from}</td>
                   <td className='px-6 py-3 font-mono text-ink/60 text-sm'>{formatAmount(flow.amount)}</td>
                   <td className='px-6 py-3'>
@@ -451,7 +451,7 @@ export default function CreateReceivablePage() {
                             <div className='flex items-center gap-2'>
                               <span className='text-xs text-ink/70 font-medium'>{proof.docName}</span>
                               <span className='text-[10px] text-ink/40'>•</span>
-                              <span className='text-[10px] text-ink/40'>{proof.flowName}</span>
+                              <span className='text-[10px] text-ink/40'>{proof.boardName}</span>
                             </div>
                             <div className='text-[10px] text-ink/40 font-mono truncate'>{proof.merkleRoot}</div>
                           </div>

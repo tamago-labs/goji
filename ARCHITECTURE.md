@@ -287,24 +287,33 @@ USDC sent to treasury address
 | Parameter | Default | Notes |
 |-----------|---------|-------|
 | Total Supply | 1,000,000 | Per receivable token |
-| Interest Rate | 20% (2000 bps) | Set by company |
+| Interest Rate | 20% APR | Set by company, in basis points |
 | Min Investment | 100 USDC | Set by company |
-| Expiry | 90 days | Set by company |
+| Expiry | 60 days | Fixed options: 30, 60, 90 days |
 | Token Ratio | 1:1 with USD | 1 token = $0.001 |
 
-### Example: $10,000 Invoice at 20% Interest
+### Pro-Rata Interest Model
 
-| Investor | Funded | Tokens | % | At Expiry (Company Repays 12k) |
-|----------|--------|--------|---|----------------|
-| Partner A | $5,000 | 500,000 | 50% | $6,000 |
-| Partner B | $3,000 | 300,000 | 30% | $3,600 |
-| Partner C | $2,000 | 200,000 | 20% | $2,400 |
-| **Total** | **$10,000** | **1,000,000** | **100%** | **$12,000** |
+Interest is calculated based on **actual days invested**, not the full term.
 
-**Flow:**
-1. Company receives $10,000 upfront when investors fund
-2. At expiry, company repays $12,000 (principal + 20% interest)
-3. Investors redeem tokens for their proportional share
+**Formula:**
+```
+interest = investedAmount × daysInvested × interestRate / (totalDays × 10000)
+```
+
+**Example:** $10,000 invoice, 60 days, 20% APR
+
+| Investor | Funded | Day | Days Invested | Interest | Share |
+|----------|--------|-----|---------------|----------|-------|
+| Partner A | $5,000 | 0 | 60 | $1,000 | $6,000 |
+| Partner B | $5,000 | 30 | 30 | $500 | $5,500 |
+| **Total** | **$10,000** | — | — | **$1,500** | **$11,500** |
+
+**Key Points:**
+- Late investors earn less interest (pro-rata by time)
+- Repayment amount varies based on funding pattern
+- Company repays: principal + actual accrued interest
+- Investors redeem: principal portion + their interest portion
 
 ---
 

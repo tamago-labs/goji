@@ -6,7 +6,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title ReceivableToken
 /// @notice ERC-20 token representing a verified receivable from Goji
-/// @dev Fractional ownership token for invoice/payroll financing
+/// @dev Fractional ownership token for invoice/payment financing
+/// @dev Interest is calculated pro-rata based on actual funding duration
 contract ReceivableToken is ERC20, Ownable {
     // ──────────────────────────── Events ────────────────────────────────
     event ReceivableFunded(address indexed investor, uint256 amount, uint256 tokens);
@@ -23,7 +24,7 @@ contract ReceivableToken is ERC20, Ownable {
 
     // Terms
     uint256 public totalReceivable;
-    uint256 public interestRate;
+    uint256 public interestRate;      // Basis points (2000 = 20% APR)
     uint256 public minInvestment;
     uint256 public maxSupply;
     uint256 public issuedAt;
@@ -31,7 +32,11 @@ contract ReceivableToken is ERC20, Ownable {
 
     // Funding
     uint256 public fundedAmount;
-    uint256 public totalRedeemable; // snapshot of balance at repayment time
+    uint256 public totalRedeemable;   // snapshot of balance at repayment time
+
+    // Pro-rata interest tracking
+    mapping(address => uint256) public fundingDate;   // investor → timestamp they funded
+    mapping(address => uint256) public investedAmount; // investor → USDC amount invested
 
     // State
     Status public status;
@@ -78,6 +83,10 @@ contract ReceivableToken is ERC20, Ownable {
         fundedAmount += msg.value;
         _mint(msg.sender, tokens);
 
+        // Track funding date and amount for pro-rata interest
+        fundingDate[msg.sender] = block.timestamp;
+        investedAmount[msg.sender] += msg.value;
+
         if (fundedAmount >= totalReceivable) {
             status = Status.Funded;
         }
@@ -89,12 +98,12 @@ contract ReceivableToken is ERC20, Ownable {
         emit ReceivableFunded(msg.sender, msg.value, tokens);
     }
 
-    /// @notice Company claims repayment (deposits principal + interest)
+    /// @notice Company claims repayment (deposits principal + pro-rata interest)
     function claimRepayment() external payable {
         require(status == Status.Active || status == Status.Funded, "Not claimable");
         require(block.timestamp >= expiresAt, "Not expired yet");
 
-        uint256 repaymentNeeded = getRepaymentAmount();
+        uint256 repaymentNeeded = getTotalRepayment();
         require(msg.value >= repaymentNeeded, "Insufficient repayment");
 
         totalRedeemable = address(this).balance;
@@ -103,13 +112,13 @@ contract ReceivableToken is ERC20, Ownable {
         emit RepaymentClaimed(msg.sender, msg.value);
     }
 
-    /// @notice Investor redeems tokens for proportional share
+    /// @notice Investor redeems tokens for pro-rata share
     function redeem() external {
         require(status == Status.Redeemed, "Not ready for redemption");
         require(balanceOf(msg.sender) > 0, "No tokens to redeem");
 
         uint256 tokens = balanceOf(msg.sender);
-        uint256 share = (tokens * totalRedeemable) / maxSupply;
+        uint256 share = calculateShare(msg.sender);
 
         _burn(msg.sender, tokens);
 
@@ -121,18 +130,44 @@ contract ReceivableToken is ERC20, Ownable {
 
     // ──────────────────────────── View Functions ────────────────────────
 
-    /// @notice Get repayment amount (principal + interest)
-    function getRepaymentAmount() public view returns (uint256) {
-        uint256 interest = (totalReceivable * interestRate) / 10000;
-        return totalReceivable + interest;
+    /// @notice Calculate pro-rata share for an investor
+    /// @dev Returns: principal portion (based on tokens) + interest portion (based on time invested)
+    function calculateShare(address investor) public view returns (uint256) {
+        if (balanceOf(investor) == 0 || totalRedeemable == 0) return 0;
+
+        // Principal portion: proportional to tokens held
+        uint256 principal = (balanceOf(investor) * totalReceivable) / maxSupply;
+
+        // Interest portion: based on actual days invested
+        uint256 interest = calculateInvestorInterest(investor);
+
+        return principal + interest;
     }
 
-    /// @notice Get investor's share of repayment
-    function getShare(address investor) external view returns (uint256) {
-        uint256 tokens = balanceOf(investor);
-        if (tokens == 0) return 0;
-        if (totalRedeemable == 0) return 0;
-        return (tokens * totalRedeemable) / maxSupply;
+    /// @notice Calculate interest earned by a specific investor
+    function calculateInvestorInterest(address investor) public view returns (uint256) {
+        if (fundingDate[investor] == 0 || investedAmount[investor] == 0) return 0;
+
+        uint256 invested = investedAmount[investor];
+        uint256 fundingTime = fundingDate[investor];
+        uint256 endTime = block.timestamp < expiresAt ? block.timestamp : expiresAt;
+        uint256 daysInvested = (endTime - fundingTime) / 1 days;
+        if (daysInvested == 0) daysInvested = 1;
+
+        uint256 totalDays = (expiresAt - issuedAt) / 1 days;
+
+        // interest = invested * daysInvested * interestRate / (totalDays * 10000)
+        return (invested * daysInvested * interestRate) / (totalDays * 10000);
+    }
+
+    /// @notice Get total interest that should be paid
+    function getTotalInterest() public view returns (uint256) {
+        return (totalReceivable * interestRate) / 10000;
+    }
+
+    /// @notice Get total repayment needed (principal + total interest)
+    function getTotalRepayment() public view returns (uint256) {
+        return totalReceivable + getTotalInterest();
     }
 
     /// @notice Get number of proof hashes
@@ -173,10 +208,8 @@ contract ReceivableToken is ERC20, Ownable {
     function _generateSymbol(string memory _type) internal pure returns (string memory) {
         if (keccak256(bytes(_type)) == keccak256(bytes("invoice"))) {
             return "GOJINV";
-        } else if (keccak256(bytes(_type)) == keccak256(bytes("payroll"))) {
+        } else if (keccak256(bytes(_type)) == keccak256(bytes("payment"))) {
             return "GOJPAY";
-        } else if (keccak256(bytes(_type)) == keccak256(bytes("contractor"))) {
-            return "GOJCONT";
         }
         return "GOJRWA";
     }

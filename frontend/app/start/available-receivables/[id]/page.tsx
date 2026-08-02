@@ -21,6 +21,9 @@ interface TokenInfo {
   fundedAmount: bigint
   status: number
   proofHashes: string[]
+  userBalance: bigint
+  userShare: bigint
+  userInterest: bigint
 }
 
 interface ProofVerification {
@@ -69,6 +72,36 @@ export default function AssetDetailPage() {
           functionName: 'getProofHashes'
         }) as string[]
 
+        // Get user's investment data
+        let userBalance = 0n
+        let userShare = 0n
+        let userInterest = 0n
+
+        if (address) {
+          userBalance = await publicClient!.readContract({
+            address: tokenAddress as `0x${string}`,
+            abi: RECEIVABLE_TOKEN_ABI,
+            functionName: 'balanceOf',
+            args: [address]
+          }) as bigint
+
+          if (userBalance > 0n) {
+            userShare = await publicClient!.readContract({
+              address: tokenAddress as `0x${string}`,
+              abi: RECEIVABLE_TOKEN_ABI,
+              functionName: 'calculateShare',
+              args: [address]
+            }) as bigint
+
+            userInterest = await publicClient!.readContract({
+              address: tokenAddress as `0x${string}`,
+              abi: RECEIVABLE_TOKEN_ABI,
+              functionName: 'calculateInvestorInterest',
+              args: [address]
+            }) as bigint
+          }
+        }
+
         setToken({
           name,
           type: info[0],
@@ -80,7 +113,10 @@ export default function AssetDetailPage() {
           issuedAt: info[5],
           fundedAmount: info[7],
           status: info[8],
-          proofHashes
+          proofHashes,
+          userBalance,
+          userShare,
+          userInterest
         })
 
         setProofs(proofHashes.map(h => ({ hash: h, verified: false, loading: false })))
@@ -140,8 +176,32 @@ export default function AssetDetailPage() {
     setInvesting(false)
   }
 
+  const handleRedeem = async () => {
+    if (!walletClient || !publicClient || !address) return
+
+    try {
+      const { request } = await publicClient.simulateContract({
+        address: tokenAddress as `0x${string}`,
+        abi: RECEIVABLE_TOKEN_ABI,
+        functionName: 'redeem',
+        account: address
+      })
+
+      const hash = await walletClient.writeContract(request)
+      await publicClient.waitForTransactionReceipt({ hash })
+      window.location.reload()
+    } catch (e) {
+      console.error('Failed to redeem:', e)
+      alert('Failed to redeem. Check console for details.')
+    }
+  }
+
   const formatAmount = (amount: bigint) => {
     return `${(Number(amount) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`
+  }
+
+  const formatTokens = (tokens: bigint) => {
+    return (Number(tokens) / 1e6).toLocaleString()
   }
 
   const formatDate = (timestamp: bigint) => {
@@ -309,6 +369,36 @@ export default function AssetDetailPage() {
               </a>
             </div>
           </div>
+
+          {/* Your Investment */}
+          {token.userBalance > 0n && (
+            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
+              <h3 className='text-sm font-semibold text-ink mb-3'>Your Investment</h3>
+              <div className='space-y-2'>
+                <div className='flex items-center justify-between text-xs'>
+                  <span className='text-ink/40'>Tokens Held</span>
+                  <span className='text-ink/60 font-mono'>{formatTokens(token.userBalance)}</span>
+                </div>
+                <div className='flex items-center justify-between text-xs'>
+                  <span className='text-ink/40'>Projected Share</span>
+                  <span className='text-ink/60'>{formatAmount(token.userShare)}</span>
+                </div>
+                <div className='flex items-center justify-between text-xs'>
+                  <span className='text-ink/40'>Interest Earned</span>
+                  <span className='text-[#28C840] font-medium'>{formatAmount(token.userInterest)}</span>
+                </div>
+              </div>
+
+              {token.status === 3 && (
+                <button
+                  onClick={handleRedeem}
+                  className='w-full mt-4 px-4 py-2 bg-mint text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity'
+                >
+                  Redeem ({formatAmount(token.userShare)})
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Invest */}
           {token.status === 0 && !isExpired() ? (

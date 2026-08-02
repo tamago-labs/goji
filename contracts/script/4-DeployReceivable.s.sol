@@ -35,7 +35,10 @@ contract DeployReceivable is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy ReceivableFactory
-        ReceivableFactory factory = new ReceivableFactory();
+        // TODO: Set your treasury address and fee amount
+        address treasury = deployer; // Temporary: deployer as treasury
+        uint256 feeAmount = 1e6;    // 1 USDC flat fee
+        ReceivableFactory factory = new ReceivableFactory(treasury, feeAmount);
         console.log("\n[1/1] ReceivableFactory deployed at:", address(factory));
 
         vm.stopBroadcast();

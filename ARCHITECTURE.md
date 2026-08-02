@@ -1,36 +1,147 @@
-# Goji Smart Contract Architecture: RWA Issuance & Distribution
+# Goji RWA Architecture
 
 ## Overview
 
-Goji transforms verified payment records into real-world assets (RWAs) that can be financed, traded, or used as collateral. This document outlines the smart contract architecture for RWA issuance and distribution using a hybrid approach with fractional financing.
+Goji transforms verified payment records into real-world assets (RWAs). Companies use their payment history as collateral to receive financing from financial partners.
+
+**Note:** USDC is the native token on Arc (Chain ID: 5042002). All funding uses `msg.value` (native transfers), not ERC-20 approvals.
 
 ---
 
-## The Pipeline
+## Real Flow
 
 ```
-Payment Activity
-      ↓
-Private Workspace (P2P)
-      ↓
-Settlement on Arc
-      ↓
-Proof Generation (GojiProof)
-      ↓
-Receivable Token Issuance
-      ↓
-Financial Partners Fund
-      ↓
-Returns on Settlement
+Month 1: Invoice → $10k → Settled → Proof 1
+Month 2: Invoice → $10k → Settled → Proof 2
+Month 3: Invoice → $10k → Settled → Proof 3
+         ↓
+Company wants funding for new $10k invoice
+         ↓
+Company creates receivable:
+  - Uses 3 proofs as collateral
+  - Sets terms: 20% interest, 90 days, min $100 investment
+  - Token supply: 1,000,000 (default)
+         ↓
+Financial Partner sees receivable:
+  - Reviews proofs on GojiProof
+  - Funds $5k (50% of total)
+  - Receives 500,000 tokens (50% of supply)
+         ↓
+At expiry (90 days):
+  - Company deposits $12k (principal + interest)
+  - Partner redeems 500k tokens → receives $6k
 ```
 
 ---
 
 ## Smart Contracts
 
-### 1. GojiProof
+### 1. ReceivableToken (ERC-20)
 
-**Purpose:** Store Merkle roots for payment verification.
+**Purpose:** Fractional ownership token for receivables.
+
+```solidity
+contract ReceivableToken is ERC20, Ownable {
+    // ─── Metadata ───
+    string public name;              // "Invoice #123"
+    string public symbol;            // "GOJINV"
+    string public receivableType;    // "invoice", "payroll", "contractor"
+    
+    // ─── Issuer ───
+    address public issuer;           // Company that created this
+    bool public issuerReceivedTokens; // False - issuer doesn't hold tokens
+    
+    // ─── Proofs (collateral) ───
+    bytes32[] public proofHashes;    // Multiple merkle roots from GojiProof
+    
+    // ─── Terms ───
+    uint256 public totalReceivable;  // e.g., 10,000 USDC (actual amount)
+    uint256 public interestRate;     // Basis points (2000 = 20%)
+    uint256 public minInvestment;    // Minimum per investor (e.g., 100 USDC)
+    uint256 public expiresAt;        // Timestamp, not duration
+    
+    // ─── Funding ───
+    uint256 public fundedAmount;     // Total USDC received from investors
+    uint256 public totalSupply;      // Max tokens (default 1,000,000)
+    mapping(address => uint256) public tokenBalances; // Investor → tokens
+    
+    // ─── State ───
+    enum Status { Active, Funded, Expired, Redeemed, Defaulted }
+    Status public status;
+    
+    // ─── Functions ───
+    function finance() external payable;  // Investor funds
+    function redeem() external;           // Investor redeems after company pays
+    function claimRepayment() external;   // Company deposits repayment
+}
+```
+
+**Key Changes from Current:**
+- `proofHashes[]` instead of single `proofHash`
+- `expiresAt` as timestamp (not `EXPIRY_PERIOD` duration)
+- `interestRate` as basis points (configurable)
+- `minInvestment` configurable
+- `totalSupply` configurable (default 1M)
+- `issuer` doesn't receive tokens
+- `fundedAmount` tracks progress
+- `status` enum for lifecycle
+
+### 2. ReceivableFactory
+
+**Purpose:** Create and track receivable tokens.
+
+```solidity
+contract ReceivableFactory {
+    // ─── Admin ───
+    address public owner;
+    address public treasury;          // Fee collection address
+    uint256 public feeAmount;         // Flat fee in USDC (1 USDC = 1e6)
+    
+    // ─── Storage ───
+    mapping(address => address[]) public issuers;      // issuer → tokens
+    mapping(address => bool) public isReceivable;      // token → is valid
+    mapping(address => uint256) public totalValue;     // issuer → total receivable value
+    uint256 public collectedFees;                      // Total fees in contract
+    
+    // ─── Events ───
+    event ReceivableCreated(
+        address indexed token,
+        address indexed issuer,
+        string name,
+        uint256 amount,
+        uint256 interestRate,
+        uint256 expiresAt
+    );
+    event FeeUpdated(uint256 oldFee, uint256 newFee);
+    event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
+    event FeesWithdrawn(address indexed treasury, uint256 amount);
+    
+    // ─── Functions ───
+    function createReceivable(
+        string memory name,
+        string memory receivableType,
+        uint256 amount,
+        uint256 interestRate,      // Basis points (2000 = 20%)
+        uint256 minInvestment,     // Minimum per investor
+        uint256 expiresAt,         // Timestamp
+        bytes32[] memory proofs    // Multiple merkle roots
+    ) external payable returns (address);
+    
+    // ─── Admin ───
+    function setFee(uint256 _feeAmount) external;       // Owner only
+    function setTreasury(address _treasury) external;   // Owner only
+    function withdrawFees() external;                   // Owner only → treasury
+    
+    // ─── View ───
+    function getReceivables(address issuer) external view returns (address[]);
+    function getReceivablesCount(address issuer) external view returns (uint256);
+    function getTotalValue(address issuer) external view returns (uint256);
+    function isReceivableToken(address token) external view returns (bool);
+    function getCollectedFees() external view returns (uint256);
+}
+```
+
+### 3. GojiProof (Existing)
 
 ```solidity
 contract GojiProof {
@@ -39,175 +150,209 @@ contract GojiProof {
     
     function anchorRoot(bytes32 merkleRoot, bytes32 connectionId) external;
     function getDocument(bytes32 merkleRoot) external view returns (DocumentRecord memory);
-    function getRootByConnection(bytes32 connectionId) external view returns (bytes32);
+    function isAnchored(bytes32 merkleRoot) external view returns (bool);
 }
 ```
 
-### 2. GojiProof → ReceivableToken Relationship
+---
 
-**Ownership Model: Submitter-Based**
+## Funding Flow
 
-The person who anchors the proof (submitter) can issue tokens from that proof.
+### Step 0: Platform Fee (Flat Fee)
 
 ```
-Company submits proof → Company can issue tokens
-Financial partner verifies → Cannot issue tokens
+Company pays flat fee when creating receivable:
+  - Default: 1 USDC per receivable
+  - Admin configurable via setFee()
+  - Fees collected in factory contract
+  - Admin withdraws to treasury via withdrawFees()
 ```
 
-**Flow:**
+### Step 1: Company Creates Receivable
+
 ```
-1. Company calls GojiProof.anchorRoot(merkleRoot, connectionId)
-2. Proof stored with submitter = company address
-3. Company calls ReceivableFactory.createReceivable()
-4. Factory checks: submitter == msg.sender?
-5. If yes → ReceivableToken minted
-6. If no → revert
+Company calls:
+  ReceivableFactory.createReceivable{value: 1e6}(
+    name: "Invoice #123",
+    type: "invoice",
+    amount: 10000 * 1e6,        // 10,000 USDC
+    interestRate: 2000,          // 20%
+    minInvestment: 100 * 1e6,    // 100 USDC
+    expiresAt: block.timestamp + 90 days,
+    proofs: [proof1, proof2, proof3]
+  )
+         ↓
+ReceivableToken deployed:
+  - 1,000,000 tokens minted (but held by contract)
+  - No tokens sent to issuer
+  - Fee collected: 1 USDC
+  - Status = Active
 ```
 
-**Security:**
-- Only the proof submitter can issue tokens
-- Financial partners can verify but cannot issue
-- Clear separation of concerns
+### Step 2: Financial Partner Funds
 
-### 3. ReceivableToken (New)
+```
+Partner calls:
+  ReceivableToken.finance() { value: 5000e6 }  // 5,000 USDC (native on Arc)
+         ↓
+Logic:
+  1. Check status == Active
+  2. Check not expired
+  3. Check msg.value >= minInvestment
+  4. Calculate tokens: (msg.value / totalReceivable) * totalSupply
+     - 5000 / 10000 * 1,000,000 = 500,000 tokens
+  5. USDC stays in contract (native on Arc)
+  6. Update fundedAmount
+  7. Update tokenBalances[partner]
+  8. If fundedAmount >= totalReceivable → status = Funded
+```
 
-**Purpose:** ERC-20 token representing a verified receivable.
+### Step 3: Company Repays (At Expiry)
+
+```
+Company calls:
+  ReceivableToken.claimRepayment() { value: 12000e6 }  // 12,000 USDC (native)
+         ↓
+Logic:
+  1. Check status == Funded or Active
+  2. Check block.timestamp >= expiresAt
+  3. Calculate repayment needed:
+     - totalReceivable + (totalReceivable * interestRate / 10000)
+     - 10000 + (10000 * 2000 / 10000) = 12000 USDC
+  4. Check msg.value >= repaymentNeeded
+  5. USDC stored in contract
+  6. Status = Redeemed (ready for partners to claim)
+```
+
+### Step 4: Partner Redeems
+
+```
+Partner calls:
+  ReceivableToken.redeem()
+         ↓
+Logic:
+  1. Check status == Redeemed
+  2. Get partner's token balance: 500,000
+  3. Calculate share:
+     - (tokenBalance / totalSupply) * contractBalance
+     - (500,000 / 1,000,000) * 12,000 = 6,000 USDC
+  4. Transfer USDC to partner (native on Arc)
+  5. Burn tokens
+  6. Status = Defaulted if company doesn't pay
+```
+
+---
+
+## Fee Model
+
+### Flat Fee (Platform Revenue)
+
+| Parameter | Default | Notes |
+|-----------|---------|-------|
+| Fee Amount | 1 USDC | Configurable by admin |
+| Fee Payer | Company (Issuer) | Pays when creating receivable |
+| Fee Timing | At Creation | Before token is deployed |
+| Collection | Factory Contract | Accumulates until withdrawal |
+| Treasury | Configurable | Admin sets withdrawal address |
+
+### Admin Functions
 
 ```solidity
-contract ReceivableToken {
-    // Token metadata
-    string public name;
-    string public symbol;
-    uint8 public decimals;
-    
-    // Receivable data
-    address public issuer;
-    string public receivableType;  // "invoice", "payroll", "contractor"
-    bytes32 public proofHash;      // Merkle root from GojiProof
-    uint256 public amount;
-    uint256 public issuedAt;
-    uint256 public expiresAt;
-    
-    // Financing
-    address public financier;
-    uint256 public financedAt;
-    bool public isFinanced;
-    
-    // Functions
-    function issue(address to, uint256 amount, bytes32 proofHash) external;
-    function finance(address financier) external;
-    function redeem() external;
-}
+function setFee(uint256 _feeAmount) external;       // Change fee amount
+function setTreasury(address _treasury) external;   // Change fee recipient
+function withdrawFees() external;                   // Withdraw to treasury
 ```
 
-### 3. ReceivableFactory (New)
+### Fee Flow
 
-**Purpose:** Create new receivable tokens.
-
-```solidity
-contract ReceivableFactory {
-    function createReceivable(
-        string memory name,
-        string memory receivableType,
-        uint256 amount,
-        bytes32 proofHash
-    ) external returns (address);
-    
-    function getReceivables(address issuer) external view returns (address[]);
-}
+```
+Company calls createReceivable{value: 1e6}
+         ↓
+Factory collects 1 USDC fee
+         ↓
+Fee stays in factory contract
+         ↓
+Admin calls withdrawFees()
+         ↓
+USDC sent to treasury address
 ```
 
 ---
 
-## Flow: Company Receives Payment
+## Token Economics
 
-```
-Month 1: Invoice → $10k → Settled on Arc
-Month 2: Invoice → $10k → Settled on Arc
-Month 3: Invoice → $10k → Settled on Arc
-         ↓
-Company has 3 settled invoices ($30k total)
-         ↓
-Company calls ReceivableFactory.createReceivable()
-         ↓
-ReceivableToken minted ($30k receivable)
-         ↓
-Token stored on Arc with proof
-```
+### Default Parameters
 
----
+| Parameter | Default | Notes |
+|-----------|---------|-------|
+| Total Supply | 1,000,000 | Per receivable token |
+| Interest Rate | 20% (2000 bps) | Set by company |
+| Min Investment | 100 USDC | Set by company |
+| Expiry | 90 days | Set by company |
+| Token Ratio | 1:1 with USD | 1 token = $0.001 |
 
-## Flow: Financial Partner Funds
+### Example: $10,000 Invoice at 20% Interest
 
-```
-Financial partner sees receivable token
-         ↓
-Reviews proof (GojiProof.verifyRoot)
-         ↓
-Evaluates receivable risk
-         ↓
-Calls ReceivableToken.finance()
-         ↓
-Funds transferred to company
-         ↓
-When payments settle, partner receives returns
-```
+| Investor | Funded | Tokens | % | At Expiry (12k) |
+|----------|--------|--------|---|-----------------|
+| Partner A | $5,000 | 500,000 | 50% | $6,000 |
+| Partner B | $3,000 | 300,000 | 30% | $3,600 |
+| Partner C | $2,000 | 200,000 | 20% | $2,400 |
+| **Total** | **$10,000** | **1,000,000** | **100%** | **$12,000** |
 
 ---
 
-## Financing Terms
+## Status Lifecycle
 
-### Investment Parameters
+```
+Active → Funded → Redeemed
+  ↓        ↓
+Expired  Defaulted (if no repayment)
+```
 
-| Term | Value | Notes |
-|------|-------|-------|
-| Minimum investment | $100 | Accessible to small investors |
-| Maximum investment | Invoice amount | No over-funding |
-| Interest rate | 0-20% | Set by company per invoice |
-| Duration | 30-90 days | Set by company |
-| Early redemption | Allowed | With penalty (5-10%) |
-
-### Example: $10,000 Invoice
-
-| Stage | Action | Amount |
-|-------|--------|--------|
-| Creation | Company creates invoice | $10,000 |
-| Financing | Investor A funds | $3,000 (30%) |
-| Financing | Investor B funds | $2,000 (20%) |
-| Total funded | — | $5,000 (50%) |
-| Settlement | Client pays | $10,000 |
-| Returns | Investor A gets back | $3,240 ($3,000 + 8%) |
-| Returns | Investor B gets back | $2,160 ($2,000 + 8%) |
-
-### Token Economics
-
-| Parameter | Value |
-|-----------|-------|
-| Token ratio | 1:1 with USD |
-| Minimum purchase | $100 |
-| Maximum purchase | Invoice amount |
-| Interest rate | 0-20% (set by company) |
-| Duration | 30-90 days |
-| Early redemption | Allowed with 5-10% penalty |
+| Status | Description |
+|--------|-------------|
+| Active | Accepting investments |
+| Funded | Fully funded, waiting for repayment |
+| Expired | Past expiry date, waiting for company to pay |
+| Redeemed | Company paid, partners can redeem |
+| Defaulted | Company didn't pay by deadline |
 
 ---
 
-## Integration with Canvas
+## UI Pages
 
+### Company (Employer)
+
+**Sidebar:** Receivables (expandable)
 ```
-Company creates invoice on canvas
-        ↓
-Invoice template selected
-        ↓
-Amount, recipient, documents filled
-        ↓
-Connection saved with template
-        ↓
-When flow runs:
-  1. Payment settled on Arc
-  2. GojiProof stores Merkle root
-  3. ReceivableToken minted (if threshold met)
-  4. Token available for financing
+/start/receivables
+├── /start/receivables/list       — My receivables table
+├── /start/receivables/create     — Create from verified payments
+└── /start/receivables/[id]       — View details + financing status
+```
+
+**Create Flow:**
+1. Select verified payments (checkboxes, payments with merkleRoot)
+2. Enter name, select type (invoice/payroll/contractor)
+3. Set terms: amount, interest rate, min investment, expiry
+4. Confirm → calls `createReceivable` with multiple proofs
+
+### Financial Partner
+
+**Sidebar:** 3 separate pages
+```
+/start/available-receivables — Browse all, filter by type/status
+/start/due-diligence         — Verify proofs, check history
+/start/funding               — Fund, track portfolio
+```
+
+### Public RWA Explorer
+
+**Standalone:** `/rwa` (no wallet required)
+```
+/rwa           — List all tokens (read-only)
+/rwa/[address] — Token details, terms, status
 ```
 
 ---
@@ -216,11 +361,11 @@ When flow runs:
 
 ### Contracts
 
-| Contract | Purpose |
+| Contract | Address |
 |----------|---------|
-| GojiProof | Store Merkle roots |
-| ReceivableToken | ERC-20 for receivables |
-| ReceivableFactory | Create receivables |
+| GojiProof | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
+| ReceivableFactory | `0xE175A675875c083f57CFAe12171b9F1C1374EC84` |
+| PriceOracle | TBD |
 
 ### Scripts
 
@@ -229,24 +374,58 @@ When flow runs:
 | 1-DeployTokens.sol | Deploy RWA tokens |
 | 2-DeployOracles.sol | Deploy price oracles |
 | 3-DeployProof.sol | Deploy GojiProof |
-| 4-DeployReceivable.sol | Deploy ReceivableToken + Factory |
+| 4-DeployReceivable.sol | Deploy ReceivableFactory |
 
 ---
 
 ## Security
 
-1. **Proof verification** — Verify Merkle roots before financing
-2. **Role-based access** — Only companies create receivables
-3. **Expiry** — Receivables expire after 90 days
-4. **Audit trail** — All actions logged on-chain
-5. **Early redemption penalty** — 5-10% penalty for early exit
+1. **Proof verification** — Multiple proofs as collateral
+2. **Issuer verification** — Only proof submitter can create receivable
+3. **Interest accrual** — On-chain calculation, no manipulation
+4. **Expiry enforcement** — Timestamp-based, not duration
+5. **Default protection** — Partners can claim if company doesn't pay
+6. **Proportional redemption** — Based on token balance (snapshot at repayment)
+7. **Fee admin** — Only owner can change fee/treasury, preventing unauthorized changes
+8. **Fee collection** — Flat fee collected before token creation, guaranteed revenue
+
+---
+
+## Frontend Files
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `frontend/lib/receivableFactory.ts` | ABI for ReceivableFactory |
+| `frontend/lib/receivableToken.ts` | ABI for ReceivableToken |
+| `frontend/app/start/receivables/layout.tsx` | Sub-menu layout |
+| `frontend/app/start/receivables/page.tsx` | Redirect to list |
+| `frontend/app/start/receivables/list/page.tsx` | Company's receivables table |
+| `frontend/app/start/receivables/create/page.tsx` | Create receivable |
+| `frontend/app/start/receivables/[id]/page.tsx` | View details |
+| `frontend/app/rwa/layout.tsx` | Public layout |
+| `frontend/app/rwa/page.tsx` | Public RWA Explorer |
+| `frontend/app/rwa/[address]/page.tsx` | Token details |
+
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `frontend/app/start/layout.tsx` | Add Receivables sub-menu, RWA link |
+| `frontend/app/start/available-receivables/page.tsx` | Implement browse page |
+| `frontend/app/start/due-diligence/page.tsx` | Implement verification |
+| `frontend/app/start/funding/page.tsx` | Implement funding + portfolio |
 
 ---
 
 ## Next Steps
 
-1. Implement ReceivableToken contract
-2. Implement ReceivableFactory contract
-3. Add deployment script
-4. Integrate with frontend
-5. Add financing flow UI
+1. ~~Rewrite `ReceivableToken.sol` with new architecture~~ ✓
+2. ~~Rewrite `ReceivableFactory.sol` with new parameters~~ ✓
+3. ~~Add flat fee model to factory~~ ✓
+4. Deploy to Arc Testnet
+5. Create ABI files in `frontend/lib/`
+6. Implement company receivables pages
+7. Implement partner pages
+8. Implement public RWA Explorer

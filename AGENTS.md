@@ -42,8 +42,8 @@ npm run lint             # eslint
 ### Contracts
 
 - `contracts/src/GojiProof.sol` — Merkle root storage for document verification
-- `contracts/src/ReceivableToken.sol` — ERC-20 for receivable assets
-- `contracts/src/ReceivableFactory.sol` — Factory for creating receivable tokens
+- `contracts/src/ReceivableToken.sol` — ERC-20 for receivable assets (multiple proofs, configurable terms)
+- `contracts/src/ReceivableFactory.sol` — Factory for creating receivable tokens (flat fee system)
 - `contracts/src/PriceOracle.sol` — Custom + Pyth price oracle
 - `contracts/script/` — Deploy scripts (1-DeployTokens, 2-DeployOracles, 3-DeployProof, 4-DeployReceivable)
 
@@ -104,6 +104,40 @@ npm run lint             # eslint
 - Verification calls GojiProof.isAnchored() on Arc Testnet
 - Modal shows document info, merkle root, timestamp, contract address
 - Document preview iframe for anchored payments
+
+## RWA System
+
+### Smart Contracts (Arc Testnet)
+
+| Contract | Address |
+|----------|---------|
+| GojiProof | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
+| ReceivableFactory | `0xE175A675875c083f57CFAe12171b9F1C1374EC84` |
+
+### ReceivableToken
+
+- ERC-20 fractional ownership token for receivables
+- Multiple proof hashes as collateral (not single proof)
+- Configurable: interest rate (bps), min investment, expiry (timestamp)
+- Max supply: 1M tokens per receivable
+- Finance: Investors send native USDC, receive tokens proportionally
+- Repayment: Company deposits principal + interest at expiry
+- Redemption: Investors burn tokens for proportional share
+
+### ReceivableFactory
+
+- Creates ReceivableToken contracts
+- Flat fee system: 1 USDC per creation (admin configurable)
+- Fee collection in factory, admin withdraws to treasury
+- Tracks issuers, token addresses, total value per issuer
+
+### Platform Fees
+
+- **Fee Type:** Flat fee at creation
+- **Fee Amount:** 1 USDC (configurable by admin)
+- **Fee Payer:** Company (issuer)
+- **Treasury:** Configurable by admin
+- **Withdrawal:** Admin calls `withdrawFees()`
 
 ## Roles
 

@@ -166,20 +166,6 @@ Each receivable has an ERC-20 token representing fractional ownership of the fin
 
 Interest is distributed pro rata: investors who contribute more or fund earlier receive a larger share of the return.
 
-```text
-interest = investedAmount x daysFunded x interestRate
-           ----------------------------------------
-                 termDays x 10,000
-```
-
-The contract lifecycle is:
-
-```text
-Active -> Funded -> Redeemed
-   |        |
-Expired  Defaulted
-```
-
 ## Private Knowledge Base
 
 Goji includes a private knowledge base for company documents. The employer terminal runs GTE-Large locally and keeps the vector index on the host. Authorized members search policies, invoices, and procedures through encrypted P2P requests.
@@ -268,6 +254,27 @@ The frontend runs on port `3000` and connects to `http://localhost:3001` by defa
 - Multi-currency payment support beyond USDC
 - Arc mainnet deployment
 - Safe multisignature wallet support
+
+## Roadmap
+
+**Onboarding**
+- Embed the frontend into the CLI terminal, so `npx @tamago-labs/goji` starts both the terminal and the workspace UI in a single command
+
+**AI**
+- Local Qwen and Gemma assistant models with tool access to the current RAG knowledge search, for conversational (not just snippet) answers
+
+**Privacy**
+- On-chain privacy (APS) for payment records and proofs
+
+**Payments & Chains**
+- Multi-stablecoin settlement, starting with EURC and other Circle-supported assets
+- Mainnet deployment on Arc, followed by additional chain support
+- Local currency payment terms (JPY, THB, USD, and others) with exchange rate fetched at settlement time
+
+**Security / Compliance**
+- Safe multisignature wallet support for company treasury and receivable funding
+- Security audit of ReceivableToken and ReceivableFactory contracts
+- KYC/KYB verification layer for companies, payees, and financial partners
 
 ## License
 

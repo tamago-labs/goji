@@ -252,13 +252,6 @@ The frontend runs on port `3000` and connects to `http://localhost:3001` by defa
 
 ## Roadmap
 
-- Local Qwen and Gemma assistant models grounded in private workspace knowledge
-- Multi-currency payment support beyond USDC
-- Arc mainnet deployment
-- Safe multisignature wallet support
-
-## Roadmap
-
 **Onboarding**
 
 - Embed the frontend into the CLI terminal, so `npx @tamago-labs/goji` starts both the terminal and the workspace UI in a single command

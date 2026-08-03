@@ -58,7 +58,7 @@ Company Workspace (P2P)
            ↓
 Company creates receivable:
   1. Selects pending flow → defines terms
-  2. Selects settled proofs → collateral
+   2. Selects settled proofs → verified payment-history evidence
   3. Calls ReceivableFactory.createReceivable()
   4. Saves to P2P (/api/receivables)
            ↓
@@ -75,7 +75,7 @@ Partner Workspace (P2P)
            ↓
 Partner reviews:
   1. Views receivable details
-  2. Verifies proofs on GojiProof contract
+   2. Verifies payment-history proofs on GojiProof contract
   3. Checks terms and funding progress
            ↓
 Partner funds:
@@ -108,15 +108,21 @@ Partners redeem:
 
 **Address:** `0x9465a4C246D44F32F391Ebda165Acb12886746Ca`
 
-Stores Merkle roots for document verification.
+Stores Merkle roots for document verification and links each root to a Goji canvas connection.
 
 ```solidity
 contract GojiProof {
+    address public owner;
     mapping(bytes32 => DocumentRecord) public documents;
-    
-    function anchorRoot(bytes32 merkleRoot, bytes32 connectionId) external;
+    mapping(bytes32 => bytes32) public connectionToRoot;
+
+    event RootAnchored(bytes32 merkleRoot, bytes32 connectionId, address submitter, uint256 timestamp);
+
+    function anchorRoot(bytes32 merkleRoot, bytes32 connectionId) external returns (uint256 timestamp);
     function isAnchored(bytes32 merkleRoot) external view returns (bool);
     function getDocument(bytes32 merkleRoot) external view returns (DocumentRecord memory);
+    function getRootByConnection(bytes32 connectionId) external view returns (bytes32);
+    function hasDocument(bytes32 connectionId) external view returns (bool);
 }
 ```
 
@@ -131,7 +137,7 @@ contract ReceivableFactory {
     address public owner;
     address public treasury;
     uint256 public feeAmount;         // 1 USDC (18 decimals)
-    
+
     function createReceivable(
         string memory name,
         string memory receivableType,
@@ -141,7 +147,7 @@ contract ReceivableFactory {
         uint256 expiresAt,
         bytes32[] memory proofs
     ) external payable returns (address);
-    
+
     function getReceivables(address issuer) external view returns (address[]);
     function setFee(uint256 _feeAmount) external;
     function setTreasury(address _treasury) external;
@@ -157,27 +163,27 @@ ERC-20 fractional ownership token for receivables.
 contract ReceivableToken is ERC20, Ownable {
     string public receivableType;    // "invoice" or "payment"
     address public issuer;
-    bytes32[] public proofHashes;    // Collateral proofs
-    
+    bytes32[] public proofHashes;    // Verified payment-history references
+
     uint256 public totalReceivable;
     uint256 public interestRate;     // Basis points (2000 = 20%)
     uint256 public minInvestment;
     uint256 public maxSupply;        // 1,000,000 * 1e6
     uint256 public expiresAt;
-    
+
     uint256 public fundedAmount;
     uint256 public totalRedeemable;
-    
+
     mapping(address => uint256) public fundingDate;
     mapping(address => uint256) public investedAmount;
-    
+
     enum Status { Active, Funded, Expired, Redeemed, Defaulted }
     Status public status;
-    
+
     function finance() external payable;
     function claimRepayment() external payable;
     function redeem() external;
-    
+
     function calculateShare(address investor) public view returns (uint256);
     function calculateInvestorInterest(address investor) public view returns (uint256);
     function getTotalRepayment() public view returns (uint256);
@@ -190,13 +196,13 @@ contract ReceivableToken is ERC20, Ownable {
 
 ### Parameters
 
-| Parameter | Default | Notes |
-|-----------|---------|-------|
-| Total Supply | 1,000,000 | Per receivable token |
-| Interest Rate | 20% APR | Set by company |
-| Min Investment | 1 USDC | Set by company |
-| Term Options | 30, 60, 90 days | Fixed options |
-| Platform Fee | 1 USDC | Flat fee at creation |
+| Parameter      | Default         | Notes                |
+| -------------- | --------------- | -------------------- |
+| Total Supply   | 1,000,000       | Per receivable token |
+| Interest Rate  | 20% APR         | Set by company       |
+| Min Investment | 1 USDC          | Set by company       |
+| Term Options   | 30, 60, 90 days | Fixed options        |
+| Platform Fee   | 1 USDC          | Flat fee at creation |
 
 ### Pro-Rata Interest
 
@@ -206,11 +212,11 @@ Interest calculated based on **actual days invested**:
 interest = investedAmount × daysInvested × interestRate / (totalDays × 10000)
 ```
 
-| Investor | Funded | Day | Days Invested | Interest | Share |
-|----------|--------|-----|---------------|----------|-------|
-| Partner A | $5,000 | 0 | 60 | $1,000 | $6,000 |
-| Partner B | $5,000 | 30 | 30 | $500 | $5,500 |
-| **Total** | **$10,000** | — | — | **$1,500** | **$11,500** |
+| Investor  | Funded      | Day | Days Invested | Interest   | Share       |
+| --------- | ----------- | --- | ------------- | ---------- | ----------- |
+| Partner A | $5,000      | 0   | 60            | $1,000     | $6,000      |
+| Partner B | $5,000      | 30  | 30            | $500       | $5,500      |
+| **Total** | **$10,000** | —   | —             | **$1,500** | **$11,500** |
 
 ### Status Lifecycle
 
@@ -226,38 +232,38 @@ Expired  Defaulted
 
 ### Pages
 
-| Route | Access | Purpose |
-|-------|--------|---------|
-| `/` | Public | Landing page |
-| `/rwa` | Public | RWA Explorer (on-chain data) |
-| `/rwa/[address]` | Public | Token detail |
-| `/start/overview` | Auth | Dashboard with portfolio |
-| `/start/receivables/*` | Company | Create/manage receivables |
-| `/start/available-receivables/*` | Partner | Browse and invest |
-| `/start/proof` | All | Verify merkle roots |
-| `/start/knowledge` | All assigned roles | Search private P2P knowledge |
-| `/start/organization/ai-assistant` | Company | Manage local model and documents |
+| Route                              | Access             | Purpose                          |
+| ---------------------------------- | ------------------ | -------------------------------- |
+| `/`                                | Public             | Landing page                     |
+| `/rwa`                             | Public             | RWA Explorer (on-chain data)     |
+| `/rwa/[address]`                   | Public             | Token detail                     |
+| `/start/overview`                  | Auth               | Dashboard with portfolio         |
+| `/start/receivables/*`             | Company            | Create/manage receivables        |
+| `/start/available-receivables/*`   | Partner            | Browse and invest                |
+| `/start/proof`                     | All                | Verify merkle roots              |
+| `/start/knowledge`                 | All assigned roles | Search private P2P knowledge     |
+| `/start/organization/ai-assistant` | Company            | Manage local model and documents |
 
 ### Data Sources
 
-| Source | Data |
-|--------|------|
+| Source    | Data                                            |
+| --------- | ----------------------------------------------- |
 | P2P (API) | Flow details, document previews, workspace data |
-| On-chain | Token info, funding status, investor balances |
+| On-chain  | Token info, funding status, investor balances   |
 
 ### Key Components
 
-| Component | Purpose |
-|-----------|---------|
-| `Portfolio` | Shows partner's investments on Overview |
-| `DocumentPreview` | Renders invoice/receipt from template |
-| `ProofExplorer` | Verifies merkle roots on GojiProof |
+| Component         | Purpose                                 |
+| ----------------- | --------------------------------------- |
+| `Portfolio`       | Shows partner's investments on Overview |
+| `DocumentPreview` | Renders invoice/receipt from template   |
+| `ProofExplorer`   | Verifies merkle roots on GojiProof      |
 
 ---
 
 ## Security
 
-1. **Proof verification** — Multiple proofs as collateral
+1. **Proof verification** — Multiple proofs demonstrate verified payment history
 2. **Issuer is company** — Correct address stored via constructor
 3. **Pro-rata interest** — Fair distribution based on funding time
 4. **Expiry enforcement** — Timestamp-based

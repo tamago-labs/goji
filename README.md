@@ -128,11 +128,13 @@ Goji uses Arc smart contracts to anchor payment proofs and create receivable ass
 
 ### GojiProof
 
-GojiProof anchors Merkle roots for payment documents on Arc. The private document stays inside the P2P workspace; only its cryptographic root, connection reference, and timestamp are stored on-chain.
+GojiProof anchors Merkle roots for payment documents on Arc. The private document stays inside the P2P workspace; the contract stores its root, canvas connection reference, submitting address, and anchor timestamp. Anchoring is permissionless, each Merkle root can be anchored only once, and the contract emits a `RootAnchored` event.
 
 - `anchorRoot(bytes32 merkleRoot, bytes32 connectionId)` stores a proof
 - `isAnchored(bytes32 merkleRoot)` verifies that a root exists
-- `getDocument(bytes32 merkleRoot)` returns the on-chain proof record
+- `getDocument(bytes32 merkleRoot)` returns the root, connection, submitter, and timestamp
+- `getRootByConnection(bytes32 connectionId)` looks up a root from its canvas connection
+- `hasDocument(bytes32 connectionId)` checks whether a connection has an anchored document
 
 ### ReceivableFactory
 
@@ -188,19 +190,19 @@ Source documents and embeddings are never replicated. Members receive only relev
 
 ## API Surface
 
-| Endpoint                                        | Purpose                                    |
-| ----------------------------------------------- | ------------------------------------------ |
-| `GET /api/health`                               | Terminal status, identity, role, and peers |
-| `/api/boards`, `/api/cards`, `/api/connections` | Visual workflow data                       |
-| `/api/flow-status`                              | Payment execution status                   |
-| `/api/chat`                                     | P2P workspace chat                         |
-| `/api/wallets`                                  | Wallet registration and balances           |
-| `/api/templates`, `/api/invoices`               | Document and invoice workflows             |
-| `/api/knowledge/documents`                      | Employer document management               |
-| `/api/knowledge/model`                          | Embedding model status and lifecycle       |
-| `POST /api/knowledge/url`                       | Fetch website text for ingestion           |
-| `POST /api/knowledge/search`                    | Local or P2P knowledge search              |
-| `/api/members`                                  | Employer member and role management        |
+| Endpoint                                        | Purpose                                               |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| `GET /api/health`                               | Terminal status, identity, role, and peers            |
+| `/api/boards`, `/api/cards`, `/api/connections` | Visual workflow data                                  |
+| `/api/flow-status`                              | Payment execution status                              |
+| `/api/chat`                                     | P2P workspace chat                                    |
+| `/api/wallets`                                  | Wallet registration and balances                      |
+| `/api/templates`, `/api/invoices`               | Document and invoice workflows                        |
+| `/api/knowledge/documents`                      | Employer document management                          |
+| `/api/knowledge/model`                          | Embedding model status and lifecycle                  |
+| `POST /api/knowledge/url`                       | Fetch website text for ingestion                      |
+| `POST /api/knowledge/search`                    | Local or P2P knowledge search                         |
+| `/api/members`                                  | Employer member and role management                   |
 | `ws://localhost:3001`                           | Live browser updates for the visual payment workspace |
 
 ## Getting Started
@@ -258,20 +260,25 @@ The frontend runs on port `3000` and connects to `http://localhost:3001` by defa
 ## Roadmap
 
 **Onboarding**
+
 - Embed the frontend into the CLI terminal, so `npx @tamago-labs/goji` starts both the terminal and the workspace UI in a single command
 
 **AI**
+
 - Local Qwen and Gemma assistant models with tool access to the current RAG knowledge search, for conversational (not just snippet) answers
 
 **Privacy**
+
 - On-chain privacy (APS) for payment records and proofs
 
 **Payments & Chains**
+
 - Multi-stablecoin settlement, starting with EURC and other Circle-supported assets
 - Mainnet deployment on Arc, followed by additional chain support
 - Local currency payment terms (JPY, THB, USD, and others) with exchange rate fetched at settlement time
 
 **Security / Compliance**
+
 - Safe multisignature wallet support for company treasury and receivable funding
 - Security audit of ReceivableToken and ReceivableFactory contracts
 - KYC/KYB verification layer for companies, payees, and financial partners

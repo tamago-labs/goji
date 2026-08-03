@@ -13,6 +13,7 @@ Private P2P workspace for business payments that anchors cryptographic proof on 
 
 - **Live App:** https://goji.tamagolabs.com/
 - **Demo Video:** https://youtu.be/QaZRVty_ViE
+- **Presentation:** https://canva.link/7z2iw3keeii3uwc
 - **Architecture:** [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 Goji is a P2P payment origination layer built on Arc.
@@ -36,15 +37,15 @@ The result is fragmented payment history that's difficult to verify, expensive t
 
 ## What Goji Does
 
-Goji is a private payment workspace built on Arc where businesses, counterparties, and financial partners collaborate through cryptographic proof instead of fragmented paperwork.
+Goji is a stablecoin-native payment and treasury workspace built on Arc, where businesses coordinate USDC payments, approvals, proof anchoring, and receivable financing through a private P2P network.
 
 **Private Layer:** Payroll, contractor payments, invoices, vendor payments, documents, and approvals remain between authorized participants.
 
 **Verification Layer:** Every settlement automatically generates Merkle proofs, signatures, and audit records that can be independently verified without exposing sensitive business data.
 
-**Settlement Layer:** Settle USDC from supported chains through Circle Unified Balance while anchoring cryptographic proof on Arc to create a permanent, verifiable payment history.
+**Settlement Layer:** Settle USDC through Circle Unified Balance and Circle Gateway, while anchoring cryptographic payment proofs on Arc.
 
-**Financial Layer:** Verified payment history enables businesses to originate receivables and other real-world assets while connecting directly with financing, treasury, and credit partners.
+**Financial Layer:** Convert verified payment history into receivable assets that financial partners can evaluate and fund through programmable stablecoin workflows.
 
 ---
 
@@ -163,7 +164,21 @@ Each receivable has an ERC-20 token representing fractional ownership of the fin
 | Term options       | 30, 60, or 90 days | Configured at creation             |
 | Creation fee       | 1 USDC             | Paid by the company issuer         |
 
-Interest is calculated from the invested amount, the number of days funded, the receivable term, and the configured interest rate. The contract lifecycle is:
+Interest is distributed pro rata: investors who contribute more or fund earlier receive a larger share of the return.
+
+```text
+interest = investedAmount x daysFunded x interestRate
+           ----------------------------------------
+                 termDays x 10,000
+```
+
+The contract lifecycle is:
+
+```text
+Active -> Funded -> Redeemed
+   |        |
+Expired  Defaulted
+```
 
 ## Private Knowledge Base
 

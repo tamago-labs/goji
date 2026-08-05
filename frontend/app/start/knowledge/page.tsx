@@ -14,7 +14,7 @@ export default function KnowledgePage() {
   const [model, setModel] = useState<KnowledgeModelStatus | null>(null)
 
   useEffect(() => {
-    if (health?.role !== 'employer') return
+    if (health?.role !== 'company') return
     const handle = window.setTimeout(() => {
       knowledgeApi.model(apiUrl).then(setModel).catch(() => setModel(null))
     }, 0)
@@ -45,8 +45,8 @@ export default function KnowledgePage() {
         </div>
         <div className='flex flex-col items-end gap-1'>
           <span className='text-[10px] uppercase tracking-wider text-ink/30'>Workspace AI</span>
-          <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${health?.role === 'employer' ? (model?.status === 'ready' ? 'bg-mint/15 text-[#1B7A50]' : 'bg-amber-100 text-amber-700') : health?.peers ? 'bg-mint/15 text-[#1B7A50]' : 'bg-coral/10 text-coral'}`}>
-            {health?.role === 'employer' ? model?.status === 'ready' ? 'Model ready' : 'Model stopped' : health?.peers ? 'Available via P2P' : 'Host unavailable'}
+          <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${health?.role === 'company' ? (model?.status === 'ready' ? 'bg-mint/15 text-[#1B7A50]' : 'bg-amber-100 text-amber-700') : health?.peers ? 'bg-mint/15 text-[#1B7A50]' : 'bg-coral/10 text-coral'}`}>
+            {health?.role === 'company' ? model?.status === 'ready' ? 'Model ready' : 'Model stopped' : health?.peers ? 'Available via P2P' : 'Host unavailable'}
           </span>
         </div>
       </div>

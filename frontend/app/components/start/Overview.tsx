@@ -38,9 +38,8 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
   const [outgoingRoutes, setOutgoingRoutes] = useState<OutgoingRoute[]>([])
   const [loading, setLoading] = useState(true)
 
-  const isCompany = role === 'employer'
-  const isPayee = role === 'payee'
-  const isPayer = role === 'payer'
+  const isCompany = role === 'company'
+  const isCounterparty = role === 'counterparty'
   const isPartner = role === 'partner'
 
   useEffect(() => {
@@ -137,12 +136,12 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
     }
   ]
 
-  // Payee steps
-  const payeeSteps = [
+  // Counterparty steps
+  const counterpartySteps = [
     {
       done: stats.walletCount > 0,
       title: 'Register Wallet',
-      desc: 'Add your wallet address to receive payments.',
+      desc: 'Add your wallet address to send or receive payments.',
       action: stats.walletCount === 0 ? <span className='text-[10px] text-mint'>Register →</span> : null
     },
     {
@@ -169,23 +168,8 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
     }
   ]
 
-  // Payer steps
-  const payerSteps = [
-    {
-      done: stats.walletCount > 0,
-      title: 'Register Wallet',
-      desc: 'Add your wallet address to send payments.',
-      action: stats.walletCount === 0 ? <span className='text-[10px] text-mint'>Register →</span> : null
-    },
-    {
-      done: false,
-      title: 'View Invoices',
-      desc: 'Review and pay invoices from contractors and vendors.',
-      action: <Link href='/start/invoices' className='text-[10px] text-mint'>View →</Link>
-    }
-  ]
 
-  const steps = isCompany ? companySteps : isPayee ? payeeSteps : role === 'payer' ? payerSteps : partnerSteps
+  const steps = isCompany ? companySteps : isCounterparty ? counterpartySteps : partnerSteps
   const completed = steps.filter((s) => s.done).length
 
   return (
@@ -201,7 +185,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 mb-5'>
               <div className='flex items-center justify-between mb-3'>
                 <span className='text-sm font-medium text-ink'>
-                  {isCompany ? 'Getting Started' : isPayee ? 'Your Setup' : 'Quick Start'}
+                  {isCompany ? 'Getting Started' : isCounterparty ? 'Your Setup' : 'Quick Start'}
                 </span>
                 <span className='text-xs text-ink/40'>{completed}/{steps.length} done</span>
               </div>
@@ -262,7 +246,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                 </div>
               </>
             )}
-            {isPayee && (
+            {isCounterparty && (
               <>
                 <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
                   <div className='text-2xl font-semibold text-ink mb-1'>{stats.walletCount}</div>
@@ -275,22 +259,6 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                 <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
                   <div className='text-2xl font-semibold text-ink mb-1'>—</div>
                   <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Invoices</div>
-                </div>
-              </>
-            )}
-            {isPayer && (
-              <>
-                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
-                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.walletCount}</div>
-                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Wallets</div>
-                </div>
-                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
-                  <div className='text-2xl font-semibold text-ink mb-1'>—</div>
-                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Invoices</div>
-                </div>
-                <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-4 text-center'>
-                  <div className='text-2xl font-semibold text-ink mb-1'>{stats.settledCount}</div>
-                  <div className='text-[10px] text-ink/40 uppercase tracking-wider'>Payments</div>
                 </div>
               </>
             )}
@@ -313,8 +281,8 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
             </div>
           )}
 
-          {/* Outgoing Payments - Company and Payer */}
-          {(isCompany || isPayer) && outgoingRoutes.length > 0 && (
+          {/* Outgoing Payments - Company and Counterparty */}
+          {(isCompany || isCounterparty) && outgoingRoutes.length > 0 && (
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden mb-5'>
               <div className='px-6 py-3 border-b border-ink/8 flex items-center justify-between'>
                 <span className='text-xs text-ink/40 uppercase tracking-wider'>Outgoing Payments</span>
@@ -359,8 +327,8 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
             </div>
           )}
 
-          {/* Empty outgoing for company/payee */}
-          {(isCompany || isPayer) && outgoingRoutes.length === 0 && !loading && (
+          {/* Empty outgoing for company/counterparty */}
+          {(isCompany || isCounterparty) && outgoingRoutes.length === 0 && !loading && (
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6 mb-5 text-center'>
               <p className='text-ink/40 text-sm'>No outgoing payments yet</p>
               <p className='text-ink/30 text-xs mt-1'>Create a flow to send your first payment.</p>
@@ -404,8 +372,8 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
             </div>
           )}
 
-          {/* Quick Actions - Payee */}
-          {isPayee && (
+          {/* Quick Actions - Counterparty */}
+          {isCounterparty && (
             <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
               <h3 className='text-sm font-medium text-ink mb-4'>Quick Actions</h3>
               <div className='space-y-3'>
@@ -413,7 +381,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                   <Wallet className='w-5 h-5 text-ink/40' />
                   <div>
                     <div className='text-sm font-medium text-ink'>Register Wallet</div>
-                    <div className='text-xs text-ink/40'>Add your wallet to receive payments</div>
+                    <div className='text-xs text-ink/40'>Add your wallet to send or receive payments</div>
                   </div>
                 </Link>
                 <Link href='/start/payments' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
@@ -423,27 +391,11 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                     <div className='text-xs text-ink/40'>Access payslips, invoices, and records</div>
                   </div>
                 </Link>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Actions - Payer */}
-          {isPayer && (
-            <div className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] p-6'>
-              <h3 className='text-sm font-medium text-ink mb-4'>Quick Actions</h3>
-              <div className='space-y-3'>
-                <Link href='/start/wallets' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
-                  <Wallet className='w-5 h-5 text-ink/40' />
-                  <div>
-                    <div className='text-sm font-medium text-ink'>Register Wallet</div>
-                    <div className='text-xs text-ink/40'>Add your wallet to send payments</div>
-                  </div>
-                </Link>
                 <Link href='/start/invoices' className='flex items-center gap-3 p-3 rounded-xl bg-ink/3 hover:bg-ink/5 transition-colors'>
                   <FileText className='w-5 h-5 text-ink/40' />
                   <div>
                     <div className='text-sm font-medium text-ink'>View Invoices</div>
-                    <div className='text-xs text-ink/40'>Review and pay invoices</div>
+                    <div className='text-xs text-ink/40'>Review and manage invoices</div>
                   </div>
                 </Link>
               </div>

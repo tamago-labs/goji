@@ -413,7 +413,7 @@ class GojiRoom {
     const existing = await this.view.get('@goji/identity', { writerKey })
     if (!existing) return null
 
-    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
+    const validRoles = ['company', 'counterparty', 'compliance', 'partner', 'pending']
     if (!validRoles.includes(role)) return null
 
     const next = {
@@ -621,7 +621,7 @@ async function main() {
 
   // Check if identity already exists in view (guest may have been assigned a role)
   const existingIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-  const role = isGuest ? (existingIdentity?.role || 'pending') : 'employer'
+    const role = isGuest ? (existingIdentity?.role || 'pending') : 'company'
   await room.appendIdentity({ displayName: identityName, role })
 
   // Set up Keet identity for message signing
@@ -809,7 +809,7 @@ async function main() {
       }
     }
     
-    const role = identity?.role || (isGuest ? 'pending' : 'employer')
+    const role = identity?.role || (isGuest ? 'pending' : 'company')
     res.json({
       status: 'ok',
       name: identityName,
@@ -827,13 +827,14 @@ async function main() {
   app.get('/api/username', (req, res) => res.json({ name: identityName }))
 
   async function getCurrentRole() {
-    if (!isGuest) return 'employer'
+    if (!isGuest) return 'company'
     const identity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
     return identity?.role || 'pending'
   }
 
-  async function isEmployer() {
-    return !isGuest && (await getCurrentRole()) === 'employer'
+  async function isCompanyOrCompliance() {
+    const role = await getCurrentRole()
+    return !isGuest && (role === 'company' || role === 'compliance')
   }
 
   app.get('/api/knowledge/model', (_req, res) => {
@@ -841,7 +842,7 @@ async function main() {
   })
 
   app.post('/api/knowledge/model/load', async (_req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can manage the knowledge service' })
     try {
       await ragStore.ensureEmbeddingModel()
       res.json(ragStore.getModelStatus())
@@ -851,18 +852,18 @@ async function main() {
   })
 
   app.post('/api/knowledge/model/unload', async (_req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can manage the knowledge service' })
     await ragStore.unloadEmbeddingModel()
     res.json(ragStore.getModelStatus())
   })
 
   app.get('/api/knowledge/documents', async (_req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can list managed documents' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can list managed documents' })
     res.json(ragStore.listDocuments().map(({ qvacIds, ...document }) => document))
   })
 
   app.post('/api/knowledge/documents', async (req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can add documents' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can add documents' })
     const { name, content, source = 'text' } = req.body || {}
     if (!name?.trim() || !content?.trim()) return res.status(400).json({ error: 'name and content are required' })
     try {
@@ -875,7 +876,7 @@ async function main() {
   })
 
   app.post('/api/knowledge/url', async (req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can import websites' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can import websites' })
     const { url } = req.body || {}
     if (!url?.trim()) return res.status(400).json({ error: 'url is required' })
     const result = await ragStore.fetchUrlContent(url.trim())
@@ -884,7 +885,7 @@ async function main() {
   })
 
   app.delete('/api/knowledge/documents/:id', async (req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can delete documents' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can delete documents' })
     try {
       res.json(await ragStore.deleteDocument(req.params.id))
     } catch (error) {
@@ -898,7 +899,7 @@ async function main() {
     const { query, topK = 5 } = req.body || {}
     if (!query?.trim()) return res.status(400).json({ error: 'query is required' })
     try {
-      const results = (await isEmployer())
+      const results = (await isCompanyOrCompliance())
         ? (await ragStore.searchDocuments(query.trim(), topK)).results
         : await relayRagSearch(query.trim(), topK)
       res.json({ success: true, results })
@@ -1100,10 +1101,10 @@ async function main() {
   })
 
   app.get('/api/wallets/all', async (req, res) => {
-    // Only employer can list all wallets
+    // Only company or compliance can list all wallets
     const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-    if (!callerIdentity || callerIdentity.role !== 'employer') {
-      return res.status(403).json({ error: 'Only employer can list all wallets' })
+    if (!callerIdentity || (callerIdentity.role !== 'company' && callerIdentity.role !== 'compliance')) {
+      return res.status(403).json({ error: 'Only company administrators can list all wallets' })
     }
 
     const rows = await room.view.find('@goji/wallets', {}).toArray()
@@ -1471,10 +1472,10 @@ async function main() {
   })
 
   app.get('/api/members', async (req, res) => {
-    // Only employer can list members
+    // Only company or compliance can list members
     const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-    if (!callerIdentity || callerIdentity.role !== 'employer') {
-      return res.status(403).json({ error: 'Only employer can list members' })
+    if (!callerIdentity || (callerIdentity.role !== 'company' && callerIdentity.role !== 'compliance')) {
+      return res.status(403).json({ error: 'Only company administrators can list members' })
     }
 
     const identities = await room.getIdentities()
@@ -1482,10 +1483,10 @@ async function main() {
   })
 
   app.post('/api/members/assign', async (req, res) => {
-    // Only employer can assign roles
+    // Only company or compliance can assign roles
     const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-    if (!callerIdentity || callerIdentity.role !== 'employer') {
-      return res.status(403).json({ error: 'Only employer can assign roles' })
+    if (!callerIdentity || (callerIdentity.role !== 'company' && callerIdentity.role !== 'compliance')) {
+      return res.status(403).json({ error: 'Only company administrators can assign roles' })
     }
 
     const { writerKey, role } = req.body
@@ -1493,7 +1494,7 @@ async function main() {
       return res.status(400).json({ error: 'writerKey and role required' })
     }
 
-    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
+    const validRoles = ['company', 'counterparty', 'compliance', 'partner', 'pending']
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` })
     }

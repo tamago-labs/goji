@@ -14,22 +14,22 @@ import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileCheck,
 
 const NAV_ITEMS = [
   // All roles
-  { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['employer', 'payee', 'payer', 'partner'] },
+  { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['company', 'counterparty', 'compliance', 'partner'] },
   // Partner only
   { href: '/start/available-receivables', label: 'Available Receivables', icon: Package, roles: ['partner'] },
   // Company only
-  { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['employer'] },
-  // Company & Payer
-  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['employer', 'payee', 'payer'] },
-  { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['employer', 'payee', 'payer'] },
-  { href: '/start/invoices', label: 'Invoices', icon: FileCheck, roles: ['employer', 'payee', 'payer'] },
+  { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['company'] },
+  // Company & Counterparty
+  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['company', 'counterparty'] },
+  { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['company', 'counterparty'] },
+  { href: '/start/invoices', label: 'Invoices', icon: FileCheck, roles: ['company', 'counterparty'] },
   // All roles
-  { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['employer', 'payee', 'payer', 'partner'] },
-  { href: '/start/knowledge', label: 'Knowledge Base', icon: BookOpen, roles: ['employer', 'payee', 'payer', 'partner'] },
+  { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['company', 'counterparty', 'compliance', 'partner'] },
+  { href: '/start/knowledge', label: 'Knowledge Base', icon: BookOpen, roles: ['company', 'counterparty', 'compliance', 'partner'] },
   // Company only
-  { href: '/start/receivables', label: 'Receivables', icon: TrendingUp, roles: ['employer'] },
+  { href: '/start/receivables', label: 'Receivables', icon: TrendingUp, roles: ['company'] },
   // Admin
-  { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['employer'] },
+  { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['company'] },
 ]
 
 function StartLayoutInner({ children }: { children: React.ReactNode }) {
@@ -63,8 +63,8 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
         <div className='flex items-center gap-2'>
           {health && (
             <>
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'employer' ? 'bg-mint/15 text-[#1B7A50]' : health.role === 'payee' ? 'bg-blue-100 text-blue-700' : health.role === 'payer' ? 'bg-amber-100 text-amber-700' : health.role === 'partner' ? 'bg-violet/15 text-[#5A4FB8]' : 'bg-ink/10 text-ink/50'}`}>
-                {health.role === 'employer' ? 'COMPANY' : health.role === 'payee' ? 'PAYEE' : health.role === 'payer' ? 'PAYER' : health.role === 'partner' ? 'PARTNER' : 'PENDING'}
+              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'company' ? 'bg-mint/15 text-[#1B7A50]' : health.role === 'counterparty' ? 'bg-blue-100 text-blue-700' : health.role === 'compliance' ? 'bg-violet/15 text-[#5A4FB8]' : health.role === 'partner' ? 'bg-violet/15 text-[#5A4FB8]' : 'bg-ink/10 text-ink/50'}`}>
+                {health.role === 'company' ? 'COMPANY' : health.role === 'counterparty' ? 'COUNTERPARTY' : health.role === 'compliance' ? 'COMPLIANCE' : health.role === 'partner' ? 'PARTNER' : 'PENDING'}
               </span>
               <span className='text-[11px] text-ink/30'>{health.peers} peer{health.peers !== 1 ? 's' : ''}</span>
               <span className='w-px h-3 bg-ink/10' />
@@ -81,7 +81,7 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
                   )}
                 </AnimatePresence>
               </div>
-              {health.role === 'employer' && (
+              {(health.role === 'company' || health.role === 'compliance') && (
                 <div className='relative'>
                   <button onClick={() => setShowInvite(!showInvite)} className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors' title='Invite'>
                     <svg className='w-4 h-4 text-ink/40' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
@@ -164,11 +164,11 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
                   </svg>
                 </div>
                 <h2 className='font-display text-xl font-semibold text-ink mb-2'>Waiting for role assignment</h2>
-                <p className='text-ink/40 text-sm'>Your employer needs to assign you a role</p>
+                <p className='text-ink/40 text-sm'>Your company admin needs to assign you a role</p>
               </div>
 
               <div className='bg-ink/[0.03] rounded-xl p-5 mb-6'>
-                <p className='text-ink/50 text-sm font-medium mb-3'>Ask your employer to:</p>
+                <p className='text-ink/50 text-sm font-medium mb-3'>Ask your company admin to:</p>
                 <ol className='text-ink/60 text-sm space-y-2.5 list-decimal list-inside'>
                   <li>Go to <span className='font-medium'>Organization → Members</span></li>
                   <li>Find your name in the list</li>

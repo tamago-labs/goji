@@ -129,10 +129,10 @@ class Router {
         this._handler27 = handler
         break
       case '@goji/set-company-profile':
-        this._handler25 = handler
+        this._handler28 = handler
         break
       case '@goji/remove-company-profile':
-        this._handler26 = handler
+        this._handler29 = handler
         break
       default:
         throw DispatchError.NONEXISTENT_ROUTE(name)
@@ -169,8 +169,8 @@ class Router {
     assert(this._handler25 !== null, 'Missing handler for "@goji/add-knowledge-document"')
     assert(this._handler26 !== null, 'Missing handler for "@goji/rag-search"')
     assert(this._handler27 !== null, 'Missing handler for "@goji/rag-search-result"')
-    assert(this._handler25 !== null, 'Missing handler for "@goji/set-company-profile"')
-    assert(this._handler26 !== null, 'Missing handler for "@goji/remove-company-profile"')
+    assert(this._handler28 !== null, 'Missing handler for "@goji/set-company-profile"')
+    assert(this._handler29 !== null, 'Missing handler for "@goji/remove-company-profile"')
   }
 
   async dispatch (message, context) {
@@ -239,10 +239,10 @@ class Router {
         return this._handler26(op.value, context)
       case 27:
         return this._handler27(op.value, context)
-      case 25:
-        return this._handler25(op.value, context)
-      case 26:
-        return this._handler26(op.value, context)
+      case 28:
+        return this._handler28(op.value, context)
+      case 29:
+        return this._handler29(op.value, context)
       default:
         throw DispatchError.HANDLER_NOT_FOUND_BY_ID(op.id)
     }

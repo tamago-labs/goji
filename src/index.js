@@ -1305,6 +1305,7 @@ async function main() {
     const next = {
       ...existing,
       status,
+      subTier: status === 'approved' && req.body?.subTier ? Number(req.body.subTier) : existing.subTier,
       approvedBy: status === 'approved' || status === 'locked' ? room.localBase.key : null,
       approvedAt: status === 'approved' || status === 'locked' ? now : existing.approvedAt,
       lockedAt: status === 'locked' ? now : existing.lockedAt,

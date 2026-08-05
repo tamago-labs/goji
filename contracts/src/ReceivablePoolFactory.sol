@@ -33,4 +33,12 @@ contract ReceivablePoolFactory {
     function poolCount() external view returns (uint256) {
         return pools.length;
     }
+
+    function getPools() external view returns (address[] memory) {
+        return pools;
+    }
+
+    function getPoolsByManager(address manager) external view returns (address[] memory) {
+        return managers[manager];
+    }
 }

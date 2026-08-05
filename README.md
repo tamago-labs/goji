@@ -170,7 +170,7 @@ ComplianceRegistry is a company or pool-specific eligibility layer. It does not 
 ReceivableFactory creates and tracks receivable token contracts for company issuers.
 
 - Creates receivables with amount, interest rate, minimum investment, expiry, and proof hashes
-- `createReceivableWithCompliance(...)` optionally applies an identity registry and required tier
+- `createReceivableWithCompliance(...)` optionally applies an identity registry, required tier, and on-chain country allowlist
 - Charges a configurable flat creation fee of 1 USDC by default
 - Tracks receivables and total value by issuer
 - Allows the administrator to configure the treasury and withdraw platform fees
@@ -186,6 +186,7 @@ Each receivable has an ERC-20 token representing fractional ownership of the fin
 - The company repays principal plus interest at expiry
 - Token holders redeem their share after repayment
 - Repayment is restricted to the receivable issuer
+- Financing checks the investor's valid Identity Pass, registry tier, and allowed country when a compliance policy is configured
 
 ### ReceivablePool
 
@@ -288,10 +289,10 @@ The frontend runs on port `3000` and connects to `http://localhost:3001` by defa
 | Contract              | Address                                      |
 | --------------------- | -------------------------------------------- |
 | GojiProof             | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
-| ReceivableFactory     | `0x9CE5e02F96ef27bc894366AB360DD7f8545d5708` |
+| ReceivableFactory     | `0x53F71eC10939d4aD243903B496E403B3C27784Ae` |
 | SoulboundIdentityPass | `0x9829724359A49c36B53deB1e059c14d3C2eA5458` |
 | ComplianceRegistry    | `0x31289306250CeB6dC5Bb78A32AC2393Dab250b22` |
-| ReceivablePoolFactory | `0xB492cb1C7bf4a199954c06b9640DF3936Af8e782` |
+| ReceivablePoolFactory | `0xc4d91B769f0bD8aF2BF7F02862Cd233e62C139d4` |
 
 - Chain: Arc Testnet, chain ID `5042002`
 - Receivable creation fee: 1 USDC, configurable by the administrator
@@ -304,8 +305,26 @@ SoulboundIdentityPass
         ↓
 ComplianceRegistry
         ↓
+ReceivableFactory
+        ↓
 ReceivablePoolFactory
 ```
+
+Configure the wallet that will approve identities on-chain. This transaction must be sent by the `ComplianceRegistry` owner:
+
+```bash
+cd contracts
+forge script script/8-ConfigureComplianceReviewer.s.sol \
+  --rpc-url $RPC_URL \
+  --broadcast
+```
+
+Required environment variables:
+
+- `PRIVATE_KEY`: ComplianceRegistry owner key
+- `REGISTRY_ADDRESS`: deployed ComplianceRegistry address
+- `REVIEWER_ADDRESS`: wallet used by the Identity Review page
+- `REVIEWER_ENABLED`: `true` to grant access, `false` to revoke it
 
 ## Roadmap
 

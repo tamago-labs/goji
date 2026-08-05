@@ -93,7 +93,8 @@ contract ReceivableFactory {
         uint256 expiresAt,
         bytes32[] memory proofs,
         address complianceRegistry,
-        uint8 requiredTier
+        uint8 requiredTier,
+        bytes2[] memory allowedCountries
     ) external payable returns (address) {
         require(amount > 0, "Zero amount");
         require(proofs.length > 0, "No proofs");
@@ -109,7 +110,7 @@ contract ReceivableFactory {
             proofs,
             msg.sender
         );
-        token.setCompliancePolicy(complianceRegistry, requiredTier);
+        token.setCompliancePolicy(complianceRegistry, requiredTier, allowedCountries);
 
         address tokenAddress = address(token);
         issuers[msg.sender].push(tokenAddress);

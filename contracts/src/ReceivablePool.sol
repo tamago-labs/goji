@@ -13,9 +13,12 @@ contract ReceivablePool is ERC20, Ownable {
     uint8 public immutable requiredComplianceTier;
     bool public depositsOpen = true;
     bool public redemptionsOpen;
+    uint256 public targetApyBps;
+    string public poolMetadata;
 
     address[] public receivables;
     mapping(address => bool) public isReceivable;
+    mapping(address => bool) public financedReceivables;
     mapping(bytes2 => bool) public allowedCountries;
 
     event Deposited(address indexed investor, uint256 amount, uint256 shares);
@@ -24,6 +27,8 @@ contract ReceivablePool is ERC20, Ownable {
     event DepositsClosed();
     event RedemptionsOpened();
     event CountryPolicyUpdated(bytes2 indexed countryCode, bool allowed);
+    event ReceivableRemoved(address indexed receivable);
+    event PoolPolicyUpdated(uint256 targetApyBps, string metadata);
 
     constructor(
         string memory name_,
@@ -59,8 +64,23 @@ contract ReceivablePool is ERC20, Ownable {
         emit ReceivableAdded(receivable);
     }
 
+    function removeReceivable(address receivable) external onlyOwner {
+        require(isReceivable[receivable], "Receivable not added");
+        require(!financedReceivables[receivable], "Receivable already financed");
+        isReceivable[receivable] = false;
+        for (uint256 i = 0; i < receivables.length; i++) {
+            if (receivables[i] == receivable) {
+                receivables[i] = receivables[receivables.length - 1];
+                receivables.pop();
+                break;
+            }
+        }
+        emit ReceivableRemoved(receivable);
+    }
+
     function financeReceivable(address receivable, uint256 amount) external onlyOwner {
         require(isReceivable[receivable], "Receivable not added");
+        financedReceivables[receivable] = true;
         ReceivableToken(receivable).finance{value: amount}();
     }
 
@@ -84,6 +104,17 @@ contract ReceivablePool is ERC20, Ownable {
         require(countryCode != bytes2(0), "Country required");
         allowedCountries[countryCode] = allowed;
         emit CountryPolicyUpdated(countryCode, allowed);
+    }
+
+    function setPoolPolicy(uint256 newTargetApyBps, string calldata metadata) external onlyOwner {
+        require(newTargetApyBps <= 5000, "APY too high");
+        targetApyBps = newTargetApyBps;
+        poolMetadata = metadata;
+        emit PoolPolicyUpdated(targetApyBps, metadata);
+    }
+
+    function getReceivables() external view returns (address[] memory) {
+        return receivables;
     }
 
     function isCountryAllowed(bytes2 countryCode) external view returns (bool) {

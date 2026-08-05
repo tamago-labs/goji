@@ -19,7 +19,7 @@ contract ReceivableToken is ERC20, Ownable {
     event ReceivableFunded(address indexed investor, uint256 amount, uint256 tokens);
     event RepaymentClaimed(address indexed company, uint256 amount);
     event Redeemed(address indexed investor, uint256 amount);
-    event CompliancePolicyUpdated(address indexed registry, uint8 requiredTier);
+    event CompliancePolicyUpdated(address indexed registry, uint8 requiredTier, bytes2[] allowedCountries);
 
     // ──────────────────────────── Enums ─────────────────────────────────
     enum Status { Active, Funded, Expired, Redeemed, Defaulted }
@@ -38,6 +38,7 @@ contract ReceivableToken is ERC20, Ownable {
     uint256 public expiresAt;
     address public complianceRegistry;
     uint8 public requiredComplianceTier;
+    bytes2[] public allowedCountries;
 
     // Funding
     uint256 public fundedAmount;
@@ -90,6 +91,9 @@ contract ReceivableToken is ERC20, Ownable {
         require(fundedAmount + msg.value <= totalReceivable, "Exceeds total");
         if (complianceRegistry != address(0)) {
             require(IComplianceRegistry(complianceRegistry).isEligible(msg.sender, requiredComplianceTier), "Identity not eligible");
+            if (allowedCountries.length > 0) {
+                require(isCountryAllowed(IComplianceRegistry(complianceRegistry).countryOf(msg.sender)), "Country not eligible");
+            }
         }
 
         uint256 tokens = (msg.value * maxSupply) / totalReceivable;
@@ -114,10 +118,27 @@ contract ReceivableToken is ERC20, Ownable {
 
     /// @notice Set optional identity eligibility requirements for investors.
     /// @dev The factory is the owner for factory-created receivables.
-    function setCompliancePolicy(address registry, uint8 tier) external onlyOwner {
+    function setCompliancePolicy(address registry, uint8 tier, bytes2[] memory countries) external onlyOwner {
         complianceRegistry = registry;
         requiredComplianceTier = tier;
-        emit CompliancePolicyUpdated(registry, tier);
+        delete allowedCountries;
+        for (uint256 i = 0; i < countries.length; i++) {
+            require(countries[i] != bytes2(0), "Invalid country");
+            allowedCountries.push(countries[i]);
+        }
+        emit CompliancePolicyUpdated(registry, tier, countries);
+    }
+
+    function getAllowedCountries() external view returns (bytes2[] memory) {
+        return allowedCountries;
+    }
+
+    function isCountryAllowed(bytes2 countryCode) public view returns (bool) {
+        if (allowedCountries.length == 0) return true;
+        for (uint256 i = 0; i < allowedCountries.length; i++) {
+            if (allowedCountries[i] == countryCode) return true;
+        }
+        return false;
     }
 
     /// @notice Company claims repayment (deposits principal + pro-rata interest)

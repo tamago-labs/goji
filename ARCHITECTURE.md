@@ -121,7 +121,7 @@ contract GojiProof {
 
 ### ReceivableFactory
 
-**Address:** `0x9CE5e02F96ef27bc894366AB360DD7f8545d5708`
+**Address:** `0x53F71eC10939d4aD243903B496E403B3C27784Ae`
 
 Creates and tracks receivable tokens. Collects platform fees.
 
@@ -150,7 +150,8 @@ contract ReceivableFactory {
         uint256 expiresAt,
         bytes32[] memory proofs,
         address complianceRegistry,
-        uint8 requiredTier
+        uint8 requiredTier,
+        bytes2[] memory allowedCountries
     ) external payable returns (address);
 
     function getReceivables(address issuer) external view returns (address[]);
@@ -175,6 +176,9 @@ contract ReceivableToken is ERC20, Ownable {
     uint256 public minInvestment;
     uint256 public maxSupply;        // 1,000,000 * 1e6
     uint256 public expiresAt;
+    address public complianceRegistry;
+    uint8 public requiredComplianceTier;
+    bytes2[] public allowedCountries; // Empty means unrestricted
 
     uint256 public fundedAmount;
     uint256 public totalRedeemable;
@@ -186,6 +190,8 @@ contract ReceivableToken is ERC20, Ownable {
     Status public status;
 
     function finance() external payable;
+    function getAllowedCountries() external view returns (bytes2[] memory);
+    function isCountryAllowed(bytes2 countryCode) public view returns (bool);
     function claimRepayment() external payable;
     function redeem() external;
 
@@ -207,13 +213,15 @@ One non-transferable ERC-721 identity pass is minted per wallet. The pass expose
 
 Company or compliance reviewers approve identity passes with a tier, expiry, and ISO country code. This registry is policy-specific; it does not modify the global identity pass. Pools can use the registry and apply an allowlist of multiple countries.
 
+The wallet used by the Identity Review page must be configured with `setReviewer(reviewer, true)` by the registry owner before it can approve identities on-chain. Use `script/8-ConfigureComplianceReviewer.s.sol` for this configuration.
+
 ### ReceivablePool
 
 Pools aggregate receivable positions for financial partners. Pool investors deposit native USDC and receive ERC-20 pool shares. The pool can finance multiple receivables, redeem those positions after repayment, and open investor redemptions explicitly.
 
 ### ReceivablePoolFactory
 
-**Address:** `0xB492cb1C7bf4a199954c06b9640DF3936Af8e782`
+**Address:** `0xc4d91B769f0bD8aF2BF7F02862Cd233e62C139d4`
 
 Creates pools owned by the financial partner that created them. Each pool can configure a compliance registry, minimum tier, and multiple allowed country codes.
 

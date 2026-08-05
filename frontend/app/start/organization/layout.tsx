@@ -2,9 +2,10 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Bot, FileText } from 'lucide-react'
+import { Users, Bot, FileText, Building } from 'lucide-react'
 
 const ORG_ITEMS = [
+  { href: '/start/organization/profile', label: 'Company Profile', icon: Building },
   { href: '/start/organization/members', label: 'Members', icon: Users },
   { href: '/start/organization/templates', label: 'Templates', icon: FileText },
   { href: '/start/organization/ai-assistant', label: 'AI Assistant', icon: Bot },

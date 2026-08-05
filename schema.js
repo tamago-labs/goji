@@ -241,6 +241,31 @@ schema.register({
 })
 
 schema.register({
+  name: 'company-profile',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'legalName', type: 'string', required: true },
+    { name: 'tradingName', type: 'string' },
+    { name: 'country', type: 'string' },
+    { name: 'entityType', type: 'string' },
+    { name: 'registrationNumber', type: 'string' },
+    { name: 'taxId', type: 'string' },
+    { name: 'localCurrency', type: 'string' },
+    { name: 'fiscalYearStart', type: 'string' },
+    { name: 'contactEmail', type: 'string' },
+    { name: 'contactPhone', type: 'string' },
+    { name: 'address', type: 'string' },
+    { name: 'description', type: 'string' },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'company-profile-remove',
+  fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
+schema.register({
   name: 'knowledge-document',
   fields: [
     { name: 'id', type: 'string', required: true },
@@ -290,6 +315,7 @@ db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] }
 db.collections.register({ name: 'flowStatuses', schema: '@goji/flow-status', key: ['id'] })
 db.collections.register({ name: 'templates', schema: '@goji/template', key: ['id'] })
 db.collections.register({ name: 'receivables', schema: '@goji/receivable', key: ['id'] })
+db.collections.register({ name: 'companyProfiles', schema: '@goji/company-profile', key: ['id'] })
 db.collections.register({ name: 'knowledgeDocuments', schema: '@goji/knowledge-document', key: ['id'] })
 db.collections.register({ name: 'ragSearches', schema: '@goji/rag-search', key: ['requestId'] })
 db.collections.register({ name: 'ragSearchResults', schema: '@goji/rag-search-result', key: ['requestId'] })
@@ -324,6 +350,8 @@ dispatch.register({ name: 'remove-template', requestType: '@goji/template-remove
 dispatch.register({ name: 'add-receivable', requestType: '@goji/receivable' })
 dispatch.register({ name: 'update-receivable', requestType: '@goji/receivable' })
 dispatch.register({ name: 'remove-receivable', requestType: '@goji/receivable-remove' })
+dispatch.register({ name: 'set-company-profile', requestType: '@goji/company-profile' })
+dispatch.register({ name: 'remove-company-profile', requestType: '@goji/company-profile-remove' })
 dispatch.register({ name: 'add-knowledge-document', requestType: '@goji/knowledge-document' })
 dispatch.register({ name: 'rag-search', requestType: '@goji/rag-search' })
 dispatch.register({ name: 'rag-search-result', requestType: '@goji/rag-search-result' })

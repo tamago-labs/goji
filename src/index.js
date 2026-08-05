@@ -268,6 +268,17 @@ class GojiRoom {
     this.router.add('@goji/remove-receivable', async (data, ctx) => {
       await ctx.view.delete('@goji/receivables', { id: data.id })
     })
+    this.router.add('@goji/set-company-profile', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/companyProfiles', { id: data.id })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/companyProfiles', { id: data.id }, () => data)
+      } else {
+        await ctx.view.insert('@goji/companyProfiles', data)
+      }
+    })
+    this.router.add('@goji/remove-company-profile', async (data, ctx) => {
+      await ctx.view.delete('@goji/companyProfiles', { id: data.id })
+    })
     this.router.add('@goji/add-knowledge-document', async (data, ctx) => {
       const existing = await ctx.view.get('@goji/knowledgeDocuments', { id: data.id })
       if (!existing) await ctx.view.insert('@goji/knowledgeDocuments', data)
@@ -1447,6 +1458,68 @@ async function main() {
     await room.base.append(GojiDispatch.encode('@goji/remove-receivable', { id }))
     wsBroadcast({ type: 'receivable:deleted', id: req.params.id })
     res.json({ ok: true })
+  })
+
+  // ── Company Profile ──────────────────────────────────────
+
+  app.get('/api/company-profile', async (req, res) => {
+    const rows = await room.view.find('@goji/companyProfiles', {}).toArray()
+    if (rows.length === 0) return res.json(null)
+    const r = rows[0]
+    res.json({
+      id: b4a.toString(r.id, 'hex'),
+      legalName: r.legalName || '',
+      tradingName: r.tradingName || '',
+      country: r.country || '',
+      entityType: r.entityType || '',
+      registrationNumber: r.registrationNumber || '',
+      taxId: r.taxId || '',
+      localCurrency: r.localCurrency || '',
+      fiscalYearStart: r.fiscalYearStart || '',
+      contactEmail: r.contactEmail || '',
+      contactPhone: r.contactPhone || '',
+      address: r.address || '',
+      description: r.description || '',
+      updatedAt: r.updatedAt
+    })
+  })
+
+  app.post('/api/company-profile', async (req, res) => {
+    const { legalName, tradingName, country, entityType, registrationNumber, taxId, localCurrency, fiscalYearStart, contactEmail, contactPhone, address, description } = req.body
+    if (!legalName) return res.status(400).json({ error: 'legalName is required' })
+
+    const now = Date.now()
+    const id = require('crypto').randomBytes(16).toString('hex')
+    const profile = {
+      id: b4a.from(id, 'hex'),
+      legalName,
+      tradingName: tradingName || '',
+      country: country || '',
+      entityType: entityType || '',
+      registrationNumber: registrationNumber || '',
+      taxId: taxId || '',
+      localCurrency: localCurrency || '',
+      fiscalYearStart: fiscalYearStart || '',
+      contactEmail: contactEmail || '',
+      contactPhone: contactPhone || '',
+      address: address || '',
+      description: description || '',
+      updatedAt: now
+    }
+
+    // Check if profile already exists
+    const existing = await room.view.find('@goji/companyProfiles', {}).toArray()
+    if (existing.length > 0) {
+      // Update existing
+      const existingProfile = { ...existing[0], ...profile, id: existing[0].id }
+      await room.base.append(GojiDispatch.encode('@goji/set-company-profile', existingProfile))
+    } else {
+      // Create new
+      await room.base.append(GojiDispatch.encode('@goji/set-company-profile', profile))
+    }
+
+    wsBroadcast({ type: 'company-profile:updated', profile: { ...profile, id } })
+    res.json({ ok: true, id })
   })
 
   app.get('/api/peers', async (req, res) => {

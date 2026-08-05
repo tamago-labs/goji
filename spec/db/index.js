@@ -4,7 +4,7 @@
 const { IndexEncoder, c, b4a } = require('hyperdb/runtime')
 const { version, getEncoding, setVersion } = require('./messages.js')
 
-const versions = { schema: version, db: 3 }
+const versions = { schema: version, db: 4 }
 
 // '@goji/boards' collection key
 const collection0_key = new IndexEncoder([
@@ -877,6 +877,73 @@ const collection12 = {
   decodedVersion: 0
 }
 
+// '@goji/companyProfiles' collection key
+const collection13_key = new IndexEncoder([
+  IndexEncoder.BUFFER
+], { prefix: 13 })
+
+function collection13_indexify (record) {
+  const a = record.id
+  return a === undefined ? [] : [a]
+}
+
+// '@goji/companyProfiles' value encoding
+const collection13_enc = getEncoding('@goji/company-profile/hyperdb#13')
+
+// '@goji/companyProfiles' reconstruction function
+function collection13_reconstruct (schemaVersion, keyBuf, valueBuf) {
+  const key = collection13_key.decode(keyBuf)
+  setVersion(schemaVersion)
+  const state = { start: 0, end: valueBuf.byteLength, buffer: valueBuf }
+  const type = c.uint.decode(state)
+  if (type !== 0) throw new Error('Unknown collection type: ' + type)
+  collection13.decodedVersion = c.uint.decode(state)
+  const record = collection13_enc.decode(state)
+  record.id = key[0]
+  return record
+}
+// '@goji/companyProfiles' key reconstruction function
+function collection13_reconstruct_key (keyBuf) {
+  const key = collection13_key.decode(keyBuf)
+  return {
+    id: key[0]
+  }
+}
+
+// '@goji/companyProfiles'
+const collection13 = {
+  name: '@goji/companyProfiles',
+  id: 13,
+  version: 4,
+  encodeKey (record) {
+    const key = [record.id]
+    return collection13_key.encode(key)
+  },
+  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
+    return collection13_key.encodeRange({
+      gt: gt ? collection13_indexify(gt) : null,
+      lt: lt ? collection13_indexify(lt) : null,
+      gte: gte ? collection13_indexify(gte) : null,
+      lte: lte ? collection13_indexify(lte) : null
+    })
+  },
+  encodeValue (schemaVersion, collectionVersion, record) {
+    setVersion(schemaVersion)
+    const state = { start: 0, end: 2, buffer: null }
+    collection13_enc.preencode(state, record)
+    state.buffer = b4a.allocUnsafe(state.end)
+    state.buffer[state.start++] = 0
+    state.buffer[state.start++] = collectionVersion
+    collection13_enc.encode(state, record)
+    return state.buffer
+  },
+  trigger: null,
+  reconstruct: collection13_reconstruct,
+  reconstructKey: collection13_reconstruct_key,
+  indexes: [],
+  decodedVersion: 0
+}
+
 const collections = [
   collection0,
   collection1,
@@ -890,7 +957,8 @@ const collections = [
   collection9,
   collection10,
   collection11,
-  collection12
+  collection12,
+  collection13
 ]
 
 const indexes = [
@@ -913,6 +981,7 @@ function resolveCollection (name) {
     case '@goji/knowledgeDocuments': return collection10
     case '@goji/ragSearches': return collection11
     case '@goji/ragSearchResults': return collection12
+    case '@goji/companyProfiles': return collection13
     default: return null
   }
 }

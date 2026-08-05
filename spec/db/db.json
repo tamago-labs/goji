@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "offset": 0,
   "schema": [
     {
@@ -194,6 +194,21 @@
       "derived": false,
       "key": [
         "requestId"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "companyProfiles",
+      "namespace": "goji",
+      "id": 13,
+      "type": 1,
+      "version": 4,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/company-profile",
+      "derived": false,
+      "key": [
+        "id"
       ],
       "trigger": null
     }

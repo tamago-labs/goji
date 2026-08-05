@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "offset": 0,
   "schema": [
     {
@@ -169,6 +169,18 @@
       "name": "@goji/rag-search-result",
       "requestType": "@goji/rag-search-result",
       "version": 3
+    },
+    {
+      "id": 25,
+      "name": "@goji/set-company-profile",
+      "requestType": "@goji/company-profile",
+      "version": 4
+    },
+    {
+      "id": 26,
+      "name": "@goji/remove-company-profile",
+      "requestType": "@goji/company-profile-remove",
+      "version": 4
     }
   ]
 }

@@ -36,8 +36,10 @@ class Router {
     this._handler25 = null
     this._handler26 = null
     this._handler27 = null
+    this._handler25 = null
+    this._handler26 = null
 
-    this._missing = 28
+    this._missing = 30
   }
 
   add (name, handler) {
@@ -126,6 +128,12 @@ class Router {
       case '@goji/rag-search-result':
         this._handler27 = handler
         break
+      case '@goji/set-company-profile':
+        this._handler25 = handler
+        break
+      case '@goji/remove-company-profile':
+        this._handler26 = handler
+        break
       default:
         throw DispatchError.NONEXISTENT_ROUTE(name)
     }
@@ -161,6 +169,8 @@ class Router {
     assert(this._handler25 !== null, 'Missing handler for "@goji/add-knowledge-document"')
     assert(this._handler26 !== null, 'Missing handler for "@goji/rag-search"')
     assert(this._handler27 !== null, 'Missing handler for "@goji/rag-search-result"')
+    assert(this._handler25 !== null, 'Missing handler for "@goji/set-company-profile"')
+    assert(this._handler26 !== null, 'Missing handler for "@goji/remove-company-profile"')
   }
 
   async dispatch (message, context) {
@@ -229,6 +239,10 @@ class Router {
         return this._handler26(op.value, context)
       case 27:
         return this._handler27(op.value, context)
+      case 25:
+        return this._handler25(op.value, context)
+      case 26:
+        return this._handler26(op.value, context)
       default:
         throw DispatchError.HANDLER_NOT_FOUND_BY_ID(op.id)
     }
@@ -430,6 +444,18 @@ const route27 = {
   enc: getEncoding('@goji/rag-search-result')
 }
 
+const route25 = {
+  name: '@goji/set-company-profile',
+  id: 25,
+  enc: getEncoding('@goji/company-profile')
+}
+
+const route26 = {
+  name: '@goji/remove-company-profile',
+  id: 26,
+  enc: getEncoding('@goji/company-profile-remove')
+}
+
 function getRouteByName (name) {
   switch (name) {
     case '@goji/add-writer':
@@ -488,6 +514,10 @@ function getRouteByName (name) {
       return route26
     case '@goji/rag-search-result':
       return route27
+    case '@goji/set-company-profile':
+      return route25
+    case '@goji/remove-company-profile':
+      return route26
     default:
       throw DispatchError.ROUTE_NOT_FOUND_BY_NAME(name)
   }
@@ -551,6 +581,10 @@ function getRouteById (id) {
       return route26
     case 27:
       return route27
+    case 25:
+      return route25
+    case 26:
+      return route26
     default:
       throw DispatchError.HANDLER_NOT_FOUND_BY_ID(id)
   }

@@ -158,8 +158,8 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
     const html = renderTemplate(templateHtml, {
       company: 'Company',
       amount: row.amount || '0',
-      sender: row.counterpartyName,
-      recipient: row.counterpartyName,
+      sender: row.direction === 'outgoing' ? 'Company' : row.counterpartyName,
+      recipient: row.direction === 'outgoing' ? row.counterpartyName : 'Company',
       date: new Date().toLocaleDateString(),
       txHash: row.txHash || 'Pending...',
       ...customFields

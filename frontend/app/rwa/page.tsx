@@ -6,6 +6,7 @@ import { Search, Loader2, ExternalLink, Package } from 'lucide-react'
 import { usePublicClient } from 'wagmi'
 import { RECEIVABLE_FACTORY_ABI, RECEIVABLE_FACTORY_ADDRESS } from '../../lib/receivableFactory'
 import { RECEIVABLE_TOKEN_ABI, getTokenStatusLabel, getTokenStatusColor } from '../../lib/receivableToken'
+import { RECEIVABLE_POOL_ABI, RECEIVABLE_POOL_FACTORY_ABI, RECEIVABLE_POOL_FACTORY_ADDRESS } from '../../lib/receivablePool'
 
 interface TokenData {
   address: string
@@ -20,6 +21,8 @@ interface TokenData {
   issuer: string
 }
 
+interface PoolData { address: string; name: string; symbol: string; owner: string; targetApyBps: bigint; requiredTier: number; depositsOpen: boolean; redemptionsOpen: boolean; receivableCount: bigint }
+
 export default function RWAPage() {
   const publicClient = usePublicClient()
   const [tokens, setTokens] = useState<TokenData[]>([])
@@ -27,6 +30,7 @@ export default function RWAPage() {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [pools, setPools] = useState<PoolData[]>([])
 
   useEffect(() => {
     if (!publicClient) return
@@ -100,6 +104,32 @@ export default function RWAPage() {
     load()
   }, [publicClient])
 
+  useEffect(() => {
+    if (!publicClient) return
+    async function loadPools() {
+      try {
+        const addresses = await publicClient.readContract({ address: RECEIVABLE_POOL_FACTORY_ADDRESS, abi: RECEIVABLE_POOL_FACTORY_ABI, functionName: 'getPools' }) as string[]
+        const data: PoolData[] = []
+        for (const address of addresses) {
+          const pool = address as `0x${string}`
+          const [name, symbol, owner, targetApyBps, requiredTier, depositsOpen, redemptionsOpen, receivableCount] = await Promise.all([
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'name' }),
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'symbol' }),
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'owner' }),
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'targetApyBps' }),
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'requiredComplianceTier' }),
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'depositsOpen' }),
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'redemptionsOpen' }),
+            publicClient.readContract({ address: pool, abi: RECEIVABLE_POOL_ABI, functionName: 'receivableCount' })
+          ])
+          data.push({ address, name: String(name), symbol: String(symbol), owner: String(owner), targetApyBps: targetApyBps as bigint, requiredTier: Number(requiredTier), depositsOpen: Boolean(depositsOpen), redemptionsOpen: Boolean(redemptionsOpen), receivableCount: receivableCount as bigint })
+        }
+        setPools(data)
+      } catch (error) { console.error('Failed to load pools:', error) }
+    }
+    void loadPools()
+  }, [publicClient])
+
   const formatAmount = (amount: bigint) => {
     return `${(Number(amount) / 1e18).toLocaleString()} USDC`
   }
@@ -135,6 +165,11 @@ export default function RWAPage() {
         <p className='text-ink/50 max-w-2xl'>
           Browse real-world assets verified on Arc. Each asset has cryptographic proof of payment history.
         </p>
+      </div>
+
+      <div className='mb-8 rounded-2xl bg-card shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden'>
+        <div className='border-b border-ink/8 px-6 py-4'><h2 className='font-display text-lg font-semibold'>Receivable Pools</h2><p className='mt-1 text-xs text-ink/40'>Financial partner pools available for on-chain investment.</p></div>
+        {pools.length === 0 ? <div className='px-6 py-5 text-xs text-ink/35'>No pools available yet.</div> : <table className='w-full text-sm'><thead><tr className='border-b border-ink/5 text-left'><th className='px-6 py-3 text-[10px] uppercase tracking-wider text-ink/40'>Pool</th><th className='px-6 py-3 text-[10px] uppercase tracking-wider text-ink/40'>Target APY</th><th className='px-6 py-3 text-[10px] uppercase tracking-wider text-ink/40'>Identity Tier</th><th className='px-6 py-3 text-[10px] uppercase tracking-wider text-ink/40'>Assets</th><th /></tr></thead><tbody>{pools.map((pool) => <tr key={pool.address} className='border-b border-ink/5 last:border-0'><td className='px-6 py-4'><p className='font-medium text-ink'>{pool.name}</p><p className='font-mono text-[10px] text-ink/35'>{pool.address.slice(0, 8)}...{pool.address.slice(-6)}</p></td><td className='px-6 py-4 text-xs text-ink/60'>{Number(pool.targetApyBps) / 100}%</td><td className='px-6 py-4 text-xs text-ink/60'>{pool.requiredTier ? `Tier ${pool.requiredTier}` : 'Open'}</td><td className='px-6 py-4 text-xs text-ink/60'>{String(pool.receivableCount)}</td><td className='px-6 py-4 text-right'><Link href={`/rwa/pools/${pool.address}`} className='text-xs font-medium text-mint hover:text-[#1B7A50]'>View pool</Link></td></tr>)}</tbody></table>}
       </div>
 
       {/* Table */}

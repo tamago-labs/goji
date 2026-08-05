@@ -10,17 +10,18 @@ import UserMenuPopover from '../components/start/UserMenuPopover'
 import UsernameModal from '../components/start/UsernameModal'
 import DepositSpendModal from '../components/start/DepositSpendModal'
 import { StartProvider, useStart } from '../components/start/StartProvider'
-import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileCheck, Settings, TrendingUp, Package, BookOpen } from 'lucide-react'
+import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileCheck, Settings, TrendingUp, Package, BookOpen, Layers3 } from 'lucide-react'
 
 const NAV_ITEMS = [
   // All roles
   { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['company', 'counterparty', 'compliance', 'partner'] },
   // Partner only
   { href: '/start/available-receivables', label: 'Available Receivables', icon: Package, roles: ['partner'] },
+  { href: '/start/pools', label: 'Your Pools', icon: Layers3, roles: ['partner'] },
   // Company only
   { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['company'] },
   // Company & Counterparty
-  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['company', 'counterparty'] },
+  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['company', 'counterparty', 'partner'] },
   { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['company', 'counterparty'] },
   { href: '/start/invoices', label: 'Invoices', icon: FileCheck, roles: ['company', 'counterparty'] },
   // All roles

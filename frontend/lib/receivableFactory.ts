@@ -10,6 +10,24 @@ export const RECEIVABLE_FACTORY_ABI = [
   },
   {
     "type": "function",
+    "name": "createReceivableWithCompliance",
+    "inputs": [
+      { "name": "name", "type": "string" },
+      { "name": "receivableType", "type": "string" },
+      { "name": "amount", "type": "uint256" },
+      { "name": "interestRate", "type": "uint256" },
+      { "name": "minInvestment", "type": "uint256" },
+      { "name": "expiresAt", "type": "uint256" },
+      { "name": "proofs", "type": "bytes32[]" },
+      { "name": "complianceRegistry", "type": "address" },
+      { "name": "requiredTier", "type": "uint8" },
+      { "name": "allowedCountries", "type": "bytes2[]" }
+    ],
+    "outputs": [{ "name": "", "type": "address" }],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
     "name": "createReceivable",
     "inputs": [
       { "name": "name", "type": "string" },
@@ -177,4 +195,4 @@ export const RECEIVABLE_FACTORY_ABI = [
   }
 ] as const
 
-export const RECEIVABLE_FACTORY_ADDRESS = '0x5646647B48b5458D8352764F1b697195454D52Bf'
+export const RECEIVABLE_FACTORY_ADDRESS = '0x53F71eC10939d4aD243903B496E403B3C27784Ae'

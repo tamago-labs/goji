@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Package, Search, Loader2 } from 'lucide-react'
 import { useStart } from '../../components/start/StartProvider'
+import ReceivableDetail from '../../components/start/ReceivableDetail'
+import { useSearchParams } from 'next/navigation'
 
 interface Receivable {
   id: string
@@ -26,6 +28,8 @@ interface Receivable {
 
 export default function AvailableReceivablesPage() {
   const { apiUrl } = useStart()
+  const searchParams = useSearchParams()
+  const tokenAddress = searchParams.get('token')
   const [receivables, setReceivables] = useState<Receivable[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -60,6 +64,8 @@ export default function AvailableReceivablesPage() {
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
+
+  if (tokenAddress) return <ReceivableDetail address={tokenAddress} mode='partner' />
 
   return (
     <div>

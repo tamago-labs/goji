@@ -95,12 +95,22 @@ export default function InvoiceDrawer({ isOpen, connection, cards, apiUrl, onClo
   const selectedTemplate = templates.find((t) => t.id === templateId) || templates[0]
 
   const previewHtml = selectedTemplate ? renderTemplate(selectedTemplate.html, {
-    company: selectedTemplate.companyName || 'Company',
+    companyName: selectedTemplate.companyName || 'Company',
     amount: amount || '0',
     sender: fromCard?.title || 'Wallet',
     recipient: toCard?.title || 'Recipient',
+    billToName: toCard?.title || 'Recipient',
     date: new Date().toLocaleDateString(),
+    invoiceDate: new Date().toLocaleDateString(),
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
     txHash: connection?.txHash || 'Pending...',
+    invoiceNumber: fieldValues.invoiceNumber || 'INV-001',
+    lineItems: fieldValues.lineItems || '<tr><td>Service</td><td>1</td><td>' + (amount || '0') + ' USDC</td><td>' + (amount || '0') + ' USDC</td></tr>',
+    subtotal: amount || '0',
+    total: amount || '0',
+    effectiveDate: fieldValues.effectiveDate || new Date().toLocaleDateString(),
+    duration: fieldValues.duration || '12 months',
+    scope: fieldValues.scope || 'To be defined',
     status: 'UNPAID',
     statusClass: 'badge-unpaid',
     ...fieldValues

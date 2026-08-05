@@ -320,6 +320,13 @@ export default function InvoicesPage() {
       invoiceDate: new Date().toLocaleDateString(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
       txHash: conn.txHash || 'Pending...',
+      invoiceNumber: customFields.invoiceNumber || 'INV-' + Date.now().toString().slice(-6),
+      lineItems: customFields.lineItems || `<tr><td>Service</td><td>1</td><td>${conn.amount || '0'} USDC</td><td>${conn.amount || '0'} USDC</td></tr>`,
+      subtotal: conn.amount || '0',
+      total: conn.amount || '0',
+      effectiveDate: customFields.effectiveDate || new Date().toLocaleDateString(),
+      duration: customFields.duration || '12 months',
+      scope: customFields.scope || 'To be defined',
       status,
       statusClass,
       ...customFields

@@ -333,12 +333,37 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
             >
               <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
                 <h3 className='font-display text-sm font-semibold'>{previewDocName}</h3>
-                <button
-                  onClick={() => setPreviewHtml(null)}
-                  className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
-                >
-                  &times;
-                </button>
+                <div className='flex items-center gap-2'>
+                  <button
+                    onClick={() => {
+                      const iframe = document.querySelector('iframe[title="Document Preview"]') as HTMLIFrameElement
+                      if (iframe?.contentWindow) iframe.contentWindow.print()
+                    }}
+                    className='px-3 py-1.5 text-xs text-ink/60 hover:text-ink hover:bg-ink/5 rounded-lg transition-colors'
+                  >
+                    Print
+                  </button>
+                  <button
+                    onClick={() => {
+                      const blob = new Blob([previewHtml], { type: 'text/html' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `${previewDocName.replace(/\s+/g, '_')}.html`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                    className='px-3 py-1.5 text-xs text-ink/60 hover:text-ink hover:bg-ink/5 rounded-lg transition-colors'
+                  >
+                    Download
+                  </button>
+                  <button
+                    onClick={() => setPreviewHtml(null)}
+                    className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
+                  >
+                    &times;
+                  </button>
+                </div>
               </div>
               <div className='flex-1 overflow-y-auto p-6'>
                 <iframe

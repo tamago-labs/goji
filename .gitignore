@@ -2,9 +2,8 @@ node_modules/
 dist/
 out/
 .next/
+frontend-dist/
 .goji-storage/
 tmp-guest/
 .DS_Store
 arc-stablecoin-fx/
-tmp-guest/
-.goji-storage/

@@ -12,23 +12,16 @@ Goji transforms verified payment records into real-world assets (RWAs). Companie
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Frontend (Next.js)                        │
+│                    Node.js Terminal (Port 3001)                  │
 ├─────────────────────────────────────────────────────────────────┤
-│  Landing Page  │  Company App  │  Partner App  │  RWA Explorer  │
-│  /             │  /start/*     │  /start/*     │  /rwa          │
+│  Embedded Frontend  │  Express API  │  WebSocket  │  P2P Room   │
+│  (static files)     │  /api/*       │  Real-time  │  Autobase   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                     ┌─────────┴─────────┐
                     │   P2P Network     │
                     │  (Hyperswarm)     │
                     └─────────┬─────────┘
-                              │
-┌─────────────────────────────┼───────────────────────────────────┐
-│                    Node.js Terminal                             │
-├─────────────────────────────────────────────────────────────────┤
-│  Express API  │  WebSocket  │  Autobase  │  Hyperschema        │
-│  Local QVAC embeddings + private RAG index                     │
-└─────────────────────────────┬───────────────────────────────────┘
                               │
 ┌─────────────────────────────┼───────────────────────────────────┐
 │                    Smart Contracts (Arc)                         │

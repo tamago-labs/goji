@@ -51,7 +51,7 @@ Goji is a stablecoin-native payment and treasury workspace built on Arc, where b
 
 ## How It Works
 
-Goji runs as a local terminal that hosts a private workspace. The frontend connects to the terminal over HTTP and WebSocket, while authorized workspace data replicates through an encrypted Pear P2P room.
+Goji runs as a local terminal that hosts a private workspace with an embedded web interface. The frontend is served directly from the terminal — no separate processes needed.
 
 ### Host a Workspace
 
@@ -60,6 +60,8 @@ Run the company terminal:
 ```bash
 npx @tamago-labs/goji
 ```
+
+Opens at `http://localhost:3001` with the full web interface.
 
 The host terminal prints an invite code. Share it with the people who should join the workspace.
 
@@ -74,6 +76,15 @@ npx @tamago-labs/goji --join
 Goji prompts for the invite code and connects the terminal to the existing workspace.
 
 After joining, the company administrator assigns each participant a role from **Organization → Members**.
+
+### Development Mode
+
+For development with hot reload:
+
+```bash
+npm start          # CLI on port 3001 (API only)
+cd frontend && npm run dev  # Frontend on port 3000
+```
 
 ### Workspace Roles
 

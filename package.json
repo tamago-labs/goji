@@ -73,7 +73,7 @@
     "spec/",
     "scripts/",
     "schema.js",
-    "frontend-dist/",
+    "frontend/.next/",
     "README.md"
   ]
 }

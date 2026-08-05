@@ -1527,7 +1527,7 @@ async function main() {
   if (!isDev) {
     const path = require('path')
     const fs = require('fs')
-    const frontendPath = path.join(__dirname, '..', 'frontend-dist')
+    const frontendPath = path.join(__dirname, '..', 'frontend', '.next')
     
     if (fs.existsSync(frontendPath)) {
       app.use(express.static(frontendPath))

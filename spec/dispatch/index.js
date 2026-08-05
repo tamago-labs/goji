@@ -444,13 +444,13 @@ const route27 = {
   enc: getEncoding('@goji/rag-search-result')
 }
 
-const route25 = {
+const route28 = {
   name: '@goji/set-company-profile',
-  id: 25,
+  id: 28,
   enc: getEncoding('@goji/company-profile')
 }
 
-const route26 = {
+const route29 = {
   name: '@goji/remove-company-profile',
   id: 26,
   enc: getEncoding('@goji/company-profile-remove')
@@ -515,9 +515,9 @@ function getRouteByName (name) {
     case '@goji/rag-search-result':
       return route27
     case '@goji/set-company-profile':
-      return route25
+      return route28
     case '@goji/remove-company-profile':
-      return route26
+      return route29
     default:
       throw DispatchError.ROUTE_NOT_FOUND_BY_NAME(name)
   }
@@ -581,10 +581,10 @@ function getRouteById (id) {
       return route26
     case 27:
       return route27
-    case 25:
-      return route25
-    case 26:
-      return route26
+    case 28:
+      return route28
+    case 29:
+      return route29
     default:
       throw DispatchError.HANDLER_NOT_FOUND_BY_ID(id)
   }

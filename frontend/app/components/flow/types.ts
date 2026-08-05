@@ -9,6 +9,15 @@ export interface FlowCard {
   fields: Record<string, string | boolean>
 }
 
+export interface IdentitySummary {
+  walletAddress: string
+  passId: string
+  tokenId: string
+  status: string
+  countryCode?: string
+  ownerName?: string
+}
+
 export interface Connection {
   id: string
   from: string

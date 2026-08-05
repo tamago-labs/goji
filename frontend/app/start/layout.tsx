@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   // Company only
   { href: '/start/receivables', label: 'Receivables', icon: TrendingUp, roles: ['company'] },
   // Admin
-  { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['company'] },
+  { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['company', 'compliance'] },
 ]
 
 function StartLayoutInner({ children }: { children: React.ReactNode }) {

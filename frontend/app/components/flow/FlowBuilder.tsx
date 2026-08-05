@@ -12,7 +12,7 @@ import DocumentDrawer from './DocumentDrawer'
 import PreviewRoutesModal from './PreviewRoutesModal'
 import FlowOverlay, { type RouteStatus } from './FlowOverlay'
 import FloatingChatButton from '../chat/FloatingChatButton'
-import { type FlowCard, type Connection, type CardCategory } from './types'
+import { type FlowCard, type Connection, type CardCategory, type IdentitySummary } from './types'
 
 const API = typeof window !== 'undefined'
   ? localStorage.getItem('goji-api-url') || 'http://localhost:3001'
@@ -53,6 +53,8 @@ export default function FlowBuilder({
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null)
   const [flowStatuses, setFlowStatuses] = useState<RouteStatus[]>([])
   const [flowActive, setFlowActive] = useState(false)
+  const [identityByAddress, setIdentityByAddress] = useState<Record<string, IdentitySummary>>({})
+  const [selectedIdentity, setSelectedIdentity] = useState<IdentitySummary | null>(null)
   const isLocked = flowActive
   const wsRef = useRef<WebSocket | null>(null)
   const boardIdRef = useRef(boardId)
@@ -101,6 +103,13 @@ export default function FlowBuilder({
       } catch {}
     }
     fetchHealth()
+  }, [])
+
+  // Identity details are optional on the canvas and available to company/compliance roles.
+  useEffect(() => {
+    fetch(`${API}/api/identities/all`).then((response) => response.ok ? response.json() : []).then((rows: IdentitySummary[]) => {
+      setIdentityByAddress(Object.fromEntries(rows.map((row) => [row.walletAddress.toLowerCase(), row])))
+    }).catch(() => setIdentityByAddress({}))
   }, [])
 
   // WebSocket for real-time sync
@@ -609,6 +618,8 @@ export default function FlowBuilder({
                   onPortClick={handlePortClick}
                   connectFrom={connectFrom}
                   locked={isLocked}
+                  identity={identityByAddress[String(card.fields.address || '').toLowerCase()]}
+                  onIdentityClick={setSelectedIdentity}
                 />
               ))}
             </div>
@@ -692,6 +703,15 @@ export default function FlowBuilder({
         onClose={() => setSelectedConnection(null)}
         onSave={updateConnection}
       />
+
+      {selectedIdentity && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4' onClick={() => setSelectedIdentity(null)}>
+          <div className='w-full max-w-sm rounded-2xl bg-card p-6 shadow-xl' onClick={(event) => event.stopPropagation()}>
+            <div className='mb-5 flex items-start justify-between'><div><p className='text-[10px] uppercase tracking-wider text-ink/35'>Wallet identity</p><h3 className='font-display text-lg font-semibold text-ink'>{selectedIdentity.ownerName || 'Workspace member'}</h3></div><button type='button' onClick={() => setSelectedIdentity(null)} className='text-ink/35'>×</button></div>
+            <div className='space-y-3 text-xs'><div className='flex items-center justify-between rounded-xl bg-ink/5 p-3'><span className='text-ink/40'>Status</span><span className='font-medium capitalize text-ink'>{selectedIdentity.status}</span></div><div className='flex items-center justify-between rounded-xl bg-ink/5 p-3'><span className='text-ink/40'>Country</span><span className='font-medium text-ink'>{selectedIdentity.countryCode || 'Not provided'}</span></div><div className='rounded-xl bg-ink/5 p-3'><span className='text-ink/40'>Pass ID</span><p className='mt-1 break-all font-mono text-ink/70'>{selectedIdentity.passId}</p></div><div className='rounded-xl bg-ink/5 p-3'><span className='text-ink/40'>Token ID</span><p className='mt-1 font-mono text-ink/70'>{selectedIdentity.tokenId}</p></div></div>
+          </div>
+        </div>
+      )}
 
       <PreviewRoutesModal
         isOpen={showPreview}

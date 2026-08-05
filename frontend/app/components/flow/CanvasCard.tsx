@@ -3,7 +3,8 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
-import { CARD_WIDTH, CATEGORY_COLORS, type FlowCard } from './types'
+import { ShieldCheck, ShieldAlert } from 'lucide-react'
+import { CARD_WIDTH, CATEGORY_COLORS, type FlowCard, type IdentitySummary } from './types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
@@ -20,6 +21,8 @@ interface CanvasCardProps {
   onPortClick: (cardId: string, portType: 'input' | 'output') => void
   connectFrom: string | null
   locked?: boolean
+  identity?: IdentitySummary
+  onIdentityClick?: (identity: IdentitySummary) => void
 }
 
 export default function CanvasCard({
@@ -29,7 +32,9 @@ export default function CanvasCard({
   onDelete,
   onPortClick,
   connectFrom,
-  locked = false
+  locked = false,
+  identity,
+  onIdentityClick
 }: CanvasCardProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: 'card-' + card.id,
@@ -53,6 +58,10 @@ export default function CanvasCard({
   const canInput = card.category === 'wallet' || card.category === 'recipient' || card.category === 'gate'
   const canOutput = card.category === 'wallet' || card.category === 'gate' || card.category === 'deposit'
   const isConnectTarget = connectFrom && connectFrom !== card.id && canInput
+  const countryFlag = identity?.countryCode && identity.countryCode.length === 2
+    ? String.fromCodePoint(...identity.countryCode.toUpperCase().split('').map((char) => 127397 + char.charCodeAt(0)))
+    : null
+  const identityApproved = identity?.status === 'approved' || identity?.status === 'locked'
 
   return (
     <div
@@ -105,6 +114,19 @@ export default function CanvasCard({
         >
           {card.category}
         </span>
+        {identity && onIdentityClick && (
+          <button
+            type='button'
+            data-identity
+            title='View wallet identity'
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => { event.stopPropagation(); onIdentityClick(identity) }}
+            className={`float-right inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] ${identityApproved ? 'bg-mint/15 text-[#1B7A50]' : 'bg-amber-100 text-amber-700'}`}
+          >
+            {identityApproved ? <ShieldCheck className='h-3 w-3' /> : <ShieldAlert className='h-3 w-3' />}
+            {countryFlag && <span>{countryFlag}</span>}
+          </button>
+        )}
       </div>
 
       {/* Body */}

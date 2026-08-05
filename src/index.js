@@ -1223,6 +1223,7 @@ async function main() {
     const owner = identities.find((item) => b4a.equals(item.writerKey, record.ownerKey))
     return {
       ...record,
+      countryCode: record.identityData?.[0]?.issuingCountryISO2 || null,
       ownerKey: b4a.toString(record.ownerKey, 'hex'),
       approvedBy: record.approvedBy ? b4a.toString(record.approvedBy, 'hex') : null,
       ownerName: owner?.displayName || 'Unknown'
@@ -1277,7 +1278,8 @@ async function main() {
       lockedAt: null,
       rejectionReason: null,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      auditLog: [{ action: 'submitted', actor: b4a.toString(room.localBase.key, 'hex'), at: now }]
     }
     await room.base.append(GojiDispatch.encode('@goji/add-compliance-identity', record))
     res.json(serializeComplianceIdentity(record, []))
@@ -1288,7 +1290,8 @@ async function main() {
     if (!existing) return res.status(404).json({ error: 'Identity not found' })
     if (!b4a.equals(existing.ownerKey, room.localBase.key)) return res.status(403).json({ error: 'Only the identity owner can edit this record' })
     if (existing.status !== 'pending' && existing.status !== 'rejected') return res.status(409).json({ error: 'Only pending or rejected identities can be edited' })
-    const next = { ...existing, ...req.body, id: existing.id, ownerKey: existing.ownerKey, status: 'pending', updatedAt: Date.now(), rejectionReason: null }
+    const now = Date.now()
+    const next = { ...existing, ...req.body, id: existing.id, ownerKey: existing.ownerKey, status: 'pending', updatedAt: now, rejectionReason: null, auditLog: [...(existing.auditLog || []), { action: 'resubmitted', actor: b4a.toString(room.localBase.key, 'hex'), at: now }] }
     await room.base.append(GojiDispatch.encode('@goji/update-compliance-identity', next))
     res.json(serializeComplianceIdentity(next, []))
   })
@@ -1297,7 +1300,7 @@ async function main() {
     if (!(await canReviewIdentities())) return res.status(403).json({ error: 'Only company and compliance roles can review identities' })
     const existing = await room.view.get('@goji/complianceIdentities', { id: req.params.id })
     if (!existing) return res.status(404).json({ error: 'Identity not found' })
-    if (existing.status === 'locked') return res.status(409).json({ error: 'Locked identities cannot be changed' })
+    if (existing.status === 'locked' && status !== 'approved') return res.status(409).json({ error: 'Locked identities cannot be changed' })
     const now = Date.now()
     const next = {
       ...existing,
@@ -1306,7 +1309,8 @@ async function main() {
       approvedAt: status === 'approved' || status === 'locked' ? now : existing.approvedAt,
       lockedAt: status === 'locked' ? now : existing.lockedAt,
       rejectionReason: status === 'rejected' ? String(req.body?.reason || 'Changes requested') : null,
-      updatedAt: now
+      updatedAt: now,
+      auditLog: [...(existing.auditLog || []), { action: existing.status === 'locked' && status === 'approved' ? 'unlocked' : status, actor: b4a.toString(room.localBase.key, 'hex'), at: now, reason: status === 'rejected' ? String(req.body?.reason || 'Changes requested') : null }]
     }
     await room.base.append(GojiDispatch.encode('@goji/update-compliance-identity', next))
     res.json(serializeComplianceIdentity(next, []))
@@ -1315,6 +1319,7 @@ async function main() {
   app.post('/api/identities/:id/approve', (req, res) => updateIdentityReview(req, res, 'approved'))
   app.post('/api/identities/:id/reject', (req, res) => updateIdentityReview(req, res, 'rejected'))
   app.post('/api/identities/:id/lock', (req, res) => updateIdentityReview(req, res, 'locked'))
+  app.post('/api/identities/:id/unlock', (req, res) => updateIdentityReview(req, res, 'approved'))
   app.post('/api/identities/:id/expire', (req, res) => updateIdentityReview(req, res, 'expired'))
 
   app.get('/api/wallets/:id/balance', async (req, res) => {
@@ -1522,6 +1527,9 @@ async function main() {
       proofs: r.proofs || [],
       status: r.status,
       issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      complianceRegistry: r.complianceRegistry || null,
+      requiredTier: r.requiredTier || 0,
+      allowedCountries: r.allowedCountries || [],
       createdAt: r.createdAt,
       updatedAt: r.updatedAt
     }))
@@ -1544,13 +1552,16 @@ async function main() {
       proofs: r.proofs || [],
       status: r.status,
       issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      complianceRegistry: r.complianceRegistry || null,
+      requiredTier: r.requiredTier || 0,
+      allowedCountries: r.allowedCountries || [],
       createdAt: r.createdAt,
       updatedAt: r.updatedAt
     })
   })
 
   app.post('/api/receivables', async (req, res) => {
-    const { tokenAddress, name, type, amount, interestRate, minInvestment, expiryDays, proofs, status } = req.body
+    const { tokenAddress, name, type, amount, interestRate, minInvestment, expiryDays, proofs, status, complianceRegistry, requiredTier, allowedCountries } = req.body
     if (!tokenAddress || !name || !type || !amount) {
       return res.status(400).json({ error: 'tokenAddress, name, type, amount required' })
     }
@@ -1568,6 +1579,9 @@ async function main() {
       proofs: proofs || [],
       status: status || 'active',
       issuer: room.localBase.key,
+      complianceRegistry: complianceRegistry || null,
+      requiredTier: Number(requiredTier) || 0,
+      allowedCountries: allowedCountries || [],
       createdAt: now,
       updatedAt: now
     }

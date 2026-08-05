@@ -1,6 +1,6 @@
 import type { Address } from 'viem'
 
-export const IDENTITY_PASS_ADDRESS = process.env.NEXT_PUBLIC_IDENTITY_PASS_ADDRESS as Address | undefined
+export const IDENTITY_PASS_ADDRESS = '0x9829724359A49c36B53deB1e059c14d3C2eA5458' as Address
 
 export const IDENTITY_PASS_ABI = [
   { type: 'function', name: 'hasPass', stateMutability: 'view', inputs: [{ name: 'wallet', type: 'address' }], outputs: [{ type: 'bool' }] },

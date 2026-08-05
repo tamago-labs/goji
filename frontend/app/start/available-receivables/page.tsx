@@ -17,6 +17,9 @@ interface Receivable {
   proofs: string[]
   status: string
   issuer: string
+  complianceRegistry?: string | null
+  requiredTier?: number
+  allowedCountries?: string[]
   createdAt: number
   updatedAt: number
 }
@@ -114,6 +117,7 @@ export default function AvailableReceivablesPage() {
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Amount</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Interest</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Term</th>
+                <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Eligibility</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'>Status</th>
                 <th className='px-6 py-2 text-[10px] text-ink/40 uppercase tracking-wider font-medium'></th>
               </tr>
@@ -126,7 +130,8 @@ export default function AvailableReceivablesPage() {
                   <td className='px-6 py-3 font-mono text-ink/60 text-sm'>{formatAmount(r.amount)}</td>
                   <td className='px-6 py-3 text-ink/60 text-sm'>{r.interestRate}%</td>
                   <td className='px-6 py-3 text-ink/50 text-xs'>{r.expiryDays} days</td>
-                  <td className='px-6 py-3'>
+                   <td className='px-6 py-3'>{r.complianceRegistry ? <span className='text-[10px] font-medium rounded-full bg-violet/10 px-2 py-0.5 text-[#5A4FB8]'>{r.requiredTier ? `Tier ${r.requiredTier}` : 'Identity required'}{r.allowedCountries?.length ? ` · ${r.allowedCountries.join(', ')}` : ''}</span> : <span className='text-[10px] text-ink/30'>Open</span>}</td>
+                   <td className='px-6 py-3'>
                     {r.status === 'active' && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700'>Active</span>}
                     {r.status === 'funded' && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Funded</span>}
                     {r.status === 'expired' && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700'>Expired</span>}

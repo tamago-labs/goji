@@ -234,7 +234,10 @@ schema.register({
     { name: 'status', type: 'string', required: true },
     { name: 'issuer', type: 'buffer', required: true },
     { name: 'createdAt', type: 'int', required: true },
-    { name: 'updatedAt', type: 'int', required: true }
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'complianceRegistry', type: 'string' },
+    { name: 'requiredTier', type: 'int' },
+    { name: 'allowedCountries', type: 'json' }
   ]
 })
 
@@ -290,7 +293,8 @@ schema.register({
     { name: 'lockedAt', type: 'int' },
     { name: 'rejectionReason', type: 'string' },
     { name: 'createdAt', type: 'int', required: true },
-    { name: 'updatedAt', type: 'int', required: true }
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'auditLog', type: 'json' }
   ]
 })
 

@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Wallet, Plus } from 'lucide-react'
 import RegisterWalletModal from './RegisterWalletModal'
+import IdentityPassStatus, { type PassInfo } from './IdentityPassStatus'
+import IdentityPassMintModal from './IdentityPassMintModal'
+import IdentityDataDrawer from './IdentityDataDrawer'
 
 interface WalletData {
   id: string
@@ -13,19 +16,35 @@ interface WalletData {
   createdAt: number
 }
 
+interface IdentityRecord {
+  id: string
+  walletId: string
+  tokenId: string
+  passId: string
+  status: string
+  identityData?: { fullName?: string }[]
+  bankAccountData?: { bankName?: string }[]
+}
+
 interface WalletsTabProps {
   apiUrl: string
 }
 
 export default function WalletsTab({ apiUrl }: WalletsTabProps) {
   const [wallets, setWallets] = useState<WalletData[]>([])
+  const [identities, setIdentities] = useState<IdentityRecord[]>([])
+  const [passes, setPasses] = useState<Record<string, PassInfo>>({})
   const [showRegister, setShowRegister] = useState(false)
+  const [mintWallet, setMintWallet] = useState<WalletData | null>(null)
+  const [dataWallet, setDataWallet] = useState<{ wallet: WalletData; pass: PassInfo; identity: IdentityRecord | null } | null>(null)
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetch(`${apiUrl}/api/wallets`)
         if (res.ok) setWallets(await res.json())
+        const identityRes = await fetch(`${apiUrl}/api/identities`)
+        if (identityRes.ok) setIdentities(await identityRes.json())
       } catch {}
     }
     load()
@@ -34,6 +53,11 @@ export default function WalletsTab({ apiUrl }: WalletsTabProps) {
   const handleRegistered = (wallet: WalletData) => {
     setWallets((prev) => [...prev, wallet])
     setShowRegister(false)
+  }
+
+  const refreshIdentities = async () => {
+    const response = await fetch(`${apiUrl}/api/identities`)
+    if (response.ok) setIdentities(await response.json())
   }
 
   const handleDelete = async (id: string) => {
@@ -72,6 +96,8 @@ export default function WalletsTab({ apiUrl }: WalletsTabProps) {
                 <th className='text-left text-[11px] text-ink/40 font-medium px-4 py-3'>Address</th>
                 <th className='text-left text-[11px] text-ink/40 font-medium px-4 py-3'>Chain</th>
                 <th className='text-left text-[11px] text-ink/40 font-medium px-4 py-3'>Type</th>
+                <th className='text-left text-[11px] text-ink/40 font-medium px-4 py-3'>NFT Pass</th>
+                <th className='text-left text-[11px] text-ink/40 font-medium px-4 py-3'>Compliance Data</th>
                 <th className='w-10'></th>
               </tr>
             </thead>
@@ -82,6 +108,8 @@ export default function WalletsTab({ apiUrl }: WalletsTabProps) {
                   <td className='px-4 py-3 text-sm text-ink/60 font-mono truncate max-w-[160px]'>{w.address}</td>
                   <td className='px-4 py-3 text-sm text-ink/50'>{w.chainType || '—'}</td>
                   <td className='px-4 py-3 text-sm text-ink/50'>{w.walletType || '—'}</td>
+                  <td className='px-4 py-3'><IdentityPassStatus address={w.address} onMint={() => setMintWallet(w)} onReady={(pass) => setPasses((current) => ({ ...current, [w.id]: pass }))} /></td>
+                  <td className='px-4 py-3'>{(() => { const identity = identities.find((item) => item.walletId === w.id); const pass = passes[w.id] || (identity ? { tokenId: identity.tokenId, passId: identity.passId } : null); return identity ? <button type='button' onClick={() => pass && setDataWallet({ wallet: w, pass, identity })} className={`rounded-full px-2 py-1 text-[10px] font-medium capitalize ${identity.status === 'approved' || identity.status === 'locked' ? 'bg-mint/15 text-[#1B7A50]' : identity.status === 'rejected' ? 'bg-coral/10 text-coral' : 'bg-amber-100 text-amber-700'}`}>{identity.status}</button> : pass ? <button type='button' onClick={() => setDataWallet({ wallet: w, pass, identity: null })} className='rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-medium text-amber-700'>Add identity</button> : <span className='text-[10px] text-ink/30'>Not submitted</span> })()}</td>
                   <td className='px-4 py-3'>
                     <button
                       onClick={() => {
@@ -109,6 +137,8 @@ export default function WalletsTab({ apiUrl }: WalletsTabProps) {
         apiUrl={apiUrl}
         onRegistered={handleRegistered}
       />
+      {mintWallet && <IdentityPassMintModal open={true} address={mintWallet.address} onClose={() => setMintWallet(null)} onMinted={(pass) => { setPasses((current) => ({ ...current, [mintWallet.id]: pass })); setDataWallet({ wallet: mintWallet, pass, identity: null }); setMintWallet(null) }} />}
+      {dataWallet && <IdentityDataDrawer open={true} apiUrl={apiUrl} wallet={dataWallet.wallet} pass={dataWallet.pass} existing={dataWallet.identity} onClose={() => setDataWallet(null)} onSaved={() => void refreshIdentities()} />}
     </div>
   )
 }

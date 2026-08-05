@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 8,
   "schema": [
     {
       "name": "writer",
@@ -733,7 +733,7 @@
       "name": "receivable",
       "namespace": "goji",
       "compact": false,
-      "flagsPosition": -1,
+      "flagsPosition": 13,
       "fields": [
         {
           "name": "id",
@@ -812,6 +812,21 @@
           "required": true,
           "type": "int",
           "version": 2
+        },
+        {
+          "name": "complianceRegistry",
+          "type": "string",
+          "version": 8
+        },
+        {
+          "name": "requiredTier",
+          "type": "int",
+          "version": 8
+        },
+        {
+          "name": "allowedCountries",
+          "type": "json",
+          "version": 8
         }
       ]
     },
@@ -1163,6 +1178,11 @@
           "required": true,
           "type": "int",
           "version": 6
+        },
+        {
+          "name": "auditLog",
+          "type": "json",
+          "version": 7
         }
       ]
     }

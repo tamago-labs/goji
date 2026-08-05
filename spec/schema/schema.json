@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "schema": [
     {
       "name": "writer",
@@ -697,6 +697,21 @@
           "required": true,
           "type": "int",
           "version": 1
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "version": 5
+        },
+        {
+          "name": "flowType",
+          "type": "string",
+          "version": 5
+        },
+        {
+          "name": "version",
+          "type": "int",
+          "version": 5
         }
       ]
     },

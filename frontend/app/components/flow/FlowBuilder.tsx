@@ -8,8 +8,7 @@ import Canvas from './Canvas'
 import CanvasCard from './CanvasCard'
 import CanvasLines from './CanvasLines'
 import Toolbar from './Toolbar'
-import ConnectionDrawer from './ConnectionDrawer'
-import InvoiceDrawer from './InvoiceDrawer'
+import DocumentDrawer from './DocumentDrawer'
 import PreviewRoutesModal from './PreviewRoutesModal'
 import FlowOverlay, { type RouteStatus } from './FlowOverlay'
 import FloatingChatButton from '../chat/FloatingChatButton'
@@ -685,37 +684,14 @@ export default function FlowBuilder({
 
       <FloatingChatButton />
 
-      {/* Check if connection involves deposit wallet */}
-      {selectedConnection && (() => {
-        const fromCard = cards.find((c) => c.id === selectedConnection.from)
-        const toCard = cards.find((c) => c.id === selectedConnection.to)
-        // Invoice flow: deposit → wallet
-        const isInvoiceConnection = fromCard?.category === 'deposit' && toCard?.category === 'wallet'
-
-        if (isInvoiceConnection) {
-          return (
-            <InvoiceDrawer
-              isOpen={true}
-              connection={selectedConnection}
-              cards={cards}
-              apiUrl={API}
-              onClose={() => setSelectedConnection(null)}
-              onSave={updateConnection}
-            />
-          )
-        }
-
-        return (
-          <ConnectionDrawer
-            isOpen={selectedConnection !== null}
-            connection={selectedConnection}
-            cards={cards}
-            apiUrl={API}
-            onClose={() => setSelectedConnection(null)}
-            onSave={updateConnection}
-          />
-        )
-      })()}
+      <DocumentDrawer
+        isOpen={selectedConnection !== null}
+        connection={selectedConnection}
+        cards={cards}
+        apiUrl={API}
+        onClose={() => setSelectedConnection(null)}
+        onSave={updateConnection}
+      />
 
       <PreviewRoutesModal
         isOpen={showPreview}

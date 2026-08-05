@@ -7,7 +7,10 @@ import TemplateEditor from '../../../components/start/TemplateEditor'
 
 interface Template {
   id: string
+  key?: string
   name: string
+  flowType: 'payment' | 'invoice'
+  version?: number
   companyName: string | null
   fields: { key: string; label: string; type: 'text' | 'number' | 'date' | 'textarea'; autoFill: boolean; position: 'header' | 'body' | 'footer' }[]
   html: string
@@ -97,9 +100,10 @@ export default function TemplatesPage() {
                   <FileText className='w-5 h-5 text-ink/40' />
                   <span className='text-sm font-medium text-ink'>{template.name}</span>
                 </div>
-                {template.isDefault && (
-                  <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Default</span>
-                )}
+                <div className='flex items-center gap-1'>
+                  <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-ink/5 text-ink/45'>{template.flowType === 'invoice' ? 'Invoice' : 'Payment'}</span>
+                  {template.isDefault && <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Default</span>}
+                </div>
               </div>
 
               {template.companyName && (

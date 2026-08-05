@@ -36,8 +36,8 @@ class Router {
     this._handler25 = null
     this._handler26 = null
     this._handler27 = null
-    this._handler25 = null
-    this._handler26 = null
+    this._handler28 = null
+    this._handler29 = null
 
     this._missing = 30
   }
@@ -119,19 +119,19 @@ class Router {
       case '@goji/remove-receivable':
         this._handler24 = handler
         break
-      case '@goji/add-knowledge-document':
+      case '@goji/set-company-profile':
         this._handler25 = handler
         break
-      case '@goji/rag-search':
+      case '@goji/remove-company-profile':
         this._handler26 = handler
         break
-      case '@goji/rag-search-result':
+      case '@goji/add-knowledge-document':
         this._handler27 = handler
         break
-      case '@goji/set-company-profile':
+      case '@goji/rag-search':
         this._handler28 = handler
         break
-      case '@goji/remove-company-profile':
+      case '@goji/rag-search-result':
         this._handler29 = handler
         break
       default:
@@ -166,11 +166,11 @@ class Router {
     assert(this._handler22 !== null, 'Missing handler for "@goji/add-receivable"')
     assert(this._handler23 !== null, 'Missing handler for "@goji/update-receivable"')
     assert(this._handler24 !== null, 'Missing handler for "@goji/remove-receivable"')
-    assert(this._handler25 !== null, 'Missing handler for "@goji/add-knowledge-document"')
-    assert(this._handler26 !== null, 'Missing handler for "@goji/rag-search"')
-    assert(this._handler27 !== null, 'Missing handler for "@goji/rag-search-result"')
-    assert(this._handler28 !== null, 'Missing handler for "@goji/set-company-profile"')
-    assert(this._handler29 !== null, 'Missing handler for "@goji/remove-company-profile"')
+    assert(this._handler25 !== null, 'Missing handler for "@goji/set-company-profile"')
+    assert(this._handler26 !== null, 'Missing handler for "@goji/remove-company-profile"')
+    assert(this._handler27 !== null, 'Missing handler for "@goji/add-knowledge-document"')
+    assert(this._handler28 !== null, 'Missing handler for "@goji/rag-search"')
+    assert(this._handler29 !== null, 'Missing handler for "@goji/rag-search-result"')
   }
 
   async dispatch (message, context) {
@@ -427,33 +427,33 @@ const route24 = {
 }
 
 const route25 = {
-  name: '@goji/add-knowledge-document',
-  id: 25,
-  enc: getEncoding('@goji/knowledge-document')
-}
-
-const route26 = {
-  name: '@goji/rag-search',
-  id: 26,
-  enc: getEncoding('@goji/rag-search')
-}
-
-const route27 = {
-  name: '@goji/rag-search-result',
-  id: 27,
-  enc: getEncoding('@goji/rag-search-result')
-}
-
-const route28 = {
   name: '@goji/set-company-profile',
-  id: 28,
+  id: 25,
   enc: getEncoding('@goji/company-profile')
 }
 
-const route29 = {
+const route26 = {
   name: '@goji/remove-company-profile',
   id: 26,
   enc: getEncoding('@goji/company-profile-remove')
+}
+
+const route27 = {
+  name: '@goji/add-knowledge-document',
+  id: 27,
+  enc: getEncoding('@goji/knowledge-document')
+}
+
+const route28 = {
+  name: '@goji/rag-search',
+  id: 28,
+  enc: getEncoding('@goji/rag-search')
+}
+
+const route29 = {
+  name: '@goji/rag-search-result',
+  id: 29,
+  enc: getEncoding('@goji/rag-search-result')
 }
 
 function getRouteByName (name) {
@@ -508,15 +508,15 @@ function getRouteByName (name) {
       return route23
     case '@goji/remove-receivable':
       return route24
-    case '@goji/add-knowledge-document':
-      return route25
-    case '@goji/rag-search':
-      return route26
-    case '@goji/rag-search-result':
-      return route27
     case '@goji/set-company-profile':
-      return route28
+      return route25
     case '@goji/remove-company-profile':
+      return route26
+    case '@goji/add-knowledge-document':
+      return route27
+    case '@goji/rag-search':
+      return route28
+    case '@goji/rag-search-result':
       return route29
     default:
       throw DispatchError.ROUTE_NOT_FOUND_BY_NAME(name)

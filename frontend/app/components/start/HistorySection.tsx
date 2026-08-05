@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
-import { renderTemplate } from '../../../lib/payslipTemplates'
+import { renderDocumentTemplate, renderLineItems, type InvoiceLineItem } from '../../../lib/documentTemplates'
+import DocumentPreviewDrawer from './DocumentPreviewDrawer'
 
 interface HistorySectionProps {
   apiUrl: string
@@ -87,11 +87,6 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
             const statusText = status?.status || 'pending'
 
             // Parse customDoc for invoice data
-            let customData = {}
-            if (conn.customDoc) {
-              try { customData = JSON.parse(conn.customDoc) } catch {}
-            }
-
             const row: PaymentRow = {
               boardName: board.name,
               counterpartyName: isSender ? (toCard.title || 'Wallet') : (fromCard.title || 'Wallet'),
@@ -128,6 +123,12 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
   }, [apiUrl])
 
   const openPayslip = async (row: PaymentRow) => {
+    if (row.payslipHtml) {
+      setPreviewHtml(row.payslipHtml)
+      setPreviewDocName(row.docName || 'Document')
+      return
+    }
+
     // Fetch template from API
     let templateHtml = ''
     try {
@@ -147,15 +148,18 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
     }
 
     // Parse customDoc for field values
-    let customFields: Record<string, string> = {}
+    let customFields: Record<string, unknown> = {}
+    let lineItems: InvoiceLineItem[] = [{ description: 'Service', quantity: '1', unitPrice: row.amount || '0', amount: row.amount || '0' }]
     if (row.customDoc) {
       try {
-        customFields = JSON.parse(row.customDoc)
+        const saved = JSON.parse(row.customDoc)
+        customFields = saved.fields || saved
+        if (Array.isArray(saved.lineItems)) lineItems = saved.lineItems
       } catch {}
     }
 
     // Render template with all fields
-    const html = renderTemplate(templateHtml, {
+    const html = renderDocumentTemplate(templateHtml, {
       companyName: 'Company',
       amount: row.amount || '0',
       sender: row.direction === 'outgoing' ? 'Company' : row.counterpartyName,
@@ -163,18 +167,18 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
       billToName: row.direction === 'outgoing' ? row.counterpartyName : 'Company',
       date: new Date().toLocaleDateString(),
       invoiceDate: new Date().toLocaleDateString(),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      dueDate: String(customFields.dueDate || 'Set due date'),
       txHash: row.txHash || 'Pending...',
-      invoiceNumber: customFields.invoiceNumber || 'INV-' + Date.now().toString().slice(-6),
-      lineItems: customFields.lineItems || `<tr><td>Service</td><td>1</td><td>${row.amount || '0'} USDC</td><td>${row.amount || '0'} USDC</td></tr>`,
+      invoiceNumber: String(customFields.invoiceNumber || 'INV-DRAFT'),
+      lineItems: renderLineItems(lineItems),
       subtotal: row.amount || '0',
       total: row.amount || '0',
-      effectiveDate: customFields.effectiveDate || new Date().toLocaleDateString(),
-      duration: customFields.duration || '12 months',
-      scope: customFields.scope || 'To be defined',
+      effectiveDate: String(customFields.effectiveDate || new Date().toLocaleDateString()),
+      duration: String(customFields.duration || '12 months'),
+      scope: String(customFields.scope || ''),
       status: row.status === 'settled' ? 'PAID' : 'UNPAID',
       statusClass: row.status === 'settled' ? 'badge-paid' : 'badge-unpaid',
-      ...customFields
+      ...Object.fromEntries(Object.entries(customFields).map(([key, value]) => [key, String(value ?? '')]))
     })
 
     setPreviewDocName(row.docName || 'Invoice')
@@ -325,70 +329,7 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
         </div>
       </div>
 
-      {/* Payslip Preview Modal */}
-      <AnimatePresence>
-        {previewHtml && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className='fixed inset-0 bg-black/30 z-50'
-              onClick={() => setPreviewHtml(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[500px] max-h-[80vh] overflow-hidden flex flex-col'
-            >
-              <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
-                <h3 className='font-display text-sm font-semibold'>{previewDocName}</h3>
-                <div className='flex items-center gap-2'>
-                  <button
-                    onClick={() => {
-                      const iframe = document.querySelector('iframe[title="Document Preview"]') as HTMLIFrameElement
-                      if (iframe?.contentWindow) iframe.contentWindow.print()
-                    }}
-                    className='px-3 py-1.5 text-xs text-ink/60 hover:text-ink hover:bg-ink/5 rounded-lg transition-colors'
-                  >
-                    Print
-                  </button>
-                  <button
-                    onClick={() => {
-                      const blob = new Blob([previewHtml], { type: 'text/html' })
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `${previewDocName.replace(/\s+/g, '_')}.html`
-                      a.click()
-                      URL.revokeObjectURL(url)
-                    }}
-                    className='px-3 py-1.5 text-xs text-ink/60 hover:text-ink hover:bg-ink/5 rounded-lg transition-colors'
-                  >
-                    Download
-                  </button>
-                  <button
-                    onClick={() => setPreviewHtml(null)}
-                    className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
-              <div className='flex-1 overflow-y-auto p-6'>
-                <iframe
-                  srcDoc={previewHtml}
-                  className='w-full border border-ink/10 rounded-xl bg-white'
-                  style={{ minHeight: 400 }}
-                  title='Document Preview'
-                />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <DocumentPreviewDrawer open={!!previewHtml} title={previewDocName} html={previewHtml || ''} onClose={() => setPreviewHtml(null)} />
     </div>
   )
 }

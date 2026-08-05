@@ -5,10 +5,10 @@ import { CheckCircle, XCircle, FileText } from 'lucide-react'
 import { useStart } from '../../components/start/StartProvider'
 import { useWallet } from '../../providers/WalletProvider'
 import { addDelegate, removeDelegate, getDelegateStatus } from '../../../lib/unified-balance'
-import { renderTemplate } from '../../../lib/payslipTemplates'
+import { renderDocumentTemplate, renderLineItems, type InvoiceLineItem } from '../../../lib/documentTemplates'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import ApprovalModal from '../../components/start/ApprovalModal'
-import { AnimatePresence, motion } from 'framer-motion'
+import DocumentPreviewDrawer from '../../components/start/DocumentPreviewDrawer'
 
 interface Connection {
   id: string
@@ -43,7 +43,7 @@ export default function InvoicesPage() {
   const [connections, setConnections] = useState<Connection[]>([])
   const [cards, setCards] = useState<Card[]>([])
   const [myAddresses, setMyAddresses] = useState<Set<string>>(new Set())
-  const [flowStatuses, setFlowStatuses] = useState<Map<string, string>>(new Map())
+  const [flowStatuses, setFlowStatuses] = useState<Map<string, { status: string; payslipHtml?: string }>>(new Map())
   const [loading, setLoading] = useState(true)
 
   // Approval modal state
@@ -72,7 +72,7 @@ export default function InvoicesPage() {
 
         const allConnections: Connection[] = []
         const allCards: Card[] = []
-        const allFlowStatuses = new Map<string, string>()
+        const allFlowStatuses = new Map<string, { status: string; payslipHtml?: string }>()
 
         for (const board of boards) {
           const [connsRes, cardsRes, statusRes] = await Promise.all([
@@ -90,7 +90,7 @@ export default function InvoicesPage() {
           if (statusRes.ok) {
             const statuses = await statusRes.json()
             for (const s of statuses) {
-              allFlowStatuses.set(s.routeId, s.status)
+              allFlowStatuses.set(s.routeId, { status: s.status, payslipHtml: s.payslipHtml || undefined })
             }
           }
         }
@@ -264,6 +264,14 @@ export default function InvoicesPage() {
   }
 
   const handleViewDocument = async (conn: Connection) => {
+    const storedStatus = flowStatuses.get(conn.id)
+    if (storedStatus?.payslipHtml) {
+      setPreviewDocName(conn.docName || 'Document')
+      setPreviewHtml(storedStatus.payslipHtml)
+      setShowPreview(true)
+      return
+    }
+
     // Find template from API
     let templateHtml = ''
     try {
@@ -284,17 +292,20 @@ export default function InvoicesPage() {
     }
 
     // Parse customDoc for field values
-    let customFields: Record<string, string> = {}
+    let customFields: Record<string, unknown> = {}
+    let lineItems: InvoiceLineItem[] = [{ description: 'Service', quantity: '1', unitPrice: conn.amount || '0', amount: conn.amount || '0' }]
     if (conn.customDoc) {
       try {
-        customFields = JSON.parse(conn.customDoc)
+        const saved = JSON.parse(conn.customDoc)
+        customFields = saved.fields || saved
+        if (Array.isArray(saved.lineItems)) lineItems = saved.lineItems
         console.log('[InvoicePreview] customDoc:', conn.customDoc, 'parsed:', customFields)
       } catch {}
     }
     console.log('[InvoicePreview] conn.customDoc:', conn.customDoc)
 
     // Get flow status for this connection
-    const flowStatus = flowStatuses.get(conn.id) || 'pending'
+    const flowStatus = flowStatuses.get(conn.id)?.status || 'pending'
     const status = flowStatus === 'settled' ? 'PAID' : 'UNPAID'
     const statusClass = flowStatus === 'settled' ? 'badge-paid' : 'badge-unpaid'
 
@@ -310,7 +321,7 @@ export default function InvoicesPage() {
     const recipient = isInvoiceFlow ? getCardTitle(conn.from) : getCardTitle(conn.to)
 
     // Render template with custom fields
-    const html = renderTemplate(templateHtml, {
+    const html = renderDocumentTemplate(templateHtml, {
       companyName: 'Company',
       amount: conn.amount || '0',
       sender,
@@ -318,18 +329,18 @@ export default function InvoicesPage() {
       billToName: recipient,
       date: new Date().toLocaleDateString(),
       invoiceDate: new Date().toLocaleDateString(),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      dueDate: String(customFields.dueDate || 'Set due date'),
       txHash: conn.txHash || 'Pending...',
-      invoiceNumber: customFields.invoiceNumber || 'INV-' + Date.now().toString().slice(-6),
-      lineItems: customFields.lineItems || `<tr><td>Service</td><td>1</td><td>${conn.amount || '0'} USDC</td><td>${conn.amount || '0'} USDC</td></tr>`,
+      invoiceNumber: String(customFields.invoiceNumber || 'INV-DRAFT'),
+      lineItems: renderLineItems(lineItems),
       subtotal: conn.amount || '0',
       total: conn.amount || '0',
-      effectiveDate: customFields.effectiveDate || new Date().toLocaleDateString(),
-      duration: customFields.duration || '12 months',
-      scope: customFields.scope || 'To be defined',
+      effectiveDate: String(customFields.effectiveDate || new Date().toLocaleDateString()),
+      duration: String(customFields.duration || '12 months'),
+      scope: String(customFields.scope || ''),
       status,
       statusClass,
-      ...customFields
+      ...Object.fromEntries(Object.entries(customFields).map(([key, value]) => [key, String(value ?? '')]))
     })
 
     setPreviewDocName(conn.docName || 'Invoice')
@@ -487,70 +498,7 @@ export default function InvoicesPage() {
         onConfirm={handleApproveConfirm}
       />
 
-      {/* Invoice Preview Modal */}
-      <AnimatePresence>
-        {showPreview && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className='fixed inset-0 bg-black/30 z-50'
-              onClick={() => setShowPreview(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[500px] max-h-[80vh] overflow-hidden flex flex-col'
-            >
-              <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
-                <h3 className='font-display text-sm font-semibold'>{previewDocName}</h3>
-                <div className='flex items-center gap-2'>
-                  <button
-                    onClick={() => {
-                      const iframe = document.querySelector('iframe[title="Invoice Preview"]') as HTMLIFrameElement
-                      if (iframe?.contentWindow) iframe.contentWindow.print()
-                    }}
-                    className='px-3 py-1.5 text-xs text-ink/60 hover:text-ink hover:bg-ink/5 rounded-lg transition-colors'
-                  >
-                    Print
-                  </button>
-                  <button
-                    onClick={() => {
-                      const blob = new Blob([previewHtml], { type: 'text/html' })
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `${previewDocName.replace(/\s+/g, '_')}.html`
-                      a.click()
-                      URL.revokeObjectURL(url)
-                    }}
-                    className='px-3 py-1.5 text-xs text-ink/60 hover:text-ink hover:bg-ink/5 rounded-lg transition-colors'
-                  >
-                    Download
-                  </button>
-                  <button
-                    onClick={() => setShowPreview(false)}
-                    className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
-                  >
-                    &times;
-                  </button>
-                </div>
-              </div>
-              <div className='flex-1 overflow-y-auto p-6'>
-                <iframe
-                  srcDoc={previewHtml}
-                  className='w-full border border-ink/10 rounded-xl bg-white'
-                  style={{ minHeight: 400 }}
-                  title='Invoice Preview'
-                />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <DocumentPreviewDrawer open={showPreview} title={previewDocName} html={previewHtml} onClose={() => setShowPreview(false)} />
     </div>
   )
 }

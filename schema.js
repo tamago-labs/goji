@@ -207,7 +207,10 @@ schema.register({
     { name: 'isDefault', type: 'int' },
     { name: 'createdBy', type: 'buffer' },
     { name: 'createdAt', type: 'int', required: true },
-    { name: 'updatedAt', type: 'int', required: true }
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'key', type: 'string' },
+    { name: 'flowType', type: 'string' },
+    { name: 'version', type: 'int' }
   ]
 })
 

@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 1,
   "offset": 0,
   "schema": [
     {
@@ -138,49 +138,49 @@
       "id": 22,
       "name": "@goji/add-receivable",
       "requestType": "@goji/receivable",
-      "version": 2
+      "version": 1
     },
     {
       "id": 23,
       "name": "@goji/update-receivable",
       "requestType": "@goji/receivable",
-      "version": 2
+      "version": 1
     },
     {
       "id": 24,
       "name": "@goji/remove-receivable",
       "requestType": "@goji/receivable-remove",
-      "version": 2
-    },
-    {
-      "id": 25,
-      "name": "@goji/add-knowledge-document",
-      "requestType": "@goji/knowledge-document",
-      "version": 3
-    },
-    {
-      "id": 26,
-      "name": "@goji/rag-search",
-      "requestType": "@goji/rag-search",
-      "version": 3
-    },
-    {
-      "id": 27,
-      "name": "@goji/rag-search-result",
-      "requestType": "@goji/rag-search-result",
-      "version": 3
+      "version": 1
     },
     {
       "id": 25,
       "name": "@goji/set-company-profile",
       "requestType": "@goji/company-profile",
-      "version": 4
+      "version": 1
     },
     {
       "id": 26,
       "name": "@goji/remove-company-profile",
       "requestType": "@goji/company-profile-remove",
-      "version": 4
+      "version": 1
+    },
+    {
+      "id": 27,
+      "name": "@goji/add-knowledge-document",
+      "requestType": "@goji/knowledge-document",
+      "version": 1
+    },
+    {
+      "id": 28,
+      "name": "@goji/rag-search",
+      "requestType": "@goji/rag-search",
+      "version": 1
+    },
+    {
+      "id": 29,
+      "name": "@goji/rag-search-result",
+      "requestType": "@goji/rag-search-result",
+      "version": 1
     }
   ]
 }

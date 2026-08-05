@@ -20,6 +20,7 @@ export default function DocumentDrawer({ isOpen, connection, cards, apiUrl, onCl
   const [templateId, setTemplateId] = useState('')
   const [docName, setDocName] = useState('')
   const [templates, setTemplates] = useState<DocumentTemplate[]>([])
+  const [identityStatuses, setIdentityStatuses] = useState<{ walletAddress: string; status: string }[]>([])
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([{ description: 'Service', quantity: '1', unitPrice: '', amount: '' }])
 
@@ -32,6 +33,11 @@ export default function DocumentDrawer({ isOpen, connection, cards, apiUrl, onCl
   useEffect(() => {
     if (!isOpen) return
     fetch(`${apiUrl}/api/templates`).then((response) => response.ok ? response.json() : []).then(setTemplates).catch(() => setTemplates([]))
+  }, [apiUrl, isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    fetch(`${apiUrl}/api/identities/all`).then((response) => response.ok ? response.json() : []).then(setIdentityStatuses).catch(() => setIdentityStatuses([]))
   }, [apiUrl, isOpen])
 
   useEffect(() => {
@@ -93,12 +99,14 @@ export default function DocumentDrawer({ isOpen, connection, cards, apiUrl, onCl
   }
 
   const dynamicFields = selectedTemplate?.fields.filter((field) => !field.autoFill && field.key !== 'lineItems') || []
+  const identityAddress = String((flowType === 'invoice' ? fromCard?.fields?.address : toCard?.fields?.address) || '').toLowerCase()
+  const identityStatus = identityStatuses.find((identity) => identity.walletAddress.toLowerCase() === identityAddress)?.status
 
   return <AnimatePresence>{isOpen && connection && <>
     <motion.div className='fixed inset-0 z-50 bg-black/30' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
     <motion.aside className='fixed inset-y-0 right-0 z-50 flex w-full max-w-[760px] flex-col bg-card shadow-[-20px_0_60px_rgba(43,36,64,0.18)]' initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.2 }}>
       <header className='flex items-center justify-between border-b border-ink/8 px-6 py-4'>
-        <div><p className='text-xs uppercase tracking-wider text-ink/35'>{flowType === 'invoice' ? 'Invoice flow' : 'Payment flow'}</p><h2 className='font-display text-lg font-semibold text-ink'>{fromCard?.title || 'Wallet'} <span className='text-ink/30'>→</span> {toCard?.title || 'Recipient'}</h2></div>
+        <div><p className='text-xs uppercase tracking-wider text-ink/35'>{flowType === 'invoice' ? 'Invoice flow' : 'Payment flow'}</p><h2 className='font-display text-lg font-semibold text-ink'>{fromCard?.title || 'Wallet'} <span className='text-ink/30'>→</span> {toCard?.title || 'Recipient'}</h2>{identityStatus && <span className='mt-1 inline-flex rounded-full bg-ink/5 px-2 py-0.5 text-[10px] capitalize text-ink/50'>Identity: {identityStatus}</span>}</div>
         <button type='button' onClick={onClose} className='rounded-lg p-2 text-ink/35 hover:bg-ink/5'><X className='h-4 w-4' /></button>
       </header>
       <div className='grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[300px_1fr]'>

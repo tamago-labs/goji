@@ -101,6 +101,8 @@ export default function InvoiceDrawer({ isOpen, connection, cards, apiUrl, onClo
     recipient: toCard?.title || 'Recipient',
     date: new Date().toLocaleDateString(),
     txHash: connection?.txHash || 'Pending...',
+    status: 'UNPAID',
+    statusClass: 'badge-unpaid',
     ...fieldValues
   }) : '<div style="padding:40px;text-align:center;color:#999">Loading template...</div>'
 

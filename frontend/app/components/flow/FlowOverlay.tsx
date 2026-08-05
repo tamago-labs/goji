@@ -196,6 +196,8 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
               recipient: route.to?.title || 'Recipient',
               date: new Date().toLocaleDateString(),
               txHash: result.txHash || 'N/A',
+              status: 'PAID',
+              statusClass: 'badge-paid',
               ...customFields
             })
           }

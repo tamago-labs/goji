@@ -42,6 +42,8 @@ export default function InvoicesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('incoming')
   const [connections, setConnections] = useState<Connection[]>([])
   const [cards, setCards] = useState<Card[]>([])
+  const [myAddresses, setMyAddresses] = useState<Set<string>>(new Set())
+  const [flowStatuses, setFlowStatuses] = useState<Map<string, string>>(new Map())
   const [loading, setLoading] = useState(true)
 
   // Approval modal state
@@ -61,7 +63,8 @@ export default function InvoicesPage() {
         // Get user's registered wallets
         const walletsRes = await fetch(`${apiUrl}/api/wallets`)
         const wallets = walletsRes.ok ? await walletsRes.json() : []
-        const myAddresses = new Set(wallets.map((w: { address: string }) => w.address.toLowerCase()))
+        const myAddressesSet = new Set(wallets.map((w: { address: string }) => w.address.toLowerCase()))
+        setMyAddresses(myAddressesSet)
 
         const boardsRes = await fetch(`${apiUrl}/api/boards`)
         if (!boardsRes.ok) { setLoading(false); return }
@@ -69,11 +72,13 @@ export default function InvoicesPage() {
 
         const allConnections: Connection[] = []
         const allCards: Card[] = []
+        const allFlowStatuses = new Map<string, string>()
 
         for (const board of boards) {
-          const [connsRes, cardsRes] = await Promise.all([
+          const [connsRes, cardsRes, statusRes] = await Promise.all([
             fetch(`${apiUrl}/api/connections?boardId=${board.id}`),
-            fetch(`${apiUrl}/api/cards?boardId=${board.id}`)
+            fetch(`${apiUrl}/api/cards?boardId=${board.id}`),
+            fetch(`${apiUrl}/api/flow-status?flowId=${board.id}`)
           ])
           if (connsRes.ok) {
             const conns = await connsRes.json()
@@ -81,6 +86,12 @@ export default function InvoicesPage() {
           }
           if (cardsRes.ok) {
             allCards.push(...await cardsRes.json())
+          }
+          if (statusRes.ok) {
+            const statuses = await statusRes.json()
+            for (const s of statuses) {
+              allFlowStatuses.set(s.routeId, s.status)
+            }
           }
         }
 
@@ -100,6 +111,7 @@ export default function InvoicesPage() {
 
         setConnections(filteredConnections)
         setCards(allCards)
+        setFlowStatuses(allFlowStatuses)
       } catch {}
       setLoading(false)
     }
@@ -125,10 +137,8 @@ export default function InvoicesPage() {
     const toCard = getCard(conn.to)
 
     // Check which wallet the user owns
-    const userOwnsCompanyWallet = walletState.address && 
-      String(toCard?.fields?.address || '').toLowerCase() === walletState.address.toLowerCase()
-    const userOwnsDepositWallet = walletState.address && 
-      String(fromCard?.fields?.address || '').toLowerCase() === walletState.address.toLowerCase()
+    const userOwnsCompanyWallet = myAddresses.has(String(toCard?.fields?.address || '').toLowerCase())
+    const userOwnsDepositWallet = myAddresses.has(String(fromCard?.fields?.address || '').toLowerCase())
 
     if (activeTab === 'incoming') {
       // Payer receives invoice (payer owns deposit wallet)
@@ -288,6 +298,11 @@ export default function InvoicesPage() {
     }
     console.log('[InvoicePreview] conn.customDoc:', conn.customDoc)
 
+    // Get flow status for this connection
+    const flowStatus = flowStatuses.get(conn.id) || 'pending'
+    const status = flowStatus === 'settled' ? 'PAID' : 'UNPAID'
+    const statusClass = flowStatus === 'settled' ? 'badge-paid' : 'badge-unpaid'
+
     // Render template with custom fields
     const html = renderTemplate(templateHtml, {
       company: 'Company',
@@ -296,6 +311,8 @@ export default function InvoicesPage() {
       recipient: getCardTitle(conn.to),
       date: new Date().toLocaleDateString(),
       txHash: conn.txHash || 'Pending...',
+      status,
+      statusClass,
       ...customFields
     })
 

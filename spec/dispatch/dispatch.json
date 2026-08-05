@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "offset": 0,
   "schema": [
     {
@@ -181,6 +181,24 @@
       "name": "@goji/rag-search-result",
       "requestType": "@goji/rag-search-result",
       "version": 1
+    },
+    {
+      "id": 30,
+      "name": "@goji/add-compliance-identity",
+      "requestType": "@goji/compliance-identity",
+      "version": 2
+    },
+    {
+      "id": 31,
+      "name": "@goji/update-compliance-identity",
+      "requestType": "@goji/compliance-identity",
+      "version": 2
+    },
+    {
+      "id": 32,
+      "name": "@goji/remove-compliance-identity",
+      "requestType": "@goji/compliance-identity",
+      "version": 2
     }
   ]
 }

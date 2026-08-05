@@ -121,7 +121,7 @@ contract GojiProof {
 
 ### ReceivableFactory
 
-**Address:** `0x5646647B48b5458D8352764F1b697195454D52Bf`
+**Address:** `0x9CE5e02F96ef27bc894366AB360DD7f8545d5708`
 
 Creates and tracks receivable tokens. Collects platform fees.
 
@@ -139,6 +139,18 @@ contract ReceivableFactory {
         uint256 minInvestment,
         uint256 expiresAt,
         bytes32[] memory proofs
+    ) external payable returns (address);
+
+    function createReceivableWithCompliance(
+        string memory name,
+        string memory receivableType,
+        uint256 amount,
+        uint256 interestRate,
+        uint256 minInvestment,
+        uint256 expiresAt,
+        bytes32[] memory proofs,
+        address complianceRegistry,
+        uint8 requiredTier
     ) external payable returns (address);
 
     function getReceivables(address issuer) external view returns (address[]);
@@ -182,6 +194,28 @@ contract ReceivableToken is ERC20, Ownable {
     function getTotalRepayment() public view returns (uint256);
 }
 ```
+
+### SoulboundIdentityPass
+
+**Address:** `0x9829724359A49c36B53deB1e059c14d3C2eA5458`
+
+One non-transferable ERC-721 identity pass is minted per wallet. The pass exposes a token ID and separate pass ID, with owner-controlled expiry and revocation. It contains no passport, bank, or KYC payload.
+
+### ComplianceRegistry
+
+**Address:** `0x31289306250CeB6dC5Bb78A32AC2393Dab250b22`
+
+Company or compliance reviewers approve identity passes with a tier, expiry, and ISO country code. This registry is policy-specific; it does not modify the global identity pass. Pools can use the registry and apply an allowlist of multiple countries.
+
+### ReceivablePool
+
+Pools aggregate receivable positions for financial partners. Pool investors deposit native USDC and receive ERC-20 pool shares. The pool can finance multiple receivables, redeem those positions after repayment, and open investor redemptions explicitly.
+
+### ReceivablePoolFactory
+
+**Address:** `0xB492cb1C7bf4a199954c06b9640DF3936Af8e782`
+
+Creates pools owned by the financial partner that created them. Each pool can configure a compliance registry, minimum tier, and multiple allowed country codes.
 
 ---
 

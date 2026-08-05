@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "schema": [
     {
       "name": "writer",
@@ -1046,6 +1046,123 @@
           "required": true,
           "type": "buffer",
           "version": 4
+        }
+      ]
+    },
+    {
+      "name": "compliance-identity",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 7,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "walletId",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "walletAddress",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "tokenId",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "passId",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "ownerKey",
+          "required": true,
+          "type": "buffer",
+          "version": 6
+        },
+        {
+          "name": "status",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "kycSource",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "kycId",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "subTier",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "subGroup",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "expirationTime",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "identityData",
+          "type": "json",
+          "version": 6
+        },
+        {
+          "name": "bankAccountData",
+          "type": "json",
+          "version": 6
+        },
+        {
+          "name": "approvedBy",
+          "type": "buffer",
+          "version": 6
+        },
+        {
+          "name": "approvedAt",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "lockedAt",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "rejectionReason",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "updatedAt",
+          "required": true,
+          "type": "int",
+          "version": 6
         }
       ]
     }

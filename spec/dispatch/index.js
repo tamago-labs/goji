@@ -38,8 +38,11 @@ class Router {
     this._handler27 = null
     this._handler28 = null
     this._handler29 = null
+    this._handler30 = null
+    this._handler31 = null
+    this._handler32 = null
 
-    this._missing = 30
+    this._missing = 33
   }
 
   add (name, handler) {
@@ -134,6 +137,15 @@ class Router {
       case '@goji/rag-search-result':
         this._handler29 = handler
         break
+      case '@goji/add-compliance-identity':
+        this._handler30 = handler
+        break
+      case '@goji/update-compliance-identity':
+        this._handler31 = handler
+        break
+      case '@goji/remove-compliance-identity':
+        this._handler32 = handler
+        break
       default:
         throw DispatchError.NONEXISTENT_ROUTE(name)
     }
@@ -171,6 +183,9 @@ class Router {
     assert(this._handler27 !== null, 'Missing handler for "@goji/add-knowledge-document"')
     assert(this._handler28 !== null, 'Missing handler for "@goji/rag-search"')
     assert(this._handler29 !== null, 'Missing handler for "@goji/rag-search-result"')
+    assert(this._handler30 !== null, 'Missing handler for "@goji/add-compliance-identity"')
+    assert(this._handler31 !== null, 'Missing handler for "@goji/update-compliance-identity"')
+    assert(this._handler32 !== null, 'Missing handler for "@goji/remove-compliance-identity"')
   }
 
   async dispatch (message, context) {
@@ -243,6 +258,12 @@ class Router {
         return this._handler28(op.value, context)
       case 29:
         return this._handler29(op.value, context)
+      case 30:
+        return this._handler30(op.value, context)
+      case 31:
+        return this._handler31(op.value, context)
+      case 32:
+        return this._handler32(op.value, context)
       default:
         throw DispatchError.HANDLER_NOT_FOUND_BY_ID(op.id)
     }
@@ -456,6 +477,24 @@ const route29 = {
   enc: getEncoding('@goji/rag-search-result')
 }
 
+const route30 = {
+  name: '@goji/add-compliance-identity',
+  id: 30,
+  enc: getEncoding('@goji/compliance-identity')
+}
+
+const route31 = {
+  name: '@goji/update-compliance-identity',
+  id: 31,
+  enc: getEncoding('@goji/compliance-identity')
+}
+
+const route32 = {
+  name: '@goji/remove-compliance-identity',
+  id: 32,
+  enc: getEncoding('@goji/compliance-identity')
+}
+
 function getRouteByName (name) {
   switch (name) {
     case '@goji/add-writer':
@@ -518,6 +557,12 @@ function getRouteByName (name) {
       return route28
     case '@goji/rag-search-result':
       return route29
+    case '@goji/add-compliance-identity':
+      return route30
+    case '@goji/update-compliance-identity':
+      return route31
+    case '@goji/remove-compliance-identity':
+      return route32
     default:
       throw DispatchError.ROUTE_NOT_FOUND_BY_NAME(name)
   }
@@ -585,6 +630,12 @@ function getRouteById (id) {
       return route28
     case 29:
       return route29
+    case 30:
+      return route30
+    case 31:
+      return route31
+    case 32:
+      return route32
     default:
       throw DispatchError.HANDLER_NOT_FOUND_BY_ID(id)
   }

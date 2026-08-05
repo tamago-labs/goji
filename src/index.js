@@ -284,6 +284,18 @@ class GojiRoom {
       const existing = await ctx.view.get('@goji/knowledgeDocuments', { id: data.id })
       if (!existing) await ctx.view.insert('@goji/knowledgeDocuments', data)
     })
+    this.router.add('@goji/add-compliance-identity', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/complianceIdentities', { id: data.id })
+      if (!existing) await ctx.view.insert('@goji/complianceIdentities', data)
+    })
+    this.router.add('@goji/update-compliance-identity', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/complianceIdentities', { id: data.id })
+      if (existing) await applyUpdate(ctx.view, '@goji/complianceIdentities', { id: data.id }, () => data)
+      else await ctx.view.insert('@goji/complianceIdentities', data)
+    })
+    this.router.add('@goji/remove-compliance-identity', async (data, ctx) => {
+      await ctx.view.delete('@goji/complianceIdentities', { id: data.id })
+    })
     this.router.add('@goji/rag-search', async (data, ctx) => {
       await ctx.view.insert('@goji/ragSearches', data)
       if (typeof this.onRagSearch === 'function') {
@@ -354,6 +366,10 @@ class GojiRoom {
     }))
   }
 
+  async getIdentitiesRaw() {
+    return await this.view.find('@goji/identity', {}).toArray()
+  }
+
   async buildSnapshot() {
     const [rawBoards, rawCards, rawConnections] = await Promise.all([
       this.getBoards(),
@@ -405,6 +421,10 @@ class GojiRoom {
 
   async getKnowledgeDocuments() {
     return await this.view.find('@goji/knowledgeDocuments', {}).toArray()
+  }
+
+  async getComplianceIdentities() {
+    return await this.view.find('@goji/complianceIdentities', {}).toArray()
   }
 
   async appendIdentity({ displayName, role, assignedBy, assignedAt }) {
@@ -1196,6 +1216,106 @@ async function main() {
     wsBroadcast({ type: 'wallet:deleted', id: req.params.id })
     res.json({ ok: true })
   })
+
+  // Workspace-scoped compliance identities. The NFT/pass reference is
+  // public; the identity and bank payloads remain in the private room.
+  function serializeComplianceIdentity(record, identities) {
+    const owner = identities.find((item) => b4a.equals(item.writerKey, record.ownerKey))
+    return {
+      ...record,
+      ownerKey: b4a.toString(record.ownerKey, 'hex'),
+      approvedBy: record.approvedBy ? b4a.toString(record.approvedBy, 'hex') : null,
+      ownerName: owner?.displayName || 'Unknown'
+    }
+  }
+
+  async function canReviewIdentities() {
+    const caller = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    return caller?.role === 'company' || caller?.role === 'compliance'
+  }
+
+  app.get('/api/identities', async (_req, res) => {
+    const rows = await room.getComplianceIdentities()
+    const mine = rows.filter((row) => b4a.equals(row.ownerKey, room.localBase.key))
+    res.json(mine.map((row) => serializeComplianceIdentity(row, [])))
+  })
+
+  app.get('/api/identities/all', async (_req, res) => {
+    if (!(await canReviewIdentities())) return res.status(403).json({ error: 'Only company and compliance roles can review identities' })
+    const [rows, identities] = await Promise.all([
+      room.getComplianceIdentities(),
+      room.getIdentitiesRaw()
+    ])
+    res.json(rows.map((row) => serializeComplianceIdentity(row, identities)))
+  })
+
+  app.post('/api/identities', async (req, res) => {
+    const { walletId, walletAddress, tokenId, passId, expirationTime, identityDataList, bankAccountList } = req.body || {}
+    if (!walletId || !walletAddress || !tokenId || !passId) return res.status(400).json({ error: 'walletId, walletAddress, tokenId, and passId are required' })
+    const wallet = (await room.view.find('@goji/wallets', {}).toArray()).find((row) => b4a.toString(row.id, 'hex') === walletId && b4a.equals(row.identityKey, room.localBase.key))
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found for this P2P identity' })
+    const existing = (await room.getComplianceIdentities()).find((row) => row.walletId === walletId)
+    if (existing) return res.status(409).json({ error: 'This wallet already has a workspace identity' })
+    const now = Date.now()
+    const record = {
+      id: `identity_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+      walletId,
+      walletAddress,
+      tokenId: String(tokenId),
+      passId: String(passId),
+      ownerKey: room.localBase.key,
+      status: 'pending',
+      kycSource: null,
+      kycId: null,
+      subTier: null,
+      subGroup: null,
+      expirationTime: Number(expirationTime) || 0,
+      identityData: identityDataList || [],
+      bankAccountData: bankAccountList || [],
+      approvedBy: null,
+      approvedAt: null,
+      lockedAt: null,
+      rejectionReason: null,
+      createdAt: now,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/add-compliance-identity', record))
+    res.json(serializeComplianceIdentity(record, []))
+  })
+
+  app.put('/api/identities/:id', async (req, res) => {
+    const existing = await room.view.get('@goji/complianceIdentities', { id: req.params.id })
+    if (!existing) return res.status(404).json({ error: 'Identity not found' })
+    if (!b4a.equals(existing.ownerKey, room.localBase.key)) return res.status(403).json({ error: 'Only the identity owner can edit this record' })
+    if (existing.status !== 'pending' && existing.status !== 'rejected') return res.status(409).json({ error: 'Only pending or rejected identities can be edited' })
+    const next = { ...existing, ...req.body, id: existing.id, ownerKey: existing.ownerKey, status: 'pending', updatedAt: Date.now(), rejectionReason: null }
+    await room.base.append(GojiDispatch.encode('@goji/update-compliance-identity', next))
+    res.json(serializeComplianceIdentity(next, []))
+  })
+
+  async function updateIdentityReview(req, res, status) {
+    if (!(await canReviewIdentities())) return res.status(403).json({ error: 'Only company and compliance roles can review identities' })
+    const existing = await room.view.get('@goji/complianceIdentities', { id: req.params.id })
+    if (!existing) return res.status(404).json({ error: 'Identity not found' })
+    if (existing.status === 'locked') return res.status(409).json({ error: 'Locked identities cannot be changed' })
+    const now = Date.now()
+    const next = {
+      ...existing,
+      status,
+      approvedBy: status === 'approved' || status === 'locked' ? room.localBase.key : null,
+      approvedAt: status === 'approved' || status === 'locked' ? now : existing.approvedAt,
+      lockedAt: status === 'locked' ? now : existing.lockedAt,
+      rejectionReason: status === 'rejected' ? String(req.body?.reason || 'Changes requested') : null,
+      updatedAt: now
+    }
+    await room.base.append(GojiDispatch.encode('@goji/update-compliance-identity', next))
+    res.json(serializeComplianceIdentity(next, []))
+  }
+
+  app.post('/api/identities/:id/approve', (req, res) => updateIdentityReview(req, res, 'approved'))
+  app.post('/api/identities/:id/reject', (req, res) => updateIdentityReview(req, res, 'rejected'))
+  app.post('/api/identities/:id/lock', (req, res) => updateIdentityReview(req, res, 'locked'))
+  app.post('/api/identities/:id/expire', (req, res) => updateIdentityReview(req, res, 'expired'))
 
   app.get('/api/wallets/:id/balance', async (req, res) => {
     const rows = await room.view.find('@goji/wallets', {}).toArray()

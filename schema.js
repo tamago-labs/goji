@@ -269,6 +269,32 @@ schema.register({
 })
 
 schema.register({
+  name: 'compliance-identity',
+  fields: [
+    { name: 'id', type: 'string', required: true },
+    { name: 'walletId', type: 'string', required: true },
+    { name: 'walletAddress', type: 'string', required: true },
+    { name: 'tokenId', type: 'string', required: true },
+    { name: 'passId', type: 'string', required: true },
+    { name: 'ownerKey', type: 'buffer', required: true },
+    { name: 'status', type: 'string', required: true },
+    { name: 'kycSource', type: 'string' },
+    { name: 'kycId', type: 'string' },
+    { name: 'subTier', type: 'int' },
+    { name: 'subGroup', type: 'string' },
+    { name: 'expirationTime', type: 'int' },
+    { name: 'identityData', type: 'json' },
+    { name: 'bankAccountData', type: 'json' },
+    { name: 'approvedBy', type: 'buffer' },
+    { name: 'approvedAt', type: 'int' },
+    { name: 'lockedAt', type: 'int' },
+    { name: 'rejectionReason', type: 'string' },
+    { name: 'createdAt', type: 'int', required: true },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
   name: 'knowledge-document',
   fields: [
     { name: 'id', type: 'string', required: true },
@@ -322,6 +348,7 @@ db.collections.register({ name: 'companyProfiles', schema: '@goji/company-profil
 db.collections.register({ name: 'knowledgeDocuments', schema: '@goji/knowledge-document', key: ['id'] })
 db.collections.register({ name: 'ragSearches', schema: '@goji/rag-search', key: ['requestId'] })
 db.collections.register({ name: 'ragSearchResults', schema: '@goji/rag-search-result', key: ['requestId'] })
+db.collections.register({ name: 'complianceIdentities', schema: '@goji/compliance-identity', key: ['id'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -358,6 +385,9 @@ dispatch.register({ name: 'remove-company-profile', requestType: '@goji/company-
 dispatch.register({ name: 'add-knowledge-document', requestType: '@goji/knowledge-document' })
 dispatch.register({ name: 'rag-search', requestType: '@goji/rag-search' })
 dispatch.register({ name: 'rag-search-result', requestType: '@goji/rag-search-result' })
+dispatch.register({ name: 'add-compliance-identity', requestType: '@goji/compliance-identity' })
+dispatch.register({ name: 'update-compliance-identity', requestType: '@goji/compliance-identity' })
+dispatch.register({ name: 'remove-compliance-identity', requestType: '@goji/compliance-identity' })
 
 Hyperdispatch.toDisk(hyperdispatch)
 

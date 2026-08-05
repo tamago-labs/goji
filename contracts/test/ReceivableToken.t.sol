@@ -190,8 +190,8 @@ contract ReceivableTokenTest is Test {
         _fundFull();
         _expire();
 
-        vm.prank(issuer);
         vm.expectRevert("Insufficient repayment");
+        vm.prank(issuer);
         token.claimRepayment{value: 11_000 * 1e18}();
     }
 

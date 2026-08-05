@@ -4,6 +4,12 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IComplianceRegistry {
+    function isEligible(address wallet, uint8 requiredTier) external view returns (bool);
+    function countryOf(address wallet) external view returns (bytes2);
+    function isEligibleForCountry(address wallet, uint8 requiredTier, bytes2 countryCode) external view returns (bool);
+}
+
 /// @title ReceivableToken
 /// @notice ERC-20 token representing a verified receivable from Goji
 /// @dev Fractional ownership token for invoice/payment financing
@@ -13,6 +19,7 @@ contract ReceivableToken is ERC20, Ownable {
     event ReceivableFunded(address indexed investor, uint256 amount, uint256 tokens);
     event RepaymentClaimed(address indexed company, uint256 amount);
     event Redeemed(address indexed investor, uint256 amount);
+    event CompliancePolicyUpdated(address indexed registry, uint8 requiredTier);
 
     // ──────────────────────────── Enums ─────────────────────────────────
     enum Status { Active, Funded, Expired, Redeemed, Defaulted }
@@ -29,6 +36,8 @@ contract ReceivableToken is ERC20, Ownable {
     uint256 public maxSupply;
     uint256 public issuedAt;
     uint256 public expiresAt;
+    address public complianceRegistry;
+    uint8 public requiredComplianceTier;
 
     // Funding
     uint256 public fundedAmount;
@@ -79,6 +88,9 @@ contract ReceivableToken is ERC20, Ownable {
         require(block.timestamp < expiresAt, "Receivable expired");
         require(msg.value >= minInvestment, "Below minimum investment");
         require(fundedAmount + msg.value <= totalReceivable, "Exceeds total");
+        if (complianceRegistry != address(0)) {
+            require(IComplianceRegistry(complianceRegistry).isEligible(msg.sender, requiredComplianceTier), "Identity not eligible");
+        }
 
         uint256 tokens = (msg.value * maxSupply) / totalReceivable;
 
@@ -100,8 +112,17 @@ contract ReceivableToken is ERC20, Ownable {
         emit ReceivableFunded(msg.sender, msg.value, tokens);
     }
 
+    /// @notice Set optional identity eligibility requirements for investors.
+    /// @dev The factory is the owner for factory-created receivables.
+    function setCompliancePolicy(address registry, uint8 tier) external onlyOwner {
+        complianceRegistry = registry;
+        requiredComplianceTier = tier;
+        emit CompliancePolicyUpdated(registry, tier);
+    }
+
     /// @notice Company claims repayment (deposits principal + pro-rata interest)
     function claimRepayment() external payable {
+        require(msg.sender == issuer, "Only issuer");
         require(status == Status.Active || status == Status.Funded, "Not claimable");
         require(block.timestamp >= expiresAt, "Not expired yet");
 

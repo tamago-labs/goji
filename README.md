@@ -147,11 +147,30 @@ GojiProof anchors Merkle roots for payment documents on Arc. The private documen
 - `getRootByConnection(bytes32 connectionId)` looks up a root from its canvas connection
 - `hasDocument(bytes32 connectionId)` checks whether a connection has an anchored document
 
+### SoulboundIdentityPass
+
+The Arc Testnet identity pass binds one non-transferable NFT to each wallet. It stores only the token/pass reference on-chain; compliance and banking data remain workspace-scoped.
+
+- `mint()` creates one pass per wallet
+- `tokenIdOf(address wallet)` returns the wallet's NFT id
+- `passIdOf(address wallet)` returns the separate identity pass id
+- `isValid(address wallet)` checks revocation and expiry
+
+### ComplianceRegistry
+
+ComplianceRegistry is a company or pool-specific eligibility layer. It does not change the global identity NFT. Reviewers approve a pass with a compliance tier, expiry, and ISO country code; pools can then apply their own country allowlist.
+
+- `approveIdentity(...)` records an approved pass
+- `revokeIdentity(...)` removes approval
+- `isEligible(...)` checks pass validity and tier
+- `isEligibleForCountry(...)` checks pass, tier, and country
+
 ### ReceivableFactory
 
 ReceivableFactory creates and tracks receivable token contracts for company issuers.
 
 - Creates receivables with amount, interest rate, minimum investment, expiry, and proof hashes
+- `createReceivableWithCompliance(...)` optionally applies an identity registry and required tier
 - Charges a configurable flat creation fee of 1 USDC by default
 - Tracks receivables and total value by issuer
 - Allows the administrator to configure the treasury and withdraw platform fees
@@ -166,6 +185,20 @@ Each receivable has an ERC-20 token representing fractional ownership of the fin
 - Interest is calculated pro rata using investment amount and time funded
 - The company repays principal plus interest at expiry
 - Token holders redeem their share after repayment
+- Repayment is restricted to the receivable issuer
+
+### ReceivablePool
+
+Financial partners can aggregate multiple receivables into a pool. Pool investors deposit native USDC and receive pool-share tokens instead of interacting with each receivable directly.
+
+- Adds and finances multiple receivables
+- Checks optional identity tier and country eligibility on deposits
+- Closes deposits before the funding phase
+- Opens redemptions explicitly after receivable repayment is collected
+
+### ReceivablePoolFactory
+
+Creates pools owned by the financial partner who created them. Pool policy can require a minimum compliance tier and allow multiple countries.
 
 #### Default Receivable Parameters
 
@@ -252,14 +285,27 @@ The frontend runs on port `3000` and connects to `http://localhost:3001` by defa
 
 ## Arc Testnet Contracts
 
-| Contract          | Address                                      |
-| ----------------- | -------------------------------------------- |
-| GojiProof         | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
-| ReceivableFactory | `0x5646647B48b5458D8352764F1b697195454D52Bf` |
+| Contract              | Address                                      |
+| --------------------- | -------------------------------------------- |
+| GojiProof             | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
+| ReceivableFactory     | `0x9CE5e02F96ef27bc894366AB360DD7f8545d5708` |
+| SoulboundIdentityPass | `0x9829724359A49c36B53deB1e059c14d3C2eA5458` |
+| ComplianceRegistry    | `0x31289306250CeB6dC5Bb78A32AC2393Dab250b22` |
+| ReceivablePoolFactory | `0xB492cb1C7bf4a199954c06b9640DF3936Af8e782` |
 
 - Chain: Arc Testnet, chain ID `5042002`
 - Receivable creation fee: 1 USDC, configurable by the administrator
 - Receivable funding uses native USDC on Arc
+
+Deployment order for the compliance and pooled-financing layer:
+
+```text
+SoulboundIdentityPass
+        ↓
+ComplianceRegistry
+        ↓
+ReceivablePoolFactory
+```
 
 ## Roadmap
 

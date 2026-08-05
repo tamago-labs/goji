@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "offset": 0,
   "schema": [
     {
@@ -206,6 +206,21 @@
       "versionField": null,
       "indexes": [],
       "schema": "@goji/company-profile",
+      "derived": false,
+      "key": [
+        "id"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "complianceIdentities",
+      "namespace": "goji",
+      "id": 14,
+      "type": 1,
+      "version": 5,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@goji/compliance-identity",
       "derived": false,
       "key": [
         "id"

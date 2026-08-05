@@ -7,8 +7,9 @@
     "goji": "src/index.js"
   },
   "scripts": {
-    "start": "node src/index.js --port 3001",
-    "start:guest": "node src/index.js --port 3002 --guest",
+    "start": "node src/index.js --port 3001 --dev",
+    "start:guest": "node src/index.js --port 3002 --guest --dev",
+    "build": "cd frontend && npm run build",
     "build:specs": "node schema.js",
     "clean:storage": "node scripts/clean-storage.js",
     "lint": "prettier . --check && lunte",

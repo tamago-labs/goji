@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 
-const DEFAULT_URL = 'http://localhost:3001'
+const DEFAULT_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
 
 interface Health {
   status: string

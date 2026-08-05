@@ -1,7 +1,7 @@
 'use client'
 
-import { use, useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import FlowBuilder from '../../components/flow/FlowBuilder'
 import { type FlowCard, type Connection } from '../../components/flow/types'
 
@@ -59,8 +59,9 @@ function getTemplateData(type: string): {
   return { cards: [], connections: [], name: 'Untitled flow' }
 }
 
-export default function FlowPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+function FlowPageInner() {
+  const searchParams = useSearchParams()
+  const id = searchParams.get('id')
   const router = useRouter()
   const [boardId, setBoardId] = useState<string | null>(null)
   const [initialCards, setInitialCards] = useState<FlowCard[]>([])
@@ -74,10 +75,13 @@ export default function FlowPage({ params }: { params: Promise<{ id: string }> }
     createdRef.current = true
 
     async function init() {
+      if (!id) {
+        setLoading(false)
+        return
+      }
+
       if (id === 'new') {
-        // Creating new board from URL params
-        const urlParams = new URLSearchParams(window.location.search)
-        const type = urlParams.get('type') || 'blank'
+        const type = searchParams.get('type') || 'blank'
         const template = getTemplateData(type)
 
         try {
@@ -91,7 +95,6 @@ export default function FlowPage({ params }: { params: Promise<{ id: string }> }
             setBoardId(board.id)
             setFlowName(board.name)
 
-            // Create template cards and connections
             for (const card of template.cards) {
               await fetch(`${API}/api/cards`, {
                 method: 'POST',
@@ -110,14 +113,12 @@ export default function FlowPage({ params }: { params: Promise<{ id: string }> }
             setInitialCards(template.cards)
             setInitialConnections(template.connections)
 
-            // Replace URL without re-render
-            window.history.replaceState(null, '', `/flow/${board.id}`)
+            window.history.replaceState(null, '', `/flow/view?id=${board.id}`)
           }
         } catch (err) {
           console.error('[flow] failed to create board:', err)
         }
       } else {
-        // Loading existing board
         setBoardId(id)
         try {
           const boardRes = await fetch(`${API}/api/boards`)
@@ -148,5 +149,17 @@ export default function FlowPage({ params }: { params: Promise<{ id: string }> }
       initialConnections={initialConnections}
       flowName={flowName}
     />
+  )
+}
+
+export default function FlowPage() {
+  return (
+    <Suspense fallback={
+      <div className='h-screen flex items-center justify-center bg-lavender'>
+        <div className='w-6 h-6 border-2 border-ink/20 border-t-ink/60 rounded-full animate-spin' />
+      </div>
+    }>
+      <FlowPageInner />
+    </Suspense>
   )
 }

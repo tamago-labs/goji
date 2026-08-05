@@ -16,7 +16,7 @@ import DepositSpendModal from './DepositSpendModal'
 import WalletsTab from './WalletsTab'
 import { DollarSign, LayoutGrid, Wallet, BookText, ListTodo } from 'lucide-react'
 
-const DEFAULT_URL = 'http://localhost:3001'
+const DEFAULT_URL = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001'
 
 interface Health {
   status: string

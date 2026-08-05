@@ -226,7 +226,7 @@ export default function RWAPage() {
                   </td>
                   <td className='px-6 py-4'>
                     <Link
-                      href={`/rwa/${token.address}`}
+                      href={`/rwa/detail?address=${token.address}`}
                       className='text-[10px] text-mint hover:text-[#1B7A50] font-medium transition-colors'
                     >
                       View

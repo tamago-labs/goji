@@ -60,7 +60,7 @@ export default function BoardsGrid({ boards, disabled, flowStatuses = [] }: Boar
       <div className='flex items-center justify-between mb-4'>
         <h2 className='font-display text-xl font-semibold'>Workflows</h2>
         <Link
-          href='/flow/new?type=blank'
+          href='/flow/view?id=new&type=blank'
           className={`flex items-center gap-1.5 px-3 py-1.5 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
         >
           <Plus className='w-3.5 h-3.5' />
@@ -79,7 +79,7 @@ export default function BoardsGrid({ boards, disabled, flowStatuses = [] }: Boar
             return (
               <Link
                 key={board.id}
-                href={`/flow/${board.id}`}
+                href={`/flow/view?id=${board.id}`}
                 className='group bg-card rounded-2xl p-6 shadow-[0_4px_20px_rgba(43,36,64,0.06)] hover:shadow-[0_8px_30px_rgba(43,36,64,0.1)] transition-shadow flex flex-col min-h-[180px]'
               >
                 <div className='flex-1'>

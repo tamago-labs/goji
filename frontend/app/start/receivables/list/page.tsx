@@ -174,7 +174,7 @@ export default function ReceivablesListPage() {
                   </td>
                   <td className='px-6 py-3'>
                     <Link
-                      href={`/start/receivables/${r.address}`}
+                      href={`/start/receivables?id=${r.address}`}
                       className='text-[10px] text-mint hover:text-[#1B7A50] font-medium transition-colors'
                     >
                       View

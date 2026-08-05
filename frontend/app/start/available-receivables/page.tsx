@@ -134,7 +134,7 @@ export default function AvailableReceivablesPage() {
                   </td>
                   <td className='px-6 py-3'>
                     <Link
-                      href={`/start/available-receivables/${r.tokenAddress}`}
+                      href={`/start/available-receivables?token=${r.tokenAddress}`}
                       className='text-[10px] text-mint hover:text-[#1B7A50] font-medium transition-colors'
                     >
                       View

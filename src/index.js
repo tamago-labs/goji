@@ -17,6 +17,7 @@ const crypto = require('hypercore-crypto')
 
 const PORT = parseInt(process.argv.find((a, i) => process.argv[i - 1] === '--port') || '3001', 10)
 const isGuest = process.argv.includes('--guest') || process.argv.includes('--join')
+const isDev = process.argv.includes('--dev')
 const joinIdx = process.argv.indexOf('--join')
 const INVITE = joinIdx !== -1 ? process.argv[joinIdx + 1] : null
 const NAME = process.argv.find((a, i) => process.argv[i - 1] === '--name') || null
@@ -1520,6 +1521,28 @@ async function main() {
     await room.appendIdentity({ displayName: name })
     res.json({ ok: true, name })
   })
+
+  // Serve frontend static files (production mode only)
+  if (!isDev) {
+    const path = require('path')
+    const fs = require('fs')
+    const frontendPath = path.join(__dirname, '..', 'frontend-dist')
+    
+    if (fs.existsSync(frontendPath)) {
+      app.use(express.static(frontendPath))
+      // SPA fallback - serve index.html for all non-API routes
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(frontendPath, 'index.html'))
+      })
+      console.log(`[goji] Frontend: http://localhost:${PORT}`)
+    } else {
+      console.log(`[goji] Frontend not built. Run: npm run build`)
+      console.log(`[goji] API only: http://localhost:${PORT}/api/health`)
+    }
+  } else {
+    console.log(`[goji] Dev mode - run frontend separately on port 3000`)
+    console.log(`[goji] API only: http://localhost:${PORT}/api/health`)
+  }
 
   const server = app.listen(PORT, () => {
     console.log(`[goji] HTTP  http://localhost:${PORT}/api/health`)

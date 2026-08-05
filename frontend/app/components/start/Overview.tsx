@@ -127,7 +127,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
       done: stats.boardCount > 0,
       title: 'Create a Flow',
       desc: 'Build a payment pipeline with wallets, recipients, and connection lines.',
-      action: stats.boardCount === 0 ? <Link href='/flow/new?type=blank' className='text-[10px] text-mint'>Create →</Link> : null
+      action: stats.boardCount === 0 ? <Link href='/flow/view?id=new&type=blank' className='text-[10px] text-mint'>Create →</Link> : null
     },
     {
       done: stats.settledCount > 0,
@@ -335,7 +335,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                   {outgoingRoutes.slice(0, 5).map((route, i) => (
                     <tr
                       key={i}
-                      onClick={() => window.location.href = `/flow/${route.boardId}`}
+                      onClick={() => window.location.href = `/flow/view?id=${route.boardId}`}
                       className='hover:bg-ink/3 transition-colors border-b border-ink/5 last:border-0 cursor-pointer'
                     >
                       <td className='px-6 py-3 text-ink/70'>{route.boardName}</td>
@@ -377,7 +377,7 @@ export default function Overview({ apiUrl, role }: OverviewProps) {
                 {recentBoards.map((board) => (
                   <Link
                     key={board.id}
-                    href={`/flow/${board.id}`}
+                    href={`/flow/view?id=${board.id}`}
                     className='flex items-center justify-between px-6 py-3 hover:bg-ink/3 transition-colors border-b border-ink/5 last:border-0'
                   >
                     <span className='text-sm text-ink/70'>{board.name}</span>

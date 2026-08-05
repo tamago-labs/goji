@@ -156,12 +156,17 @@ export default function HistorySection({ apiUrl }: HistorySectionProps) {
 
     // Render template with all fields
     const html = renderTemplate(templateHtml, {
-      company: 'Company',
+      companyName: 'Company',
       amount: row.amount || '0',
       sender: row.direction === 'outgoing' ? 'Company' : row.counterpartyName,
       recipient: row.direction === 'outgoing' ? row.counterpartyName : 'Company',
+      billToName: row.direction === 'outgoing' ? row.counterpartyName : 'Company',
       date: new Date().toLocaleDateString(),
+      invoiceDate: new Date().toLocaleDateString(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
       txHash: row.txHash || 'Pending...',
+      status: row.status === 'settled' ? 'PAID' : 'UNPAID',
+      statusClass: row.status === 'settled' ? 'badge-paid' : 'badge-unpaid',
       ...customFields
     })
 

@@ -190,11 +190,14 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
           }
           if (templateHtml) {
             payslipHtml = renderTemplate(templateHtml, {
-              company: 'Company',
+              companyName: selectedTemplate?.companyName || 'Company',
               amount: amount || '0',
               sender: route.from?.title || 'Wallet',
               recipient: route.to?.title || 'Recipient',
+              billToName: route.to?.title || 'Recipient',
               date: new Date().toLocaleDateString(),
+              invoiceDate: new Date().toLocaleDateString(),
+              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
               txHash: result.txHash || 'N/A',
               status: 'PAID',
               statusClass: 'badge-paid',

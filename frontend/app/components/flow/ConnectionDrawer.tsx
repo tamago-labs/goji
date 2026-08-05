@@ -99,12 +99,17 @@ export default function ConnectionDrawer({ isOpen, connection, cards, apiUrl, on
   const selectedTemplate = templates.find((t) => t.id === templateId) || templates[0]
 
   const previewHtml = selectedTemplate ? renderTemplate(selectedTemplate.html, {
-    company: selectedTemplate.companyName || 'Company',
+    companyName: selectedTemplate.companyName || 'Company',
     amount: amount || '0',
     sender: fromCard?.title || 'Wallet',
     recipient: toCard?.title || 'Recipient',
+    billToName: toCard?.title || 'Recipient',
     date: new Date().toLocaleDateString(),
+    invoiceDate: new Date().toLocaleDateString(),
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
     txHash: connection?.txHash || 'Pending...',
+    status: 'UNPAID',
+    statusClass: 'badge-unpaid',
     ...fieldValues
   }) : '<div style="padding:40px;text-align:center;color:#999">Loading template...</div>'
 

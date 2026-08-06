@@ -23,13 +23,21 @@ export default function Nav() {
         >
           Supported chains
         </a>
+        <a
+          href='/rwa'
+          className='text-ink/65 text-[15px] font-medium hover:opacity-100 transition-opacity'
+        >
+          RWA Explorer
+        </a>
         <div className='relative'>
           <button
             onClick={() => setShowMore(!showMore)}
             className='flex items-center gap-1 text-ink/65 text-[15px] font-medium hover:opacity-100 transition-opacity'
           >
             More
-            <ChevronDown className={`w-3 h-3 transition-transform ${showMore ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-3 h-3 transition-transform ${showMore ? 'rotate-180' : ''}`}
+            />
           </button>
           {showMore && (
             <div className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 py-2 min-w-[150px] z-50'>

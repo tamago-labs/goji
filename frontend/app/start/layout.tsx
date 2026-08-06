@@ -10,27 +10,98 @@ import UserMenuPopover from '../components/start/UserMenuPopover'
 import UsernameModal from '../components/start/UsernameModal'
 import DepositSpendModal from '../components/start/DepositSpendModal'
 import { StartProvider, useStart } from '../components/start/StartProvider'
-import { ListTodo, DollarSign, LayoutGrid, Building2, Wallet, Shield, FileCheck, Settings, TrendingUp, Package, BookOpen, Layers3 } from 'lucide-react'
+import {
+  ListTodo,
+  DollarSign,
+  LayoutGrid,
+  Building2,
+  Wallet,
+  Shield,
+  FileCheck,
+  Settings,
+  TrendingUp,
+  Package,
+  BookOpen,
+  Layers3,
+  ClipboardList,
+  ScrollText
+} from 'lucide-react'
 
 const NAV_ITEMS = [
   // All roles
-  { href: '/start/overview', label: 'Overview', icon: ListTodo, roles: ['company', 'counterparty', 'compliance', 'partner'] },
+  {
+    href: '/start/overview',
+    label: 'Overview',
+    icon: ListTodo,
+    roles: ['company', 'counterparty', 'compliance', 'partner']
+  },
+  {
+    href: '/start/identities',
+    label: 'Identity Review',
+    icon: ClipboardList,
+    roles: ['compliance']
+  },
+  {
+    href: '/start/travel-rule',
+    label: 'Travel Rule Audit',
+    icon: ScrollText,
+    roles: ['compliance']
+  },
   // Partner only
-  { href: '/start/available-receivables', label: 'Available Receivables', icon: Package, roles: ['partner'] },
+  {
+    href: '/start/available-receivables',
+    label: 'Available Receivables',
+    icon: Package,
+    roles: ['partner']
+  },
   { href: '/start/pools', label: 'Your Pools', icon: Layers3, roles: ['partner'] },
-  // Company only
-  { href: '/start/workflows', label: 'Workflows', icon: LayoutGrid, roles: ['company'] },
+  // Company & Compliance
+  {
+    href: '/start/workflows',
+    label: 'Workflows',
+    icon: LayoutGrid,
+    roles: ['company', 'compliance']
+  },
+  {
+    href: '/start/receivables',
+    label: 'Receivables',
+    icon: TrendingUp,
+    roles: ['company', 'compliance']
+  },
   // Company & Counterparty
-  { href: '/start/wallets', label: 'Wallets', icon: Wallet, roles: ['company', 'counterparty', 'partner'] },
-  { href: '/start/payments', label: 'Payments', icon: DollarSign, roles: ['company', 'counterparty'] },
-  { href: '/start/invoices', label: 'Invoices', icon: FileCheck, roles: ['company', 'counterparty'] },
+  {
+    href: '/start/wallets',
+    label: 'Wallets',
+    icon: Wallet,
+    roles: ['company', 'counterparty', 'partner']
+  },
+  {
+    href: '/start/payments',
+    label: 'Payments',
+    icon: DollarSign,
+    roles: ['company', 'counterparty']
+  },
+  {
+    href: '/start/invoices',
+    label: 'Invoices',
+    icon: FileCheck,
+    roles: ['company', 'counterparty']
+  },
   // All roles
-  { href: '/start/proof', label: 'Proof Explorer', icon: Shield, roles: ['company', 'counterparty', 'compliance', 'partner'] },
-  { href: '/start/knowledge', label: 'Knowledge Base', icon: BookOpen, roles: ['company', 'counterparty', 'compliance', 'partner'] },
-  // Company only
-  { href: '/start/receivables', label: 'Receivables', icon: TrendingUp, roles: ['company'] },
+  {
+    href: '/start/proof',
+    label: 'Proof Explorer',
+    icon: Shield,
+    roles: ['company', 'counterparty', 'compliance', 'partner']
+  },
+  {
+    href: '/start/knowledge',
+    label: 'Knowledge Base',
+    icon: BookOpen,
+    roles: ['company', 'counterparty', 'compliance', 'partner']
+  },
   // Admin
-  { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['company', 'compliance'] },
+  { href: '/start/organization', label: 'Organization', icon: Building2, roles: ['company'] }
 ]
 
 function StartLayoutInner({ children }: { children: React.ReactNode }) {
@@ -64,37 +135,105 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
         <div className='flex items-center gap-2'>
           {health && (
             <>
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'company' ? 'bg-mint/15 text-[#1B7A50]' : health.role === 'counterparty' ? 'bg-blue-100 text-blue-700' : health.role === 'compliance' ? 'bg-violet/15 text-[#5A4FB8]' : health.role === 'partner' ? 'bg-violet/15 text-[#5A4FB8]' : 'bg-ink/10 text-ink/50'}`}>
-                {health.role === 'company' ? 'COMPANY' : health.role === 'counterparty' ? 'COUNTERPARTY' : health.role === 'compliance' ? 'COMPLIANCE' : health.role === 'partner' ? 'PARTNER' : 'PENDING'}
+              <span
+                className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${health.role === 'company' ? 'bg-mint/15 text-[#1B7A50]' : health.role === 'counterparty' ? 'bg-blue-100 text-blue-700' : health.role === 'compliance' ? 'bg-violet/15 text-[#5A4FB8]' : health.role === 'partner' ? 'bg-violet/15 text-[#5A4FB8]' : 'bg-ink/10 text-ink/50'}`}
+              >
+                {health.role === 'company'
+                  ? 'COMPANY'
+                  : health.role === 'counterparty'
+                    ? 'COUNTERPARTY'
+                    : health.role === 'compliance'
+                      ? 'COMPLIANCE'
+                      : health.role === 'partner'
+                        ? 'PARTNER'
+                        : 'PENDING'}
               </span>
-              <span className='text-[11px] text-ink/30'>{health.peers} peer{health.peers !== 1 ? 's' : ''}</span>
+              <span className='text-[11px] text-ink/30'>
+                {health.peers} peer{health.peers !== 1 ? 's' : ''}
+              </span>
               <span className='w-px h-3 bg-ink/10' />
               <div className='relative'>
-                <button onClick={() => setShowUserMenu(!showUserMenu)} className='flex items-center gap-1.5 text-[11px] text-ink/60 font-medium bg-ink/5 hover:bg-ink/10 rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer'>
-                  <svg className='w-3 h-3 text-ink/30' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className='flex items-center gap-1.5 text-[11px] text-ink/60 font-medium bg-ink/5 hover:bg-ink/10 rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer'
+                >
+                  <svg
+                    className='w-3 h-3 text-ink/30'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+                    />
                   </svg>
                   {health.name}
                 </button>
                 <AnimatePresence>
                   {showUserMenu && (
-                    <UserMenuPopover isOpen={showUserMenu} onClose={() => setShowUserMenu(false)} health={health} onOpenUsername={() => { setShowUsernameModal(true); setShowUserMenu(false) }} onOpenDeposit={() => { setShowDeposit(true); setShowUserMenu(false) }} />
+                    <UserMenuPopover
+                      isOpen={showUserMenu}
+                      onClose={() => setShowUserMenu(false)}
+                      health={health}
+                      onOpenUsername={() => {
+                        setShowUsernameModal(true)
+                        setShowUserMenu(false)
+                      }}
+                      onOpenDeposit={() => {
+                        setShowDeposit(true)
+                        setShowUserMenu(false)
+                      }}
+                    />
                   )}
                 </AnimatePresence>
               </div>
               {(health.role === 'company' || health.role === 'compliance') && (
                 <div className='relative'>
-                  <button onClick={() => setShowInvite(!showInvite)} className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors' title='Invite'>
-                    <svg className='w-4 h-4 text-ink/40' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' />
+                  <button
+                    onClick={() => setShowInvite(!showInvite)}
+                    className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors'
+                    title='Invite'
+                  >
+                    <svg
+                      className='w-4 h-4 text-ink/40'
+                      fill='none'
+                      viewBox='0 0 24 24'
+                      stroke='currentColor'
+                    >
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth={2}
+                        d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'
+                      />
                     </svg>
                   </button>
                   <AnimatePresence>
                     {showInvite && (
-                      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.15 }} className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'>
-                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>Invite Code</p>
-                        <p className='font-mono text-xs text-ink/60 break-all mb-3'>{health.peerId}</p>
-                        <button onClick={async () => { await navigator.clipboard.writeText(health.peerId) }} className='w-full px-3 py-2 bg-ink text-lavender text-xs font-medium rounded-lg hover:opacity-90 transition-opacity'>Copy Invite Code</button>
+                      <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 4 }}
+                        transition={{ duration: 0.15 }}
+                        className='absolute top-full right-0 mt-2 bg-card rounded-xl shadow-[0_10px_40px_rgba(43,36,64,0.15)] border border-ink/8 p-4 w-72 z-50'
+                      >
+                        <p className='text-[10px] text-ink/30 uppercase tracking-wider mb-2'>
+                          Invite Code
+                        </p>
+                        <p className='font-mono text-xs text-ink/60 break-all mb-3'>
+                          {health.peerId}
+                        </p>
+                        <button
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(health.peerId)
+                          }}
+                          className='w-full px-3 py-2 bg-ink text-lavender text-xs font-medium rounded-lg hover:opacity-90 transition-opacity'
+                        >
+                          Copy Invite Code
+                        </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -102,7 +241,13 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
               )}
             </>
           )}
-          <button onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }} className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors'>
+          <button
+            onClick={() => {
+              setSettingsInput(apiUrl)
+              setShowSettings(true)
+            }}
+            className='w-8 h-8 rounded-lg bg-ink/5 hover:bg-ink/10 flex items-center justify-center transition-colors'
+          >
             <Settings className='w-4 h-4 text-ink/40' />
           </button>
         </div>
@@ -116,13 +261,26 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
               <div className='w-12 h-12 bg-ink/5 rounded-full flex items-center justify-center mx-auto mb-5'>
                 <div className='w-6 h-6 border-2 border-ink/20 border-t-ink/60 rounded-full animate-spin' />
               </div>
-              <h2 className='font-display text-lg font-semibold text-ink mb-2'>Connecting to workspace</h2>
-              <p className='text-ink/40 text-sm mb-6'>Looking for your terminal...</p>
-              
+              <h2 className='font-display text-lg font-semibold text-ink mb-2'>
+                Connecting to workspace
+              </h2>
+              <p className='text-ink/40 text-sm mb-6'>Connecting to your local Goji terminal...</p>
+
+              <div className='mb-6 rounded-xl bg-ink/[0.03] p-4 text-left'>
+                <p className='mb-3 text-xs leading-5 text-ink/45'>Choose the setup that matches how you are using it:</p>
+                <div className='space-y-3 text-xs leading-5 text-ink/50'>
+                  <p><span className='font-medium text-ink/65'>Goji Web:</span> Open this site in Chrome and run the terminal on your local machine. The default terminal URL is <code className='rounded bg-ink/5 px-1 py-0.5 font-mono text-[10px]'>http://localhost:3001</code>.</p>
+                  <p><span className='font-medium text-ink/65'>Local Goji:</span> Run <code className='rounded bg-ink/5 px-1 py-0.5 font-mono text-[10px]'>npx @tamago-labs/goji</code>, then open the local frontend. This works in any modern browser.</p>
+                </div>
+              </div>
+
               {!error ? (
                 <div className='space-y-3'>
                   <button
-                    onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }}
+                    onClick={() => {
+                      setSettingsInput(apiUrl)
+                      setShowSettings(true)
+                    }}
                     className='text-sm text-ink/40 hover:text-ink/70 transition-colors'
                   >
                     Change terminal URL
@@ -135,13 +293,19 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
                     <p className='text-coral/70 text-xs'>Could not reach terminal at {apiUrl}</p>
                   </div>
                   <button
-                    onClick={() => { setError(null); setLoading(true) }}
+                    onClick={() => {
+                      setError(null)
+                      setLoading(true)
+                    }}
                     className='w-full px-4 py-2.5 bg-ink text-lavender text-sm font-medium rounded-xl hover:opacity-90 transition-opacity'
                   >
                     Retry
                   </button>
                   <button
-                    onClick={() => { setSettingsInput(apiUrl); setShowSettings(true) }}
+                    onClick={() => {
+                      setSettingsInput(apiUrl)
+                      setShowSettings(true)
+                    }}
                     className='text-sm text-ink/40 hover:text-ink/70 transition-colors'
                   >
                     Change terminal URL
@@ -160,18 +324,32 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
             <div className='bg-card rounded-2xl shadow-[0_16px_60px_rgba(43,36,64,0.08)] p-8 max-w-[480px] w-full'>
               <div className='text-center mb-6'>
                 <div className='w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4'>
-                  <svg className='w-6 h-6 text-amber-500' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
+                  <svg
+                    className='w-6 h-6 text-amber-500'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={1.5}
+                      d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+                    />
                   </svg>
                 </div>
-                <h2 className='font-display text-xl font-semibold text-ink mb-2'>Waiting for role assignment</h2>
+                <h2 className='font-display text-xl font-semibold text-ink mb-2'>
+                  Waiting for role assignment
+                </h2>
                 <p className='text-ink/40 text-sm'>Your company admin needs to assign you a role</p>
               </div>
 
               <div className='bg-ink/[0.03] rounded-xl p-5 mb-6'>
                 <p className='text-ink/50 text-sm font-medium mb-3'>Ask your company admin to:</p>
                 <ol className='text-ink/60 text-sm space-y-2.5 list-decimal list-inside'>
-                  <li>Go to <span className='font-medium'>Organization → Members</span></li>
+                  <li>
+                    Go to <span className='font-medium'>Organization → Members</span>
+                  </li>
                   <li>Find your name in the list</li>
                   <li>Click your role and select a role</li>
                 </ol>
@@ -192,7 +370,7 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Sidebar */}
             <div className='w-[200px] flex-shrink-0'>
               <nav className='space-y-1'>
-                {NAV_ITEMS.filter(item => item.roles.includes(health?.role || '')).map((item) => {
+                {NAV_ITEMS.filter((item) => item.roles.includes(health?.role || '')).map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                   return (
                     <Link
@@ -209,9 +387,7 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Page Content */}
-            <div className='flex-1 min-w-0'>
-              {children}
-            </div>
+            <div className='flex-1 min-w-0'>{children}</div>
           </div>
         </div>
       )}
@@ -222,25 +398,65 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
       <AnimatePresence>
         {showSettings && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 bg-black/30 z-50' onClick={() => setShowSettings(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} transition={{ duration: 0.2 }} className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[560px] max-h-[80vh] overflow-hidden flex flex-col'>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 bg-black/30 z-50'
+              onClick={() => setShowSettings(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[560px] max-h-[80vh] overflow-hidden flex flex-col'
+            >
               <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
                 <h3 className='font-display text-lg font-semibold'>Settings</h3>
-                <button onClick={() => setShowSettings(false)} className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'>&times;</button>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
+                >
+                  &times;
+                </button>
               </div>
               <div className='flex flex-1 min-h-0'>
                 <div className='w-[140px] border-r border-ink/8 py-4 px-3'>
-                  <button className='w-full text-left px-3 py-2 rounded-lg bg-ink/5 text-sm font-medium text-ink'>Terminal</button>
+                  <button className='w-full text-left px-3 py-2 rounded-lg bg-ink/5 text-sm font-medium text-ink'>
+                    Terminal
+                  </button>
                 </div>
                 <div className='flex-1 flex flex-col p-6'>
                   <label className='block mb-4'>
                     <span className='text-xs text-ink/40 mb-1.5 block'>API URL</span>
-                    <input value={settingsInput} onChange={(e) => setSettingsInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveSettings()} className='w-full text-sm text-ink font-mono bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20' placeholder='http://localhost:3001' />
+                    <input
+                      value={settingsInput}
+                      onChange={(e) => setSettingsInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && saveSettings()}
+                      className='w-full text-sm text-ink font-mono bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
+                      placeholder='http://localhost:3001'
+                    />
                   </label>
-                  <button onClick={resetSettings} className='text-xs text-ink/30 hover:text-coral transition-colors self-start mb-auto'>Reset to default</button>
+                  <button
+                    onClick={resetSettings}
+                    className='text-xs text-ink/30 hover:text-coral transition-colors self-start mb-auto'
+                  >
+                    Reset to default
+                  </button>
                   <div className='flex justify-end gap-2 mt-6 pt-4 border-t border-ink/8'>
-                    <button onClick={() => setShowSettings(false)} className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'>Cancel</button>
-                    <button onClick={saveSettings} className='px-4 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'>Save & Reconnect</button>
+                    <button
+                      onClick={() => setShowSettings(false)}
+                      className='px-4 py-2 text-xs text-ink/50 hover:text-ink/70 transition-colors'
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveSettings}
+                      className='px-4 py-2 bg-ink text-lavender text-xs font-medium rounded-xl hover:opacity-90 transition-opacity'
+                    >
+                      Save & Reconnect
+                    </button>
                   </div>
                 </div>
               </div>
@@ -249,8 +465,18 @@ function StartLayoutInner({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      <UsernameModal isOpen={showUsernameModal} onClose={() => setShowUsernameModal(false)} currentName={health?.name || ''} apiUrl={apiUrl} onNameChange={(name) => { if (health) setHealth({ ...health, name }) }} />
-      {showDeposit && <DepositSpendModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />}
+      <UsernameModal
+        isOpen={showUsernameModal}
+        onClose={() => setShowUsernameModal(false)}
+        currentName={health?.name || ''}
+        apiUrl={apiUrl}
+        onNameChange={(name) => {
+          if (health) setHealth({ ...health, name })
+        }}
+      />
+      {showDeposit && (
+        <DepositSpendModal isOpen={showDeposit} onClose={() => setShowDeposit(false)} />
+      )}
     </div>
   )
 }

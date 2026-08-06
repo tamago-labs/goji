@@ -359,14 +359,14 @@ export default function ReceivableDetail({ address, mode = 'company' }: Receivab
         if (!switchChainAsync) throw new Error('Wallet cannot switch to Arc Testnet')
         await switchChainAsync({ chainId: arcTestnet.id })
       }
-      const simulation = await publicClient.simulateContract({
+      const { request } = await (publicClient as any).simulateContract({
         address: address as `0x${string}`,
         abi: RECEIVABLE_TOKEN_ABI,
         functionName,
         ...(value !== undefined ? { value } : {}),
         account: walletAddress
       })
-      const hash = await walletClient.writeContract(simulation.request)
+      const hash = await walletClient.writeContract(request)
       await publicClient.waitForTransactionReceipt({ hash })
       setMessage('Transaction confirmed on Arc Testnet.')
       window.location.reload()

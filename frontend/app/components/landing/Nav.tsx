@@ -12,12 +12,6 @@ export default function Nav() {
       <Logo />
       <div className='hidden md:flex gap-8 items-center'>
         <a
-          href='/rwa'
-          className='text-ink/65 text-[15px] font-medium hover:opacity-100 transition-opacity'
-        >
-          RWA Explorer
-        </a>
-        <a
           href='#how-it-works'
           className='text-ink/65 text-[15px] font-medium hover:opacity-100 transition-opacity'
         >

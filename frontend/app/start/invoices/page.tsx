@@ -63,7 +63,7 @@ export default function InvoicesPage() {
         // Get user's registered wallets
         const walletsRes = await fetch(`${apiUrl}/api/wallets`)
         const wallets = walletsRes.ok ? await walletsRes.json() : []
-        const myAddressesSet = new Set(wallets.map((w: { address: string }) => w.address.toLowerCase()))
+        const myAddressesSet = new Set<string>(wallets.map((w: { address: string }) => w.address.toLowerCase()))
         setMyAddresses(myAddressesSet)
 
         const boardsRes = await fetch(`${apiUrl}/api/boards`)

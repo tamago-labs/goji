@@ -200,8 +200,8 @@ export default function CreateReceivablePage() {
       }) as bigint
 
       const simulation = terms.complianceEnabled
-        ? await publicClient.simulateContract({ address: RECEIVABLE_FACTORY_ADDRESS, abi: RECEIVABLE_FACTORY_ABI, functionName: 'createReceivableWithCompliance', args: [terms.name, terms.type, amount, interestRate, minInvest, expiresAt, proofHashes, COMPLIANCE_REGISTRY_ADDRESS, Number(terms.requiredTier), terms.allowedCountries.map(countryCodeToBytes2)], value: fee, account: address })
-        : await publicClient.simulateContract({ address: RECEIVABLE_FACTORY_ADDRESS, abi: RECEIVABLE_FACTORY_ABI, functionName: 'createReceivable', args: [terms.name, terms.type, amount, interestRate, minInvest, expiresAt, proofHashes], value: fee, account: address })
+        ? await (publicClient as any).simulateContract({ address: RECEIVABLE_FACTORY_ADDRESS, abi: RECEIVABLE_FACTORY_ABI, functionName: 'createReceivableWithCompliance', args: [terms.name, terms.type, amount, interestRate, minInvest, expiresAt, proofHashes, COMPLIANCE_REGISTRY_ADDRESS, Number(terms.requiredTier), terms.allowedCountries.map(countryCodeToBytes2)], value: fee, account: address })
+        : await (publicClient as any).simulateContract({ address: RECEIVABLE_FACTORY_ADDRESS, abi: RECEIVABLE_FACTORY_ABI, functionName: 'createReceivable', args: [terms.name, terms.type, amount, interestRate, minInvest, expiresAt, proofHashes], value: fee, account: address })
 
       const hash = await walletClient.writeContract(simulation.request)
       await publicClient.waitForTransactionReceipt({ hash })

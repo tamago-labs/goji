@@ -44,7 +44,7 @@ export default function Hero() {
             Get started now
           </Link>
           <Link
-            href='/rwa'
+            href='/start'
             className='text-ink text-[15px] font-medium py-[15px] px-2.5 hover:opacity-70 transition-opacity'
           >
             Explore Assets →

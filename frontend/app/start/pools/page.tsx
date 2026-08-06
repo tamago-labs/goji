@@ -48,7 +48,7 @@ function PoolManagerCard({ address, api, targetApy }: { address: string; api: { 
   async function update(fn: string, args: readonly unknown[] = []) {
     if (!api.publicClient || !api.walletClient || !api.address) return
     const { request } = await api.publicClient.simulateContract({ address: address as `0x${string}`, abi: RECEIVABLE_POOL_ABI, functionName: fn as never, args: args as never, account: api.address })
-    const hash = await api.walletClient.writeContract(request)
+    const hash = await (api.walletClient as any).writeContract(request)
     await api.publicClient.waitForTransactionReceipt({ hash })
   }
   return <div className='rounded-2xl bg-card p-5 shadow-[0_4px_20px_rgba(43,36,64,0.05)]'><p className='font-medium'>Pool {address.slice(0, 10)}</p><p className='mt-1 font-mono text-xs text-ink/35'>{address}</p><p className='mt-2 text-xs text-ink/45'>Target APY: {targetApy}%</p><div className='mt-4 flex flex-wrap gap-2'><input value={receivable} onChange={(event) => setReceivable(event.target.value)} placeholder='Receivable token address' className='min-w-[260px] flex-1 rounded-xl border border-ink/10 bg-ink/5 px-3 py-2 text-xs outline-none' /><button type='button' onClick={() => void update('addReceivable', [receivable])} className='rounded-xl bg-ink px-3 py-2 text-xs text-lavender'>Add receivable</button><button type='button' onClick={() => void update('closeDeposits')} className='rounded-xl bg-ink/5 px-3 py-2 text-xs text-ink/60'>Close deposits</button><button type='button' onClick={() => void update('openRedemptions')} className='rounded-xl bg-mint/15 px-3 py-2 text-xs text-[#1B7A50]'>Open redemptions</button></div></div>

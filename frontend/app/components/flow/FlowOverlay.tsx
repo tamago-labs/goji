@@ -18,7 +18,7 @@ export interface RouteStatus {
   id: string
   flowId: string
   routeId: string
-  status: 'pending' | 'signing' | 'sending' | 'settled' | 'failed' | 'approved' | 'awaiting'
+  status: 'pending' | 'signing' | 'sending' | 'settled' | 'failed' | 'approved' | 'awaiting' | 'payment_settled' | 'proof_pending'
   txHash?: string
   error?: string
   payslipHtml?: string

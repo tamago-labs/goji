@@ -5,18 +5,18 @@ import { Check } from 'lucide-react'
 
 const useCases = [
   {
-    title: 'P2P Payment Workspace',
-    subtitle: 'Manage payroll, contractors, and invoices from one single visual workspace.',
+    title: 'Compliant Payment Workspace',
+    subtitle: 'Design payment workflows visually with drag-and-drop. From invoices to contractor payments, every transaction is compliance-ready.',
     bullets: [
-      'Manage employees, contractors, and vendors',
-      'Send instant USDC payments through Unified Balance',
       'Merkle proofs anchor every payment and document on Arc',
-      'Verify records without exposing private business data'
+      'Send instant USDC payments through Unified Balance',
+      'Soulbound NFT identity for portable, verifiable credentials',
+      'On-chain compliance rules enforced automatically'
     ]
   },
   {
     title: 'Team Collaboration, AI-Assisted',
-    subtitle: 'Work together without sending company knowledge to a cloud service.',
+    subtitle: 'Work together without sending company knowledge to a cloud service. AI-powered insights stay local, powered by your private data.',
     bullets: [
       'Direct P2P sync for records and documents',
       'GTE-Large private knowledge search',
@@ -25,13 +25,13 @@ const useCases = [
     ]
   },
   {
-    title: 'RWA Issuance from Payments',
-    subtitle: 'Create receivable tokens from verified payment history. Financial partners fund and earn pro-rata returns.',
+    title: 'From Payments to Pooled Assets',
+    subtitle: 'Companies issue receivable tokens from verified payments. Financial partners fund them directly, then aggregate into pools for other investors.',
     bullets: [
       'Create receivable assets from settled payments',
-      'Set terms: interest rate, min investment, expiry',
-      'Financial partners fund and receive tokens',
-      'Pro-rata interest based on investment duration'
+      'Financial partners fund individual receivables',
+      'Aggregate into pools for diversified investor access',
+      'Pro-rata returns based on investment duration on Arc'
     ]
   }
 ]

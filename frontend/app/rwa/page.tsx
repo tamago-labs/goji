@@ -33,7 +33,7 @@ export default function RWAPage() {
   const [pools, setPools] = useState<PoolSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | 'open' | 'closed'>('all')
+  const [filter, setFilter] = useState<'all' | 'open' | 'closed'>('open')
 
   useEffect(() => {
     if (!publicClient) return

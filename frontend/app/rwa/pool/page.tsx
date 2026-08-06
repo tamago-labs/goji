@@ -118,7 +118,10 @@ export default function PoolDetailPage() {
     loadUserData()
   }, [publicClient, poolAddress, walletAddress, pool])
 
-  const formatAmount = (amount: bigint) => `$${(Number(amount) / 1e18).toLocaleString()}`
+  const formatAmount = (amount: bigint) => {
+    const usdc = Number(amount) / 1e18
+    return `$${usdc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
 
   const handleInvest = async () => {
     if (!walletClient || !publicClient || !walletAddress || !pool || !depositAmount) return
@@ -193,7 +196,7 @@ export default function PoolDetailPage() {
       <div className='grid grid-cols-5 gap-3 mb-8'>
         <Stat label='Projected APY' value={`${pool.apy}%`} />
         <Stat label='Total Value Locked' value={formatAmount(pool.assets)} />
-        <Stat label='Share Price' value={pool.totalSupply > BigInt(0) ? `$${(Number(pool.assets) / Number(pool.totalSupply) * 1e18).toFixed(2)}` : '—'} />
+        <Stat label='Share Price' value={pool.totalSupply > BigInt(0) && pool.assets > BigInt(0) ? `$${(Number(pool.assets) / Number(pool.totalSupply) * 1e18 / 1e18).toFixed(2)}` : '—'} />
         <Stat label='Compliance' value={pool.tier ? `Tier ${pool.tier}+` : 'Open'} />
         <Stat label='Term' value={pool.term ? `${Math.floor(pool.term / 86400)} days` : 'Open'} />
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { parseUnits, type WalletClient } from 'viem'
 import { Loader2 } from 'lucide-react'
 import { RECEIVABLE_POOL_ABI, ERC20_RECEIVABLE_ABI } from '../../../lib/receivablePool'
+import { useStart } from '../../components/start/StartProvider'
 
 const COUNTRIES = [
   ['US', 'United States'],
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export default function PoolManagerCard({ address, api, targetApy, minimumStakeDays }: Props) {
+  const { apiUrl } = useStart()
   const [receivable, setReceivable] = useState('')
   const [tokenAmount, setTokenAmount] = useState('')
   const [metadata, setMetadata] = useState('Managed pool of verified receivable positions.')
@@ -49,6 +51,24 @@ export default function PoolManagerCard({ address, api, targetApy, minimumStakeD
   const [busy, setBusy] = useState(false)
   const [custodiedReceivables, setCustodiedReceivables] = useState<{ address: string; amount: bigint }[]>([])
   const [loadingReceivables, setLoadingReceivables] = useState(false)
+  const [availableReceivables, setAvailableReceivables] = useState<{ tokenAddress: string; name: string; amount: string }[]>([])
+
+  // Fetch available receivables from P2P
+  useEffect(() => {
+    async function loadAvailable() {
+      try {
+        const res = await fetch(`${apiUrl}/api/receivables`)
+        if (res.ok) {
+          const data = await res.json()
+          console.log('[PoolManagerCard] Available receivables:', data)
+          setAvailableReceivables(data)
+        }
+      } catch (e) {
+        console.error('[PoolManagerCard] Failed to load available receivables:', e)
+      }
+    }
+    loadAvailable()
+  }, [apiUrl])
   const [confirmStop, setConfirmStop] = useState(false)
 
   useEffect(() => {
@@ -168,7 +188,22 @@ export default function PoolManagerCard({ address, api, targetApy, minimumStakeD
       <div className='mb-5'>
         <h4 className='mb-2 text-[10px] font-semibold uppercase tracking-wider text-ink/45'>Add Receivable</h4>
         <div className='space-y-2'>
-          <input value={receivable} onChange={(e) => setReceivable(e.target.value)} placeholder='Token address' className='w-full rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none' />
+          <select
+            value={receivable}
+            onChange={(e) => {
+              setReceivable(e.target.value)
+              const selected = availableReceivables.find(r => r.tokenAddress === e.target.value)
+              if (selected) setTokenAmount(String(parseFloat(selected.amount)))
+            }}
+            className='w-full rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none'
+          >
+            <option value=''>Select receivable token</option>
+            {availableReceivables.map((r) => (
+              <option key={r.tokenAddress} value={r.tokenAddress}>
+                {r.name} — 1,000,000 GOJ tokens
+              </option>
+            ))}
+          </select>
           <input value={tokenAmount} onChange={(e) => setTokenAmount(e.target.value)} placeholder='Amount' type='number' className='w-full rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none' />
           <button onClick={() => void custodyReceivable()} disabled={busy || !receivable || !tokenAmount} className='w-full rounded-lg bg-ink px-3 py-2 text-[11px] text-lavender disabled:opacity-40'>Add to Pool</button>
         </div>

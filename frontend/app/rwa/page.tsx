@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePublicClient } from 'wagmi'
-import { Search, Loader2, ExternalLink, Shield } from 'lucide-react'
+import { arcTestnet } from 'viem/chains'
+import { Search, Loader2, ExternalLink, Shield, Package } from 'lucide-react'
 import { RECEIVABLE_POOL_FACTORY_ABI, RECEIVABLE_POOL_FACTORY_ADDRESS, RECEIVABLE_POOL_ABI } from '../../lib/receivablePool'
 
 interface PoolSummary {
@@ -28,7 +29,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 export default function RWAPage() {
-  const publicClient = usePublicClient()
+  const publicClient = usePublicClient({ chainId: arcTestnet.id })
   const [pools, setPools] = useState<PoolSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')

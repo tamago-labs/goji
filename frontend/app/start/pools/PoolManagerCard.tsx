@@ -39,13 +39,20 @@ export default function PoolManagerCard({ address, api, targetApy, minimumStakeD
   const [busy, setBusy] = useState(false)
   const [custodiedReceivables, setCustodiedReceivables] = useState<{ address: string; amount: bigint }[]>([])
   const [loadingReceivables, setLoadingReceivables] = useState(false)
+  const [confirmStop, setConfirmStop] = useState(false)
 
   useEffect(() => {
     if (!api.publicClient || !address) return
     async function load() {
       setLoadingReceivables(true)
       try {
-        const addrs = await api.publicClient!.readContract({ address: address as `0x${string}`, abi: RECEIVABLE_POOL_ABI, functionName: 'getReceivables' }) as string[]
+        const [addrs, meta, cap] = await Promise.all([
+          api.publicClient!.readContract({ address: address as `0x${string}`, abi: RECEIVABLE_POOL_ABI, functionName: 'getReceivables' }) as Promise<string[]>,
+          api.publicClient!.readContract({ address: address as `0x${string}`, abi: RECEIVABLE_POOL_ABI, functionName: 'poolMetadata' }) as Promise<string>,
+          api.publicClient!.readContract({ address: address as `0x${string}`, abi: RECEIVABLE_POOL_ABI, functionName: 'poolCapacity' }) as Promise<bigint>
+        ])
+        setMetadata(String(meta || ''))
+        setCapacity(String(Number(cap) / 1e18 || '0'))
         const items = await Promise.all(addrs.map(async (a: string) => {
           const amt = await api.publicClient!.readContract({ address: address as `0x${string}`, abi: RECEIVABLE_POOL_ABI, functionName: 'custodiedAmounts', args: [a] }) as bigint
           return { address: a, amount: amt }
@@ -182,7 +189,14 @@ export default function PoolManagerCard({ address, api, targetApy, minimumStakeD
 
       {/* Actions */}
       <div className='mt-auto flex gap-2'>
-        <button onClick={() => void transact('closeDeposits')} disabled={busy} className='flex-1 rounded-lg bg-ink px-3 py-2 text-[11px] text-lavender disabled:opacity-40'>Stop Pool</button>
+        {confirmStop ? (
+          <div className='flex-1 flex gap-2'>
+            <button onClick={() => { setConfirmStop(false); void transact('closeDeposits') }} disabled={busy} className='flex-1 rounded-lg bg-coral/15 px-3 py-2 text-[11px] text-coral font-medium disabled:opacity-40'>Confirm Stop</button>
+            <button onClick={() => setConfirmStop(false)} disabled={busy} className='rounded-lg bg-ink/10 px-3 py-2 text-[11px] text-ink/60 hover:bg-ink/20'>Cancel</button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmStop(true)} disabled={busy} className='flex-1 rounded-lg bg-ink px-3 py-2 text-[11px] text-lavender disabled:opacity-40'>Stop Pool</button>
+        )}
         <button onClick={() => void transact('openRedemptions')} disabled={busy} className='flex-1 rounded-lg bg-mint/15 px-3 py-2 text-[11px] text-[#1B7A50] disabled:opacity-40'>Open Redemptions</button>
       </div>
 

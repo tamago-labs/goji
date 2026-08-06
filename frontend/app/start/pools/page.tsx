@@ -65,62 +65,68 @@ export default function PoolsPage() {
   const [message, setMessage] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [selectedPool, setSelectedPool] = useState<PoolSummary | null>(null)
+  const [loadError, setLoadError] = useState('')
 
   const load = useCallback(async () => {
     if (!publicClient || !address) return
-    const result = await publicClient.readContract({
-      address: RECEIVABLE_POOL_FACTORY_ADDRESS,
-      abi: RECEIVABLE_POOL_FACTORY_ABI,
-      functionName: 'getPoolsByManager',
-      args: [address]
-    })
-    const addresses = result as string[]
-    const summaries = await Promise.all(
-      addresses.map(async (poolAddress) => {
-        const pool = poolAddress as `0x${string}`
-        const [poolName, poolApy, poolTerm, assets, depositsOpen] = await Promise.all([
-          publicClient.readContract({
-            address: pool,
-            abi: RECEIVABLE_POOL_ABI,
-            functionName: 'name'
-          }),
-          publicClient.readContract({
-            address: pool,
-            abi: RECEIVABLE_POOL_ABI,
-            functionName: 'targetApyBps'
-          }),
-          publicClient.readContract({
-            address: pool,
-            abi: RECEIVABLE_POOL_ABI,
-            functionName: 'poolTerm'
-          }),
-          publicClient.readContract({
-            address: pool,
-            abi: RECEIVABLE_POOL_ABI,
-            functionName: 'totalAssets'
-          }),
-          publicClient.readContract({
-            address: pool,
-            abi: RECEIVABLE_POOL_ABI,
-            functionName: 'depositsOpen'
-          })
-        ])
-        return {
-          address: poolAddress,
-          name: String(poolName),
-          apy: poolApy as bigint,
-          term: poolTerm as bigint,
-          assets: assets as bigint,
-          depositsOpen: Boolean(depositsOpen)
-        }
+    setLoadError('')
+    try {
+      const result = await publicClient.readContract({
+        address: RECEIVABLE_POOL_FACTORY_ADDRESS,
+        abi: RECEIVABLE_POOL_FACTORY_ABI,
+        functionName: 'getPoolsByManager',
+        args: [address]
       })
-    )
-    setPools(summaries)
+      const addresses = result as string[]
+      const summaries = await Promise.all(
+        addresses.map(async (poolAddress) => {
+          const pool = poolAddress as `0x${string}`
+          const [poolName, poolApy, poolTerm, assets, depositsOpen] = await Promise.all([
+            publicClient.readContract({
+              address: pool,
+              abi: RECEIVABLE_POOL_ABI,
+              functionName: 'name'
+            }),
+            publicClient.readContract({
+              address: pool,
+              abi: RECEIVABLE_POOL_ABI,
+              functionName: 'targetApyBps'
+            }),
+            publicClient.readContract({
+              address: pool,
+              abi: RECEIVABLE_POOL_ABI,
+              functionName: 'poolTerm'
+            }),
+            publicClient.readContract({
+              address: pool,
+              abi: RECEIVABLE_POOL_ABI,
+              functionName: 'totalAssets'
+            }),
+            publicClient.readContract({
+              address: pool,
+              abi: RECEIVABLE_POOL_ABI,
+              functionName: 'depositsOpen'
+            })
+          ])
+          return {
+            address: poolAddress,
+            name: String(poolName),
+            apy: poolApy as bigint,
+            term: poolTerm as bigint,
+            assets: assets as bigint,
+            depositsOpen: Boolean(depositsOpen)
+          }
+        })
+      )
+      setPools(summaries)
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Failed to load pools')
+    }
   }, [address, publicClient])
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
-      void load().catch(() => {})
+      void load()
     }, 0)
     return () => window.clearTimeout(handle)
   }, [load])
@@ -196,6 +202,9 @@ export default function PoolsPage() {
         <Summary label='Open Pools' value={String(pools.filter(p => p.depositsOpen).length)} />
         <Summary label='Avg APY' value={pools.length > 0 ? `${(pools.reduce((sum, p) => sum + Number(p.apy), 0) / pools.length / 100).toFixed(1)}%` : '0%'} />
       </div>
+      {loadError && (
+        <div className='mb-4 rounded-xl bg-coral/10 p-3 text-xs text-coral'>{loadError}</div>
+      )}
       <div className='space-y-3'>
         {pools.length > 0 && (
           <div className='overflow-hidden rounded-2xl bg-card shadow-[0_4px_20px_rgba(43,36,64,0.05)]'>

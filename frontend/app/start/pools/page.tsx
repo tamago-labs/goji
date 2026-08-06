@@ -12,6 +12,7 @@ import {
   RECEIVABLE_POOL_FACTORY_ABI,
   RECEIVABLE_POOL_FACTORY_ADDRESS
 } from '../../../lib/receivablePool'
+import PoolManagerCard from './PoolManagerCard'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as `0x${string}`
 const COUNTRIES = [
@@ -303,7 +304,6 @@ export default function PoolsPage() {
   )
 }
 
-function PoolManagerCard({
   address,
   api,
   targetApy,
@@ -585,11 +585,17 @@ function PoolManagerCard({
           {message && <p className='mt-3 text-xs text-ink/55'>{message}</p>}
 
           {/* Custodied Receivables */}
-          {custodiedReceivables.length > 0 && (
-            <div className='mt-4'>
-              <h4 className='mb-3 text-xs font-semibold uppercase tracking-wider text-ink/45'>
-                Custodied Receivables
-              </h4>
+          <div className='mt-4'>
+            <h4 className='mb-3 text-xs font-semibold uppercase tracking-wider text-ink/45'>Custodied Receivables</h4>
+            {loadingReceivables ? (
+              <div className='flex items-center justify-center py-4'>
+                <Loader2 className='w-4 h-4 text-ink/40 animate-spin' />
+              </div>
+            ) : custodiedReceivables.length === 0 ? (
+              <div className='rounded-xl bg-ink/5 p-4 text-center text-xs text-ink/40'>
+                No receivables custodied yet. Add one below.
+              </div>
+            ) : (
               <div className='space-y-2'>
                 {custodiedReceivables.map((item) => (
                   <div key={item.address} className='flex items-center justify-between rounded-xl bg-ink/5 px-3 py-2'>
@@ -598,22 +604,14 @@ function PoolManagerCard({
                       <p className='text-[10px] text-ink/40'>Amount: {formatAmount(item.amount)}</p>
                     </div>
                     <div className='flex items-center gap-2'>
-                      <button
-                        type='button'
-                        onClick={() => {
-                          setReceivable(item.address)
-                          setTokenAmount(String(Number(item.amount) / 1e6))
-                        }}
-                        className='rounded-lg bg-ink/5 px-2 py-1 text-[10px] text-ink/60'
-                      >
-                        Select
-                      </button>
+                      <button type='button' onClick={() => { setReceivable(item.address); setTokenAmount(String(Number(item.amount) / 1e6)) }} className='rounded-lg bg-ink/5 px-2 py-1 text-[10px] text-ink/60 hover:bg-ink/10'>Select</button>
+                      <button type='button' onClick={() => void transact('removeReceivable', [item.address, item.amount])} disabled={busy} className='rounded-lg bg-coral/10 px-2 py-1 text-[10px] text-coral hover:bg-coral/20'>Remove</button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </section>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { parseUnits, type WalletClient } from 'viem'
 import { Loader2 } from 'lucide-react'
-import { RECEIVABLE_POOL_ABI, ERC20_RECEIVABLE_ABI } from '../../lib/receivablePool'
+import { RECEIVABLE_POOL_ABI, ERC20_RECEIVABLE_ABI } from '../../../lib/receivablePool'
 
 interface PoolApi {
   publicClient: any
@@ -166,7 +166,7 @@ export default function PoolManagerCard({ address, api, targetApy, minimumStakeD
             <input value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder='Capacity USDC' type='number' className='rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none' />
             <input value={poolTermDays} onChange={(e) => setPoolTermDays(e.target.value)} placeholder='Term days' type='number' className='rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none' />
           </div>
-          <button onClick={() => void transact('setPoolPolicy', [BigInt(Math.floor(Number(targetApy) * 100)), metadata, BigInt(Math.floor(Number(minimumStakeDays) * 86400)), parseUnits(capacity || '0', 18), BigInt(Math.floor(Number(poolTermDays) * 86400))])} disabled={busy} className='w-full rounded-lg bg-ink/5 px-3 py-2 text-[11px] text-ink/60 disabled:opacity-40'>Save</button>
+          <button onClick={() => void transact('setPoolPolicy', [BigInt(Math.floor(Number(targetApy) * 100)), metadata, BigInt(Math.floor(Number(minimumStakeDays) * 86400)), parseUnits(capacity || '0', 18), BigInt(Math.floor(Number(poolTermDays) * 86400))])} disabled={busy} className='w-full rounded-lg bg-ink px-3 py-2 text-[11px] text-lavender disabled:opacity-40'>Save</button>
         </div>
       </div>
 
@@ -175,14 +175,14 @@ export default function PoolManagerCard({ address, api, targetApy, minimumStakeD
         <h4 className='mb-2 text-[10px] font-semibold uppercase tracking-wider text-ink/45'>Compliance</h4>
         <div className='flex gap-2'>
           <input value={country} onChange={(e) => setCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder='ISO2' className='w-16 rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none' />
-          <button onClick={() => void transact('setAllowedCountry', [`0x${Array.from(country).map((c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('')}`, countryAllowed])} disabled={busy || country.length !== 2} className='rounded-lg bg-ink/5 px-3 py-2 text-[11px] text-ink/60 disabled:opacity-40'>{countryAllowed ? 'Allow' : 'Block'}</button>
-          <button onClick={() => setCountryAllowed((v) => !v)} className='rounded-lg bg-ink/5 px-3 py-2 text-[11px] text-ink/60'>Toggle</button>
+          <button onClick={() => void transact('setAllowedCountry', [`0x${Array.from(country).map((c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('')}`, countryAllowed])} disabled={busy || country.length !== 2} className='rounded-lg bg-ink px-3 py-2 text-[11px] text-lavender disabled:opacity-40'>{countryAllowed ? 'Allow' : 'Block'}</button>
+          <button onClick={() => setCountryAllowed((v) => !v)} className='rounded-lg bg-ink/10 px-3 py-2 text-[11px] text-ink/70 hover:bg-ink/20'>Toggle</button>
         </div>
       </div>
 
       {/* Actions */}
       <div className='mt-auto flex gap-2'>
-        <button onClick={() => void transact('closeDeposits')} disabled={busy} className='flex-1 rounded-lg bg-ink/5 px-3 py-2 text-[11px] text-ink/60 disabled:opacity-40'>Close Deposits</button>
+        <button onClick={() => void transact('closeDeposits')} disabled={busy} className='flex-1 rounded-lg bg-ink px-3 py-2 text-[11px] text-lavender disabled:opacity-40'>Stop Pool</button>
         <button onClick={() => void transact('openRedemptions')} disabled={busy} className='flex-1 rounded-lg bg-mint/15 px-3 py-2 text-[11px] text-[#1B7A50] disabled:opacity-40'>Open Redemptions</button>
       </div>
 

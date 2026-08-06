@@ -5,6 +5,16 @@ import { parseUnits, type WalletClient } from 'viem'
 import { Loader2 } from 'lucide-react'
 import { RECEIVABLE_POOL_ABI, ERC20_RECEIVABLE_ABI } from '../../../lib/receivablePool'
 
+const COUNTRIES = [
+  ['US', 'United States'],
+  ['TH', 'Thailand'],
+  ['VN', 'Vietnam'],
+  ['SG', 'Singapore'],
+  ['JP', 'Japan'],
+  ['GB', 'United Kingdom'],
+  ['DE', 'Germany']
+] as const
+
 interface PoolApi {
   publicClient: any
   walletClient?: WalletClient
@@ -181,9 +191,17 @@ export default function PoolManagerCard({ address, api, targetApy, minimumStakeD
       <div className='mb-5'>
         <h4 className='mb-2 text-[10px] font-semibold uppercase tracking-wider text-ink/45'>Compliance</h4>
         <div className='flex gap-2'>
-          <input value={country} onChange={(e) => setCountry(e.target.value.toUpperCase().slice(0, 2))} placeholder='ISO2' className='w-16 rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none' />
+          <select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className='flex-1 rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-[11px] outline-none'
+          >
+            <option value=''>Select country</option>
+            {COUNTRIES.map(([code, name]) => (
+              <option key={code} value={code}>{name} ({code})</option>
+            ))}
+          </select>
           <button onClick={() => void transact('setAllowedCountry', [`0x${Array.from(country).map((c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('')}`, countryAllowed])} disabled={busy || country.length !== 2} className='rounded-lg bg-ink px-3 py-2 text-[11px] text-lavender disabled:opacity-40'>{countryAllowed ? 'Allow' : 'Block'}</button>
-          <button onClick={() => setCountryAllowed((v) => !v)} className='rounded-lg bg-ink/10 px-3 py-2 text-[11px] text-ink/70 hover:bg-ink/20'>Toggle</button>
         </div>
       </div>
 

@@ -20,9 +20,10 @@ contract ReceivablePoolFactory {
         string memory name,
         string memory symbol,
         address registry,
-        uint8 requiredTier
+        uint8 requiredTier,
+        bytes2[] memory allowedCountries
     ) external returns (address pool) {
-        ReceivablePool created = new ReceivablePool(name, symbol, registry, requiredTier);
+        ReceivablePool created = new ReceivablePool(name, symbol, registry, requiredTier, allowedCountries);
         created.transferOwnership(msg.sender);
         pool = address(created);
         pools.push(pool);

@@ -6,6 +6,7 @@ import "../src/SoulboundIdentityPass.sol";
 import "../src/ComplianceRegistry.sol";
 import "../src/ReceivablePool.sol";
 import "../src/ReceivablePoolFactory.sol";
+import "../src/ReceivableToken.sol";
 
 contract IdentityAndPoolTest is Test {
     SoulboundIdentityPass internal pass;
@@ -72,7 +73,8 @@ contract IdentityAndPoolTest is Test {
         registry.approveIdentity(investor, 1, "SG", 0);
 
         ReceivablePoolFactory factory = new ReceivablePoolFactory();
-        address poolAddress = factory.createPool("Verified Pool", "GPOOL", address(registry), 1);
+        bytes2[] memory countries = new bytes2[](0);
+        address poolAddress = factory.createPool("Verified Pool", "GPOOL", address(registry), 1, countries);
         ReceivablePool pool = ReceivablePool(payable(poolAddress));
         pool.setAllowedCountry("SG", true);
 
@@ -94,11 +96,46 @@ contract IdentityAndPoolTest is Test {
         registry.approveIdentity(investor, 1, "SG", 0);
 
         ReceivablePoolFactory factory = new ReceivablePoolFactory();
-        ReceivablePool pool = ReceivablePool(payable(factory.createPool("US Pool", "USPOOL", address(registry), 1)));
+        bytes2[] memory countries = new bytes2[](0);
+        ReceivablePool pool = ReceivablePool(payable(factory.createPool("US Pool", "USPOOL", address(registry), 1, countries)));
         pool.setAllowedCountry("US", true);
 
         vm.prank(investor);
         vm.expectRevert("Country not allowed");
         pool.deposit{value: 1 ether}();
+    }
+
+    function test_poolCustodiesPartnerReceivablePosition() public {
+        bytes32[] memory proofs = new bytes32[](1);
+        proofs[0] = keccak256("proof");
+        ReceivableToken receivable = new ReceivableToken(
+            "Invoice",
+            "invoice",
+            10 ether,
+            2000,
+            1 ether,
+            block.timestamp + 30 days,
+            proofs,
+            user
+        );
+
+        vm.prank(user);
+        receivable.finance{value: 10 ether}();
+        uint256 partnerTokens = receivable.balanceOf(user);
+
+        ReceivablePoolFactory factory = new ReceivablePoolFactory();
+        vm.prank(user);
+        bytes2[] memory countries = new bytes2[](0);
+        ReceivablePool pool = ReceivablePool(payable(factory.createPool("Custodied", "CPOOL", address(0), 0, countries)));
+
+        vm.startPrank(user);
+        receivable.approve(address(pool), partnerTokens);
+        uint256 managerShares = pool.addReceivable(address(receivable), partnerTokens);
+        vm.stopPrank();
+
+        assertGt(managerShares, 0);
+        assertEq(receivable.balanceOf(address(pool)), partnerTokens);
+        assertEq(pool.balanceOf(user), managerShares);
+        assertGt(pool.totalAssets(), 0);
     }
 }

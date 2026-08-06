@@ -190,10 +190,10 @@ export default function PoolsPage() {
         </button>
       </div>
       <div className='mb-6 grid grid-cols-2 gap-3 md:grid-cols-4'>
-        <Summary label='Pools' value={String(pools.length)} />
-        <Summary label='Open' value='On-chain' />
-        <Summary label='Assets' value='Arc USDC' />
-        <Summary label='Mode' value='Managed' />
+        <Summary label='Your Pools' value={String(pools.length)} />
+        <Summary label='Total TVL' value={formatAmount(pools.reduce((sum, p) => sum + p.assets, BigInt(0)))} />
+        <Summary label='Open Pools' value={String(pools.filter(p => p.depositsOpen).length)} />
+        <Summary label='Avg APY' value={pools.length > 0 ? `${(pools.reduce((sum, p) => sum + Number(p.apy), 0) / pools.length / 100).toFixed(1)}%` : '0%'} />
       </div>
       <div className='space-y-3'>
         {pools.length > 0 && (
@@ -325,6 +325,40 @@ function PoolManagerCard({
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [custodiedReceivables, setCustodiedReceivables] = useState<{ address: string; amount: bigint }[]>([])
+
+  // Fetch custodied receivables
+  useEffect(() => {
+    if (!expanded || !api.publicClient || !address) return
+
+    async function loadReceivables() {
+      try {
+        const addresses = await api.publicClient!.readContract({
+          address: address as `0x${string}`,
+          abi: RECEIVABLE_POOL_ABI,
+          functionName: 'getReceivables'
+        }) as string[]
+
+        const items = await Promise.all(
+          addresses.map(async (addr: string) => {
+            const amount = await api.publicClient!.readContract({
+              address: address as `0x${string}`,
+              abi: RECEIVABLE_POOL_ABI,
+              functionName: 'custodiedAmounts',
+              args: [addr]
+            }) as bigint
+            return { address: addr, amount }
+          })
+        )
+
+        setCustodiedReceivables(items)
+      } catch (e) {
+        console.error('Failed to load receivables:', e)
+      }
+    }
+
+    loadReceivables()
+  }, [expanded, address, api.publicClient])
 
   async function transact(
     functionName:
@@ -549,6 +583,37 @@ function PoolManagerCard({
             </button>
           </div>
           {message && <p className='mt-3 text-xs text-ink/55'>{message}</p>}
+
+          {/* Custodied Receivables */}
+          {custodiedReceivables.length > 0 && (
+            <div className='mt-4'>
+              <h4 className='mb-3 text-xs font-semibold uppercase tracking-wider text-ink/45'>
+                Custodied Receivables
+              </h4>
+              <div className='space-y-2'>
+                {custodiedReceivables.map((item) => (
+                  <div key={item.address} className='flex items-center justify-between rounded-xl bg-ink/5 px-3 py-2'>
+                    <div className='flex-1 min-w-0'>
+                      <p className='text-xs font-mono text-ink/60 truncate'>{item.address}</p>
+                      <p className='text-[10px] text-ink/40'>Amount: {formatAmount(item.amount)}</p>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <button
+                        type='button'
+                        onClick={() => {
+                          setReceivable(item.address)
+                          setTokenAmount(String(Number(item.amount) / 1e6))
+                        }}
+                        className='rounded-lg bg-ink/5 px-2 py-1 text-[10px] text-ink/60'
+                      >
+                        Select
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>

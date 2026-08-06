@@ -192,10 +192,26 @@ export default function PoolDetailPage() {
       {/* Stats */}
       <div className='grid grid-cols-5 gap-3 mb-8'>
         <Stat label='Projected APY' value={`${pool.apy}%`} />
-        <Stat label='Pool Assets' value={formatAmount(pool.assets)} />
+        <Stat label='Total Value Locked' value={formatAmount(pool.assets)} />
+        <Stat label='Share Price' value={pool.totalSupply > BigInt(0) ? `$${(Number(pool.assets) / Number(pool.totalSupply) * 1e18).toFixed(2)}` : '—'} />
         <Stat label='Compliance' value={pool.tier ? `Tier ${pool.tier}+` : 'Open'} />
         <Stat label='Term' value={pool.term ? `${Math.floor(pool.term / 86400)} days` : 'Open'} />
-        <Stat label='Receivables' value={String(pool.receivables)} />
+      </div>
+
+      {/* Pool Info */}
+      <div className='mb-6 flex items-center gap-4 text-xs text-ink/50'>
+        <div className='flex items-center gap-2'>
+          <span className='w-2 h-2 rounded-full bg-[#7FD9B0]' />
+          <span>Arc Network</span>
+        </div>
+        <div className='flex items-center gap-2'>
+          <span className='w-2 h-2 rounded-full bg-[#28C840]' />
+          <span>Receivables: {pool.receivables}</span>
+        </div>
+        <div className='flex items-center gap-2'>
+          <span className='w-2 h-2 rounded-full bg-[#5A4FB8]' />
+          <span>Managed Pool</span>
+        </div>
       </div>
 
       {/* Two Column Layout */}
@@ -367,6 +383,28 @@ export default function PoolDetailPage() {
               </div>
             </div>
           )}
+
+          {/* How It Works */}
+          <div className='bg-card rounded-2xl shadow-[0_2px_8px_rgba(43,36,64,0.04)] p-6'>
+            <h3 className='text-sm font-semibold text-ink mb-3'>How It Works</h3>
+            <div className='space-y-2 text-xs text-ink/50'>
+              <div className='flex items-start gap-2'>
+                <span className='w-4 h-4 rounded-full bg-mint/20 text-[#1B7A50] flex items-center justify-center text-[10px] font-medium flex-shrink-0'>1</span>
+                <span>Deposit USDC to receive pool shares proportional to your investment</span>
+              </div>
+              <div className='flex items-start gap-2'>
+                <span className='w-4 h-4 rounded-full bg-mint/20 text-[#1B7A50] flex items-center justify-center text-[10px] font-medium flex-shrink-0'>2</span>
+                <span>Pool manager uses cash to finance verified receivables</span>
+              </div>
+              <div className='flex items-start gap-2'>
+                <span className='w-4 h-4 rounded-full bg-mint/20 text-[#1B7A50] flex items-center justify-center text-[10px] font-medium flex-shrink-0'>3</span>
+                <span>Redeem your shares when redemptions open</span>
+              </div>
+            </div>
+            <p className='mt-3 text-[10px] text-ink/40'>
+              Pool cash is used to finance receivables. Investors redeem shares to withdraw. Minimum stake period: {pool.minimumStake ? `${Math.floor(pool.minimumStake / 86400)} days` : 'None'}.
+            </p>
+          </div>
         </div>
       </div>
     </div>

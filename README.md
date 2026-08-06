@@ -93,7 +93,8 @@ cd frontend && npm run dev  # Frontend on port 3000
 | Company           | Manages members, workflows, documents, and receivables |
 | Payee             | Receives payments and views permitted documents        |
 | Payer             | Reviews and approves payment flows                     |
-| Financial Partner | Verifies proofs and funds receivables                  |
+| Financial Partner | Verifies proofs, funds receivables, and manages pools  |
+| Compliance Officer | Reviews identities and audits available transfer data |
 
 ## P2P Identity
 
@@ -165,6 +166,8 @@ ComplianceRegistry is a company or pool-specific eligibility layer. It does not 
 - `isEligible(...)` checks pass validity and tier
 - `isEligibleForCountry(...)` checks pass, tier, and country
 
+The Identity Review page performs the on-chain approval transaction through `approveIdentity(...)` before recording the workspace review status. A reviewer wallet must be granted access with `setReviewer(...)` by the registry owner.
+
 ### ReceivableFactory
 
 ReceivableFactory creates and tracks receivable token contracts for company issuers.
@@ -190,16 +193,22 @@ Each receivable has an ERC-20 token representing fractional ownership of the fin
 
 ### ReceivablePool
 
-Financial partners can aggregate multiple receivables into a pool. Pool investors deposit native USDC and receive pool-share tokens instead of interacting with each receivable directly.
+Financial partners first finance company receivables, then transfer the resulting receivable-token positions into a managed pool. Pool investors deposit native USDC and receive pool-share tokens instead of interacting with each receivable directly.
 
-- Adds and finances multiple receivables
+- Custodies actual receivable-token positions contributed by the manager
+- Mints manager shares against contributed receivable value
+- Allows pool cash to finance additional receivables selected by the manager
+- Values pool shares against cash and custodied receivable positions
 - Checks optional identity tier and country eligibility on deposits
-- Closes deposits before the funding phase
-- Opens redemptions explicitly after receivable repayment is collected
+- Configures target APY, pool capacity, term, and minimum stake period
+- Closes deposits before redemption preparation
+- Opens redemptions only after underlying receivable positions are redeemed
 
 ### ReceivablePoolFactory
 
-Creates pools owned by the financial partner who created them. Pool policy can require a minimum compliance tier and allow multiple countries.
+Creates pools owned by the financial partner who created them. Pool policy can require a minimum compliance tier, allow multiple countries, and control the investor redemption window.
+
+Pool investors use the public RWA Explorer at `/rwa`. The pool list is public; investing and redemption require a connected wallet and execute directly against the pool contract.
 
 #### Default Receivable Parameters
 
@@ -210,6 +219,16 @@ Creates pools owned by the financial partner who created them. Pool policy can r
 | Minimum investment | 1 USDC             | Configured by the company          |
 | Term options       | 30, 60, or 90 days | Configured at creation             |
 | Creation fee       | 1 USDC             | Paid by the company issuer         |
+
+#### Pool Parameters
+
+| Parameter           | Description                                                    |
+| ------------------- | -------------------------------------------------------------- |
+| Target APY          | Manager projection based on underlying receivables             |
+| Pool capacity       | Maximum pool asset value; zero means unlimited                  |
+| Pool term           | Intended pool duration                                          |
+| Minimum stake       | Minimum time before an investor can redeem                      |
+| Country policy      | Optional ISO country allowlist                                  |
 
 Interest is distributed pro rata: investors who contribute more or fund earlier receive a larger share of the return.
 
@@ -248,6 +267,8 @@ Source documents and embeddings are never replicated. Members receive only relev
 | `POST /api/knowledge/url`                       | Fetch website text for ingestion                      |
 | `POST /api/knowledge/search`                    | Local or P2P knowledge search                         |
 | `/api/members`                                  | Employer member and role management                   |
+| `/api/receivables`                              | P2P receivable metadata and proof references          |
+| `/api/identities`                               | Workspace identity submission and review records      |
 | `ws://localhost:3001`                           | Live browser updates for the visual payment workspace |
 
 ## Getting Started
@@ -292,11 +313,12 @@ The frontend runs on port `3000` and connects to `http://localhost:3001` by defa
 | ReceivableFactory     | `0x53F71eC10939d4aD243903B496E403B3C27784Ae` |
 | SoulboundIdentityPass | `0x9829724359A49c36B53deB1e059c14d3C2eA5458` |
 | ComplianceRegistry    | `0x31289306250CeB6dC5Bb78A32AC2393Dab250b22` |
-| ReceivablePoolFactory | `0xc4d91B769f0bD8aF2BF7F02862Cd233e62C139d4` |
+| ReceivablePoolFactory | `0x839bDD622641bF9b0680F8aC9B2Fd7FC9f44263F` |
 
 - Chain: Arc Testnet, chain ID `5042002`
 - Receivable creation fee: 1 USDC, configurable by the administrator
-- Receivable funding uses native USDC on Arc
+- Receivable and pool funding uses native USDC on Arc
+- ERC-20 approval is used when a financial partner transfers receivable-token positions into pool custody
 
 Deployment order for the compliance and pooled-financing layer:
 

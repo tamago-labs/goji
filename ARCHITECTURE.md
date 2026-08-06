@@ -4,7 +4,7 @@
 
 Goji transforms verified payment records into real-world assets (RWAs). Companies use their payment history as collateral to receive financing from financial partners.
 
-**Note:** USDC is the native token on Arc (Chain ID: 5042002). All funding uses `msg.value` (native transfers), not ERC-20 approvals.
+**Note:** USDC is the native token on Arc (Chain ID: 5042002). USDC funding uses `msg.value`; ERC-20 approval is used when a financial partner transfers receivable-token positions into pool custody.
 
 ---
 
@@ -26,7 +26,8 @@ Goji transforms verified payment records into real-world assets (RWAs). Companie
 ┌─────────────────────────────┼───────────────────────────────────┐
 │                    Smart Contracts (Arc)                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  GojiProof  │  ReceivableFactory  │  ReceivableToken            │
+│  GojiProof  │  ComplianceRegistry │  ReceivableFactory          │
+│  ReceivableToken  │  ReceivablePoolFactory  │  ReceivablePool      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -81,6 +82,23 @@ Partner funds:
 ### Company Repays
 
 ```
+
+### Partner Creates a Managed Pool
+
+```
+Financial Partner has financed receivables
+            ↓
+1. Creates a pool through ReceivablePoolFactory
+2. Approves the pool to transfer selected ReceivableToken positions
+3. Pool takes custody and mints manager pool shares
+4. Manager configures APY, term, capacity, stake period, and compliance
+5. Public pool investors deposit native USDC and receive pool shares
+6. Manager may use pool cash to finance additional receivables
+            ↓
+Deposits close → underlying receivables are redeemed → redemptions open
+```
+
+Pool investors interact with the pool smart contract directly. P2P is used for company and financial-partner coordination, documents, proofs, and workspace metadata; it is not used to settle pool-investor capital.
 At expiry:
   Company calls ReceivableToken.claimRepayment{value: repayment}()
            ↓
@@ -217,11 +235,13 @@ The wallet used by the Identity Review page must be configured with `setReviewer
 
 ### ReceivablePool
 
-Pools aggregate receivable positions for financial partners. Pool investors deposit native USDC and receive ERC-20 pool shares. The pool can finance multiple receivables, redeem those positions after repayment, and open investor redemptions explicitly.
+Pools aggregate receivable positions for financial partners. The manager transfers actual `ReceivableToken` positions into the pool and receives manager shares based on their underlying value. Pool investors deposit native USDC and receive ERC-20 pool shares. Pool cash can finance additional receivables selected by the manager. Redemptions open only after the manager has redeemed the underlying receivable positions.
+
+The pool values a custodied position from its token balance and the receivable's `totalReceivable`/`totalSupply`. Pool share issuance uses the current cash plus underlying receivable value. Redemption is blocked until the manager closes deposits and redeems all underlying positions.
 
 ### ReceivablePoolFactory
 
-**Address:** `0xc4d91B769f0bD8aF2BF7F02862Cd233e62C139d4`
+**Address:** `0x839bDD622641bF9b0680F8aC9B2Fd7FC9f44263F`
 
 Creates pools owned by the financial partner that created them. Each pool can configure a compliance registry, minimum tier, and multiple allowed country codes.
 
@@ -271,10 +291,14 @@ Expired  Defaulted
 | ---------------------------------- | ------------------ | -------------------------------- |
 | `/`                                | Public             | Landing page                     |
 | `/rwa`                             | Public             | RWA Explorer (on-chain data)     |
-| `/rwa/[address]`                   | Public             | Token detail                     |
+| `/rwa`                             | Public             | Public pool listing              |
+| `/rwa/pool?address=<pool>`         | Public             | Pool detail, invest, redeem      |
 | `/start/overview`                  | Auth               | Dashboard with portfolio         |
 | `/start/receivables/*`             | Company            | Create/manage receivables        |
 | `/start/available-receivables/*`   | Partner            | Browse and invest                |
+| `/start/pools`                     | Partner            | Create and manage pools          |
+| `/start/identities`                | Compliance         | Review and on-chain approve IDs  |
+| `/start/travel-rule`               | Compliance         | Read-only audit and CSV export   |
 | `/start/proof`                     | All                | Verify merkle roots              |
 | `/start/knowledge`                 | All assigned roles | Search private P2P knowledge     |
 | `/start/organization/ai-assistant` | Company            | Manage local model and documents |
@@ -285,6 +309,8 @@ Expired  Defaulted
 | --------- | ----------------------------------------------- |
 | P2P (API) | Flow details, document previews, workspace data |
 | On-chain  | Token info, funding status, investor balances   |
+
+Pool pages read pool inventory, APY, term, capacity, compliance policy, share balances, and redemption state directly from Arc.
 
 ### Key Components
 
@@ -303,4 +329,6 @@ Expired  Defaulted
 3. **Pro-rata interest** — Fair distribution based on funding time
 4. **Expiry enforcement** — Timestamp-based
 5. **Fee admin** — Only owner can change fee/treasury
-6. **Native USDC** — No ERC-20 approvals needed on Arc
+6. **Native USDC** — USDC funding uses native transfers on Arc
+7. **Pool custody** — Receivable positions must be transferred into pool custody before manager shares are issued
+8. **Compliance separation** — Identity documents remain workspace-scoped while eligibility enforcement occurs on-chain

@@ -5,10 +5,10 @@ import { CheckCircle, XCircle, FileText } from 'lucide-react'
 import { useStart } from '../../components/start/StartProvider'
 import { useWallet } from '../../providers/WalletProvider'
 import { addDelegate, removeDelegate, getDelegateStatus } from '../../../lib/unified-balance'
-import { renderTemplate } from '../../../lib/payslipTemplates'
+import { renderDocumentTemplate, renderLineItems, type InvoiceLineItem } from '../../../lib/documentTemplates'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import ApprovalModal from '../../components/start/ApprovalModal'
-import { AnimatePresence, motion } from 'framer-motion'
+import DocumentPreviewDrawer from '../../components/start/DocumentPreviewDrawer'
 
 interface Connection {
   id: string
@@ -42,6 +42,8 @@ export default function InvoicesPage() {
   const [activeTab, setActiveTab] = useState<TabType>('incoming')
   const [connections, setConnections] = useState<Connection[]>([])
   const [cards, setCards] = useState<Card[]>([])
+  const [myAddresses, setMyAddresses] = useState<Set<string>>(new Set())
+  const [flowStatuses, setFlowStatuses] = useState<Map<string, { status: string; payslipHtml?: string }>>(new Map())
   const [loading, setLoading] = useState(true)
 
   // Approval modal state
@@ -61,7 +63,8 @@ export default function InvoicesPage() {
         // Get user's registered wallets
         const walletsRes = await fetch(`${apiUrl}/api/wallets`)
         const wallets = walletsRes.ok ? await walletsRes.json() : []
-        const myAddresses = new Set(wallets.map((w: { address: string }) => w.address.toLowerCase()))
+        const myAddressesSet = new Set<string>(wallets.map((w: { address: string }) => w.address.toLowerCase()))
+        setMyAddresses(myAddressesSet)
 
         const boardsRes = await fetch(`${apiUrl}/api/boards`)
         if (!boardsRes.ok) { setLoading(false); return }
@@ -69,11 +72,13 @@ export default function InvoicesPage() {
 
         const allConnections: Connection[] = []
         const allCards: Card[] = []
+        const allFlowStatuses = new Map<string, { status: string; payslipHtml?: string }>()
 
         for (const board of boards) {
-          const [connsRes, cardsRes] = await Promise.all([
+          const [connsRes, cardsRes, statusRes] = await Promise.all([
             fetch(`${apiUrl}/api/connections?boardId=${board.id}`),
-            fetch(`${apiUrl}/api/cards?boardId=${board.id}`)
+            fetch(`${apiUrl}/api/cards?boardId=${board.id}`),
+            fetch(`${apiUrl}/api/flow-status?flowId=${board.id}`)
           ])
           if (connsRes.ok) {
             const conns = await connsRes.json()
@@ -81,6 +86,12 @@ export default function InvoicesPage() {
           }
           if (cardsRes.ok) {
             allCards.push(...await cardsRes.json())
+          }
+          if (statusRes.ok) {
+            const statuses = await statusRes.json()
+            for (const s of statuses) {
+              allFlowStatuses.set(s.routeId, { status: s.status, payslipHtml: s.payslipHtml || undefined })
+            }
           }
         }
 
@@ -100,6 +111,7 @@ export default function InvoicesPage() {
 
         setConnections(filteredConnections)
         setCards(allCards)
+        setFlowStatuses(allFlowStatuses)
       } catch {}
       setLoading(false)
     }
@@ -125,10 +137,8 @@ export default function InvoicesPage() {
     const toCard = getCard(conn.to)
 
     // Check which wallet the user owns
-    const userOwnsCompanyWallet = walletState.address && 
-      String(toCard?.fields?.address || '').toLowerCase() === walletState.address.toLowerCase()
-    const userOwnsDepositWallet = walletState.address && 
-      String(fromCard?.fields?.address || '').toLowerCase() === walletState.address.toLowerCase()
+    const userOwnsCompanyWallet = myAddresses.has(String(toCard?.fields?.address || '').toLowerCase())
+    const userOwnsDepositWallet = myAddresses.has(String(fromCard?.fields?.address || '').toLowerCase())
 
     if (activeTab === 'incoming') {
       // Payer receives invoice (payer owns deposit wallet)
@@ -254,13 +264,16 @@ export default function InvoicesPage() {
   }
 
   const handleViewDocument = async (conn: Connection) => {
-    // Find template
-    let templateHtml = ''
-    const defaultTemplates = [
-      { id: 'standard', html: '<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto}h1{border-bottom:2px solid #7FD9B0;padding-bottom:10px;margin-bottom:5px}.field{margin:12px 0}.label{color:#666;font-size:12px}.value{font-size:16px;color:#333}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:11px}</style></head><body><h1>{{company}}</h1><p style="color:#666">Payment Receipt</p><div class="field"><div class="label">To</div><div class="value">{{recipient}}</div></div><div class="field"><div class="label">Amount</div><div class="value">{{amount}} USDC</div></div><div class="field"><div class="label">Date</div><div class="value">{{date}}</div></div><div class="footer">Generated by Goji</div></body></html>' }
-    ]
+    const storedStatus = flowStatuses.get(conn.id)
+    if (storedStatus?.payslipHtml) {
+      setPreviewDocName(conn.docName || 'Document')
+      setPreviewHtml(storedStatus.payslipHtml)
+      setShowPreview(true)
+      return
+    }
 
-    // Try to find template from API
+    // Find template from API
+    let templateHtml = ''
     try {
       const templatesRes = await fetch(`${apiUrl}/api/templates`)
       if (templatesRes.ok) {
@@ -272,31 +285,62 @@ export default function InvoicesPage() {
       }
     } catch {}
 
-    // Fallback to default template
+    // If no template found, show error
     if (!templateHtml) {
-      const found = defaultTemplates.find((t) => t.id === conn.template) || defaultTemplates[0]
-      templateHtml = found.html
+      alert('Template not found. Make sure the terminal is running.')
+      return
     }
 
     // Parse customDoc for field values
-    let customFields: Record<string, string> = {}
+    let customFields: Record<string, unknown> = {}
+    let lineItems: InvoiceLineItem[] = [{ description: 'Service', quantity: '1', unitPrice: conn.amount || '0', amount: conn.amount || '0' }]
     if (conn.customDoc) {
       try {
-        customFields = JSON.parse(conn.customDoc)
+        const saved = JSON.parse(conn.customDoc)
+        customFields = saved.fields || saved
+        if (Array.isArray(saved.lineItems)) lineItems = saved.lineItems
         console.log('[InvoicePreview] customDoc:', conn.customDoc, 'parsed:', customFields)
       } catch {}
     }
     console.log('[InvoicePreview] conn.customDoc:', conn.customDoc)
 
+    // Get flow status for this connection
+    const flowStatus = flowStatuses.get(conn.id)?.status || 'pending'
+    const status = flowStatus === 'settled' ? 'PAID' : 'UNPAID'
+    const statusClass = flowStatus === 'settled' ? 'badge-paid' : 'badge-unpaid'
+
+    // Determine direction: invoice flow is deposit → wallet
+    // Company owns wallet (receives invoice), payer owns deposit (sends payment)
+    const fromCard = getCard(conn.from)
+    const toCard = getCard(conn.to)
+    const isInvoiceFlow = fromCard?.category === 'deposit' || toCard?.category === 'deposit'
+
+    // For invoice: sender = company (wallet), recipient = payer (deposit)
+    // For payment: sender = from, recipient = to
+    const sender = isInvoiceFlow ? getCardTitle(conn.to) : getCardTitle(conn.from)
+    const recipient = isInvoiceFlow ? getCardTitle(conn.from) : getCardTitle(conn.to)
+
     // Render template with custom fields
-    const html = renderTemplate(templateHtml, {
-      company: 'Company',
+    const html = renderDocumentTemplate(templateHtml, {
+      companyName: 'Company',
       amount: conn.amount || '0',
-      sender: getCardTitle(conn.from),
-      recipient: getCardTitle(conn.to),
+      sender,
+      recipient,
+      billToName: recipient,
       date: new Date().toLocaleDateString(),
+      invoiceDate: new Date().toLocaleDateString(),
+      dueDate: String(customFields.dueDate || 'Set due date'),
       txHash: conn.txHash || 'Pending...',
-      ...customFields
+      invoiceNumber: String(customFields.invoiceNumber || 'INV-DRAFT'),
+      lineItems: renderLineItems(lineItems),
+      subtotal: conn.amount || '0',
+      total: conn.amount || '0',
+      effectiveDate: String(customFields.effectiveDate || new Date().toLocaleDateString()),
+      duration: String(customFields.duration || '12 months'),
+      scope: String(customFields.scope || ''),
+      status,
+      statusClass,
+      ...Object.fromEntries(Object.entries(customFields).map(([key, value]) => [key, String(value ?? '')]))
     })
 
     setPreviewDocName(conn.docName || 'Invoice')
@@ -454,45 +498,7 @@ export default function InvoicesPage() {
         onConfirm={handleApproveConfirm}
       />
 
-      {/* Invoice Preview Modal */}
-      <AnimatePresence>
-        {showPreview && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className='fixed inset-0 bg-black/30 z-50'
-              onClick={() => setShowPreview(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-card rounded-2xl shadow-[0_20px_60px_rgba(43,36,64,0.2)] w-[500px] max-h-[80vh] overflow-hidden flex flex-col'
-            >
-              <div className='flex items-center justify-between px-6 py-4 border-b border-ink/8'>
-                <h3 className='font-display text-sm font-semibold'>{previewDocName}</h3>
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className='w-7 h-7 rounded-lg hover:bg-ink/5 flex items-center justify-center text-ink/30 hover:text-ink/60 transition-colors'
-                >
-                  &times;
-                </button>
-              </div>
-              <div className='flex-1 overflow-y-auto p-6'>
-                <iframe
-                  srcDoc={previewHtml}
-                  className='w-full border border-ink/10 rounded-xl bg-white'
-                  style={{ minHeight: 400 }}
-                  title='Invoice Preview'
-                />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      <DocumentPreviewDrawer open={showPreview} title={previewDocName} html={previewHtml} onClose={() => setShowPreview(false)} />
     </div>
   )
 }

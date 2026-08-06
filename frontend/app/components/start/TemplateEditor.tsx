@@ -14,7 +14,10 @@ interface TemplateField {
 
 interface Template {
   id: string
+  key?: string
   name: string
+  flowType: 'payment' | 'invoice'
+  version?: number
   companyName: string | null
   fields: TemplateField[]
   html: string
@@ -59,7 +62,7 @@ function generateHtml(companyName: string, fields: TemplateField[]): string {
   const footerFields = fields.filter((f) => f.position === 'footer')
 
   const renderField = (field: TemplateField) => {
-    const value = field.autoFill ? `{{${field.key}}}` : `[${field.label}]`
+    const value = `{{${field.key}}}`
     return `
       <div class="field">
         <div class="label">${field.label}</div>
@@ -87,7 +90,7 @@ function generateHtml(companyName: string, fields: TemplateField[]): string {
 </head>
 <body>
   <div class="header-section">
-    <div class="company">${companyName || '{{company}}'}</div>
+    <div class="company">{{companyName}}</div>
     <div class="subtitle">Document</div>
     ${headerFields.map(renderField).join('')}
   </div>
@@ -107,7 +110,7 @@ function generateHtml(companyName: string, fields: TemplateField[]): string {
 
 function renderPreviewHtml(html: string, companyName: string, fields: TemplateField[]): string {
   let preview = html
-  preview = preview.replace(/\{\{company\}\}/g, companyName || 'Company Name')
+  preview = preview.replace(/\{\{companyName\}\}/g, companyName || 'Company Name')
   
   for (const field of fields) {
     const regex = new RegExp(`\\{\\{${field.key}\\}\\}`, 'g')
@@ -133,6 +136,7 @@ function renderPreviewHtml(html: string, companyName: string, fields: TemplateFi
 
 export default function TemplateEditor({ template, onSave, onClose, apiUrl }: TemplateEditorProps) {
   const [name, setName] = useState(template?.name || '')
+  const [flowType, setFlowType] = useState<'payment' | 'invoice'>(template?.flowType || 'payment')
   const [companyName, setCompanyName] = useState(template?.companyName || '')
   const [fields, setFields] = useState<TemplateField[]>(template?.fields || DEFAULT_FIELDS)
   const [saving, setSaving] = useState(false)
@@ -174,13 +178,16 @@ export default function TemplateEditor({ template, onSave, onClose, apiUrl }: Te
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, companyName, fields, html: generatedHtml })
+        body: JSON.stringify({ key: template?.key, name, companyName, flowType, version: template?.version || 1, fields, html: generatedHtml })
       })
       if (res.ok) {
         const data = await res.json()
         onSave({
-          id: data.id || template?.id || '',
-          name,
+           id: data.id || template?.id || '',
+           key: data.key || template?.key,
+           name,
+           flowType,
+           version: data.version || template?.version || 1,
           companyName,
           fields,
           html: generatedHtml,
@@ -249,6 +256,19 @@ export default function TemplateEditor({ template, onSave, onClose, apiUrl }: Te
                     className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
                     placeholder='e.g., Acme Corp'
                   />
+                </div>
+
+                <div>
+                  <label className='text-xs text-ink/40 mb-1.5 block'>Flow Type</label>
+                  <select
+                    value={flowType}
+                    onChange={(e) => setFlowType(e.target.value as 'payment' | 'invoice')}
+                    className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
+                  >
+                    <option value='payment'>Payment connection</option>
+                    <option value='invoice'>Invoice connection</option>
+                  </select>
+                  <p className='mt-1.5 text-[11px] text-ink/35'>This controls where the template can be selected.</p>
                 </div>
               </div>
 

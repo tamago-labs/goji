@@ -20,7 +20,7 @@ export default function CTA() {
           </span>
         </h2>
         <p className='text-ink/50 text-lg mb-8 max-w-[560px] mx-auto'>
-          Settle invoices, payroll, and contractor payments. Each creates verifiable proof for RWA origination.
+          Web3 payments to RWA origination on Arc. Compliance is built-in but configurable. Contact us for enterprise approval and custom compliance rules.
         </p>
         <Link
           href='/start'

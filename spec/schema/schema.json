@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 8,
   "schema": [
     {
       "name": "writer",
@@ -697,6 +697,21 @@
           "required": true,
           "type": "int",
           "version": 1
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "version": 5
+        },
+        {
+          "name": "flowType",
+          "type": "string",
+          "version": 5
+        },
+        {
+          "name": "version",
+          "type": "int",
+          "version": 5
         }
       ]
     },
@@ -718,7 +733,7 @@
       "name": "receivable",
       "namespace": "goji",
       "compact": false,
-      "flagsPosition": -1,
+      "flagsPosition": 13,
       "fields": [
         {
           "name": "id",
@@ -797,6 +812,21 @@
           "required": true,
           "type": "int",
           "version": 2
+        },
+        {
+          "name": "complianceRegistry",
+          "type": "string",
+          "version": 8
+        },
+        {
+          "name": "requiredTier",
+          "type": "int",
+          "version": 8
+        },
+        {
+          "name": "allowedCountries",
+          "type": "json",
+          "version": 8
         }
       ]
     },
@@ -936,6 +966,223 @@
           "required": true,
           "type": "int",
           "version": 3
+        }
+      ]
+    },
+    {
+      "name": "company-profile",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 2,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 4
+        },
+        {
+          "name": "legalName",
+          "required": true,
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "tradingName",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "entityType",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "registrationNumber",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "taxId",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "localCurrency",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "fiscalYearStart",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "contactEmail",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "contactPhone",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "version": 4
+        },
+        {
+          "name": "updatedAt",
+          "required": true,
+          "type": "int",
+          "version": 4
+        }
+      ]
+    },
+    {
+      "name": "company-profile-remove",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "buffer",
+          "version": 4
+        }
+      ]
+    },
+    {
+      "name": "compliance-identity",
+      "namespace": "goji",
+      "compact": false,
+      "flagsPosition": 7,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "walletId",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "walletAddress",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "tokenId",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "passId",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "ownerKey",
+          "required": true,
+          "type": "buffer",
+          "version": 6
+        },
+        {
+          "name": "status",
+          "required": true,
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "kycSource",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "kycId",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "subTier",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "subGroup",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "expirationTime",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "identityData",
+          "type": "json",
+          "version": 6
+        },
+        {
+          "name": "bankAccountData",
+          "type": "json",
+          "version": 6
+        },
+        {
+          "name": "approvedBy",
+          "type": "buffer",
+          "version": 6
+        },
+        {
+          "name": "approvedAt",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "lockedAt",
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "rejectionReason",
+          "type": "string",
+          "version": 6
+        },
+        {
+          "name": "createdAt",
+          "required": true,
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "updatedAt",
+          "required": true,
+          "type": "int",
+          "version": 6
+        },
+        {
+          "name": "auditLog",
+          "type": "json",
+          "version": 7
         }
       ]
     }

@@ -1,0 +1,61 @@
+const BASE_STYLE = `body{font-family:Arial,sans-serif;padding:32px;max-width:680px;margin:0 auto;color:#1a1a2e;background:#fafafa}.container{background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.08)}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #7FD9B0}.company{font-size:13px;color:#666}.badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}.badge-paid{background:#7FD9B0;color:#fff}.badge-unpaid{background:#f0f0f0;color:#666}.section{margin:20px 0}.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px}.party{display:flex;gap:16px}.party-box{flex:1;background:#f8f9fa;border-radius:8px;padding:16px}.role{font-size:10px;text-transform:uppercase;color:#999;margin-bottom:4px}.name{font-weight:600;font-size:14px}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}.label{color:#666;font-size:13px}.value{font-weight:600;font-size:13px}.amount{background:#f8f9fa;border-radius:8px;padding:16px;margin:16px 0;text-align:center;font-size:28px;font-weight:700}.notes{background:#fffde7;border-radius:8px;padding:12px;margin-top:16px;font-size:12px;color:#666}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center}`
+
+const invoiceFields = [
+  { key: 'invoiceNumber', label: 'Invoice Number', type: 'text', autoFill: false, position: 'header' },
+  { key: 'invoiceDate', label: 'Invoice Date', type: 'date', autoFill: true, position: 'header' },
+  { key: 'dueDate', label: 'Due Date', type: 'date', autoFill: false, position: 'header' },
+  { key: 'billToAddress', label: 'Bill To Address', type: 'textarea', autoFill: false, position: 'body' },
+  { key: 'billToTaxId', label: 'Bill To Tax ID', type: 'text', autoFill: false, position: 'body' },
+  { key: 'paymentTerms', label: 'Payment Terms', type: 'text', autoFill: false, position: 'footer' },
+  { key: 'taxRate', label: 'Tax Rate (%)', type: 'number', autoFill: false, position: 'body' },
+  { key: 'notes', label: 'Notes', type: 'textarea', autoFill: false, position: 'footer' }
+]
+
+const paymentFields = [
+  { key: 'reference', label: 'Reference', type: 'text', autoFill: false, position: 'body' },
+  { key: 'notes', label: 'Notes', type: 'textarea', autoFill: false, position: 'footer' }
+]
+
+const agreementFields = [
+  { key: 'effectiveDate', label: 'Effective Date', type: 'date', autoFill: false, position: 'header' },
+  { key: 'duration', label: 'Duration', type: 'text', autoFill: false, position: 'body' },
+  { key: 'clientAddress', label: 'Client Address', type: 'textarea', autoFill: false, position: 'body' },
+  { key: 'scope', label: 'Scope of Work', type: 'textarea', autoFill: false, position: 'body' },
+  { key: 'paymentSchedule', label: 'Payment Schedule', type: 'text', autoFill: false, position: 'body' },
+  { key: 'terminationClause', label: 'Termination Clause', type: 'textarea', autoFill: false, position: 'footer' }
+]
+
+function wrap(title, body, accent = '#7FD9B0') {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${BASE_STYLE}.header{border-color:${accent}}table{width:100%;border-collapse:collapse;margin:16px 0}th{text-align:left;font-size:11px;text-transform:uppercase;color:#999;padding:8px 0;border-bottom:2px solid #eee}td{padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px}td:last-child{text-align:right}.total{background:#f0eeff;border-radius:8px;padding:16px;margin:20px 0}.total-row{display:flex;justify-content:space-between;padding:4px 0}.grand{font-size:18px;font-weight:700;padding-top:8px;border-top:2px solid ${accent}}</style></head><body><div class="container">${body}</div></body></html>`
+}
+
+function getDefaultTemplates() {
+  return [
+    {
+      key: 'payment-receipt',
+      name: 'Payment Receipt',
+      flowType: 'payment',
+      version: 1,
+      fields: paymentFields,
+      html: wrap('Payment Receipt', `<div class="header"><div><h1>Payment Receipt</h1><div class="company">{{companyName}}</div></div><span class="badge {{statusClass}}">{{status}}</span></div><div class="party"><div class="party-box"><div class="role">From</div><div class="name">{{sender}}</div></div><div class="party-box"><div class="role">To</div><div class="name">{{recipient}}</div></div></div><div class="section"><div class="section-title">Payment Details</div><div class="row"><span class="label">Date</span><span class="value">{{date}}</span></div><div class="row"><span class="label">Transaction</span><span class="value">{{txHash}}</span></div>{{#reference}}<div class="row"><span class="label">Reference</span><span class="value">{{reference}}</span></div>{{/reference}}</div><div class="amount">{{amount}} USDC</div>{{#notes}}<div class="notes"><strong>Notes:</strong> {{notes}}</div>{{/notes}}<div class="footer">Generated by Goji P2P Workspace</div>`)
+    },
+    {
+      key: 'invoice',
+      name: 'Invoice',
+      flowType: 'invoice',
+      version: 1,
+      fields: invoiceFields,
+      html: wrap('Invoice', `<div class="header"><div><h1>Invoice</h1><div class="company">{{companyName}}</div></div><span class="badge {{statusClass}}">{{status}}</span></div><div class="section"><div class="row"><span class="label">Invoice #</span><span class="value">{{invoiceNumber}}</span></div><div class="row"><span class="label">Invoice Date</span><span class="value">{{invoiceDate}}</span></div><div class="row"><span class="label">Due Date</span><span class="value">{{dueDate}}</span></div></div><div class="party"><div class="party-box"><div class="role">From</div><div class="name">{{sender}}</div></div><div class="party-box"><div class="role">Bill To</div><div class="name">{{billToName}}</div>{{#billToAddress}}<div>{{billToAddress}}</div>{{/billToAddress}}{{#billToTaxId}}<div>Tax ID: {{billToTaxId}}</div>{{/billToTaxId}}</div></div><div class="section"><div class="section-title">Line Items</div><table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>{{lineItems}}</tbody></table></div><div class="total"><div class="total-row"><span>Subtotal</span><span>{{subtotal}} USDC</span></div>{{#taxAmount}}<div class="total-row"><span>Tax ({{taxRate}}%)</span><span>{{taxAmount}} USDC</span></div>{{/taxAmount}}<div class="total-row grand"><span>Total Due</span><span>{{total}} USDC</span></div></div>{{#paymentTerms}}<div class="notes"><strong>Payment Terms:</strong> {{paymentTerms}}</div>{{/paymentTerms}}{{#notes}}<div class="notes"><strong>Notes:</strong> {{notes}}</div>{{/notes}}<div class="footer">Transaction: {{txHash}}<br>Generated by Goji P2P Workspace</div>`, '#8B7FD6')
+    },
+    {
+      key: 'service-agreement',
+      name: 'Service Agreement',
+      flowType: 'payment',
+      version: 1,
+      fields: agreementFields,
+      html: wrap('Service Agreement', `<div class="header"><div><h1>Service Agreement</h1><div class="company">{{companyName}}</div></div></div><div class="section"><div class="section-title">Effective Date</div><p>{{effectiveDate}}</p></div><div class="section"><div class="section-title">Parties</div><div class="party"><div class="party-box"><div class="role">Service Provider</div><div class="name">{{sender}}</div></div><div class="party-box"><div class="role">Client</div><div class="name">{{recipient}}</div>{{#clientAddress}}<div>{{clientAddress}}</div>{{/clientAddress}}</div></div></div><div class="section"><div class="section-title">Duration</div><p>{{duration}}</p></div><div class="section"><div class="section-title">Scope of Work</div><div class="notes">{{scope}}</div></div><div class="section"><div class="section-title">Compensation</div><div class="amount">{{amount}} USDC</div>{{#paymentSchedule}}<div class="notes"><strong>Payment Schedule:</strong> {{paymentSchedule}}</div>{{/paymentSchedule}}</div>{{#terminationClause}}<div class="section"><div class="section-title">Termination</div><p>{{terminationClause}}</p></div>{{/terminationClause}}<div class="footer">Transaction: {{txHash}}<br>Generated by Goji P2P Workspace</div>`)
+    }
+  ]
+}
+
+module.exports = { getDefaultTemplates }

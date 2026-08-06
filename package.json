@@ -1,15 +1,17 @@
 {
   "name": "@tamago-labs/goji",
-  "version": "0.7.7",
+  "version": "0.8.6",
   "description": "Arc-native P2P origination layer. Turn verified USDC payments into real-world assets with cryptographic proof.",
   "main": "src/index.js",
   "bin": {
     "goji": "src/index.js"
   },
   "scripts": {
-    "start": "node src/index.js --port 3001",
-    "start:guest": "node src/index.js --port 3002 --guest",
+    "start": "node src/index.js --port 3001 --dev",
+    "start:guest": "node src/index.js --port 3002 --guest --dev",
+    "build": "cd frontend && npm run build",
     "build:specs": "node schema.js",
+    "prepublishOnly": "npm run build",
     "clean:storage": "node scripts/clean-storage.js",
     "lint": "prettier . --check && lunte",
     "format": "prettier . --write"
@@ -72,6 +74,7 @@
     "spec/",
     "scripts/",
     "schema.js",
+    "frontend/out/",
     "README.md"
   ]
 }

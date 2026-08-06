@@ -1,31 +1,24 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { NetworkArc, NetworkBase, NetworkEthereum } from '@web3icons/react'
+import { useState, useCallback } from 'react'
 import { keccak256, toBytes } from 'viem'
+import { arcTestnet } from 'viem/chains'
 import { spendFromUnified } from '../../../lib/unified-balance'
-import { renderTemplate, DEFAULT_TEMPLATES } from '../../../lib/payslipTemplates'
+import { renderDocumentTemplate, renderLineItems, type DocumentTemplate, type InvoiceLineItem } from '../../../lib/documentTemplates'
 import { buildMerkleTree, getMerkleRoot } from '../../../lib/merkle'
 import { GOJIPROOF_ABI } from '../../../lib/gojiProof'
 import { useWallet } from '../../providers/WalletProvider'
-import { usePublicClient, useWalletClient } from 'wagmi'
+import { usePublicClient, useSwitchChain, useWalletClient } from 'wagmi'
 import { type FlowCard, type Connection } from './types'
 
 // GojiProof contract address on Arc Testnet
 const GOJIPROOF_ADDRESS = '0x9465a4C246D44F32F391Ebda165Acb12886746Ca' as `0x${string}`
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const CHAIN_ICONS: Record<string, React.ComponentType<any>> = {
-  Arc_Testnet: NetworkArc,
-  Base_Sepolia: NetworkBase,
-  Ethereum_Sepolia: NetworkEthereum
-}
-
 export interface RouteStatus {
   id: string
   flowId: string
   routeId: string
-  status: 'pending' | 'signing' | 'sending' | 'settled' | 'failed' | 'approved' | 'awaiting'
+  status: 'pending' | 'signing' | 'sending' | 'settled' | 'failed' | 'approved' | 'awaiting' | 'payment_settled' | 'proof_pending'
   txHash?: string
   error?: string
   payslipHtml?: string
@@ -43,9 +36,10 @@ interface FlowOverlayProps {
 }
 
 export default function FlowOverlay({ boardId, cards, connections, flowStatuses, apiUrl, onStatusUpdate }: FlowOverlayProps) {
-  const { state: walletState, dispatch } = useWallet()
-  const publicClient = usePublicClient()
+  const { state: walletState } = useWallet()
+  const arcPublicClient = usePublicClient({ chainId: arcTestnet.id })
   const { data: walletClient } = useWalletClient()
+  const { switchChainAsync } = useSwitchChain()
   const [signingId, setSigningId] = useState<string | null>(null)
 
   const cardMap = new Map(cards.map((c) => [c.id, c]))
@@ -160,43 +154,61 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
       console.log('[FlowOverlay] spendFromUnified result:', result)
 
       if (result.success) {
+        const existing = flowStatuses.find((s) => s.routeId === route.conn.id)
+        if (existing) {
+          await fetch(`${apiUrl}/api/flow-status/${existing.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'payment_settled', txHash: result.txHash })
+          })
+          onStatusUpdate({ ...existing, status: 'payment_settled', txHash: result.txHash || undefined })
+        }
+
         // Parse customDoc for field values
-        let customFields: Record<string, string> = {}
+        let customFields: Record<string, unknown> = {}
+        let lineItems: InvoiceLineItem[] = [{ description: 'Service', quantity: '1', unitPrice: amount || '0', amount: amount || '0' }]
         if (route.conn.customDoc) {
           try {
-            customFields = JSON.parse(route.conn.customDoc)
+            const saved = JSON.parse(route.conn.customDoc)
+            customFields = saved.fields || saved
+            if (Array.isArray(saved.lineItems)) lineItems = saved.lineItems
           } catch {}
         }
         
         // Render payslip HTML if document is attached
         let payslipHtml = null
+        let documentCompanyName = 'Company'
         if (route.conn.document && route.conn.template) {
-          // Try to find template from API first, then from defaults
-          let templateHtml = null
-          const defaultTemplate = DEFAULT_TEMPLATES.find((t) => t.id === route.conn.template)
-          if (defaultTemplate && defaultTemplate.html) {
-            templateHtml = defaultTemplate.html
-          } else {
-            try {
-              const templatesRes = await fetch(`${apiUrl}/api/templates`)
-              if (templatesRes.ok) {
-                const templates = await templatesRes.json()
-                const found = templates.find((t: { id: string }) => t.id === route.conn.template)
-                if (found && found.html) {
-                  templateHtml = found.html
-                }
-              }
-            } catch {}
-          }
-          if (templateHtml) {
-            payslipHtml = renderTemplate(templateHtml, {
-              company: 'Company',
+          let selectedTemplate: DocumentTemplate | null = null
+          try {
+            const templatesRes = await fetch(`${apiUrl}/api/templates`)
+            if (templatesRes.ok) {
+              const templates: DocumentTemplate[] = await templatesRes.json()
+              selectedTemplate = templates.find((template) => template.id === route.conn.template) || null
+            }
+          } catch {}
+          if (selectedTemplate) {
+            documentCompanyName = selectedTemplate.companyName || 'Company'
+            payslipHtml = renderDocumentTemplate(selectedTemplate.html, {
+              companyName: documentCompanyName,
               amount: amount || '0',
               sender: route.from?.title || 'Wallet',
               recipient: route.to?.title || 'Recipient',
+              billToName: route.to?.title || 'Recipient',
               date: new Date().toLocaleDateString(),
+              invoiceDate: new Date().toLocaleDateString(),
+              dueDate: String(customFields.dueDate || 'Set due date'),
               txHash: result.txHash || 'N/A',
-              ...customFields
+              invoiceNumber: String(customFields.invoiceNumber || 'INV-DRAFT'),
+              lineItems: renderLineItems(lineItems),
+              subtotal: amount || '0',
+              total: amount || '0',
+              effectiveDate: String(customFields.effectiveDate || new Date().toLocaleDateString()),
+              duration: String(customFields.duration || '12 months'),
+              scope: String(customFields.scope || ''),
+              status: 'PAID',
+              statusClass: 'badge-paid',
+              ...Object.fromEntries(Object.entries(customFields).map(([key, value]) => [key, String(value ?? '')]))
             })
           }
         }
@@ -207,12 +219,13 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
         let merkleRoot = null
         try {
           const documentValues = [
-            'Company',  // companyName
+            documentCompanyName,
             route.to?.title || 'Recipient',
             amount || '0',
             new Date().toLocaleDateString(),
             result.txHash || 'N/A',
-            ...Object.values(customFields)
+            ...Object.values(customFields).map((value) => String(value ?? '')),
+            JSON.stringify(lineItems)
           ]
           const tree = buildMerkleTree(documentValues)
           merkleRoot = getMerkleRoot(tree)
@@ -220,30 +233,63 @@ export default function FlowOverlay({ boardId, cards, connections, flowStatuses,
           console.error('[FlowOverlay] merkle root generation failed:', err)
         }
 
-        // Anchor Merkle root on GojiProof contract
-        if (publicClient && walletClient && merkleRoot) {
+        // Anchor Merkle root on GojiProof specifically on Arc Testnet.
+        let proofError: string | null = null
+        if (arcPublicClient && walletClient && merkleRoot) {
           try {
-            const connectionId = keccak256(toBytes(route.conn.id))
-            const { request } = await publicClient.simulateContract({
+            const walletChainId = await walletClient.getChainId()
+            if (walletChainId !== arcTestnet.id) {
+              if (!switchChainAsync) throw new Error('Wallet cannot switch to Arc Testnet')
+              await switchChainAsync({ chainId: arcTestnet.id })
+              if (await walletClient.getChainId() !== arcTestnet.id) {
+                throw new Error('Wallet did not switch to Arc Testnet')
+              }
+            }
+
+            const alreadyAnchored = await arcPublicClient.readContract({
               address: GOJIPROOF_ADDRESS,
               abi: GOJIPROOF_ABI,
-              functionName: 'anchorRoot',
-              args: [merkleRoot as `0x${string}`, connectionId],
-              account: walletClient.account
+              functionName: 'isAnchored',
+              args: [merkleRoot as `0x${string}`]
             })
-            await walletClient.writeContract(request)
+
+            if (!alreadyAnchored) {
+              const connectionId = keccak256(toBytes(route.conn.id))
+              const { request } = await arcPublicClient.simulateContract({
+                address: GOJIPROOF_ADDRESS,
+                abi: GOJIPROOF_ABI,
+                functionName: 'anchorRoot',
+                args: [merkleRoot as `0x${string}`, connectionId],
+                account: walletClient.account
+              })
+              const proofHash = await walletClient.writeContract(request)
+              await arcPublicClient.waitForTransactionReceipt({ hash: proofHash })
+            }
           } catch (err) {
+            proofError = err instanceof Error ? err.message : 'Proof anchoring failed'
             console.error('[FlowOverlay] GojiProof.anchorRoot() failed:', err)
           }
         } else {
-          console.log('[FlowOverlay] skipping anchorRoot - missing publicClient or walletClient')
-          console.log('[FlowOverlay] publicClient:', !!publicClient, 'walletClient:', !!walletClient)
+          proofError = 'Arc proof client or wallet is unavailable'
+          console.error('[FlowOverlay] skipping anchorRoot:', proofError)
+        }
+
+        if (proofError) {
+          if (existing) {
+            await fetch(`${apiUrl}/api/flow-status/${existing.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'proof_pending', txHash: result.txHash, error: proofError, payslipHtml })
+            })
+            onStatusUpdate({ ...existing, status: 'proof_pending', txHash: result.txHash || undefined, error: proofError, payslipHtml: payslipHtml || undefined })
+          }
+          setSigningId(null)
+          return
         }
 
         // Update to settled
-        const existing = flowStatuses.find((s) => s.routeId === route.conn.id)
         if (existing) {
-          const res = await fetch(`${apiUrl}/api/flow-status/${existing.id}`, {
+          await fetch(`${apiUrl}/api/flow-status/${existing.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'settled', txHash: result.txHash, payslipHtml, merkleRoot })

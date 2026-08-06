@@ -83,6 +83,45 @@ contract ReceivableFactory {
         return tokenAddress;
     }
 
+    /// @notice Create a receivable with optional identity eligibility checks.
+    function createReceivableWithCompliance(
+        string memory name,
+        string memory receivableType,
+        uint256 amount,
+        uint256 interestRate,
+        uint256 minInvestment,
+        uint256 expiresAt,
+        bytes32[] memory proofs,
+        address complianceRegistry,
+        uint8 requiredTier,
+        bytes2[] memory allowedCountries
+    ) external payable returns (address) {
+        require(amount > 0, "Zero amount");
+        require(proofs.length > 0, "No proofs");
+        require(msg.value >= feeAmount, "Insufficient fee");
+
+        ReceivableToken token = new ReceivableToken(
+            name,
+            receivableType,
+            amount,
+            interestRate,
+            minInvestment,
+            expiresAt,
+            proofs,
+            msg.sender
+        );
+        token.setCompliancePolicy(complianceRegistry, requiredTier, allowedCountries);
+
+        address tokenAddress = address(token);
+        issuers[msg.sender].push(tokenAddress);
+        isReceivable[tokenAddress] = true;
+        totalValue[msg.sender] += amount;
+        collectedFees += feeAmount;
+
+        emit ReceivableCreated(tokenAddress, msg.sender, name, amount, interestRate, expiresAt);
+        return tokenAddress;
+    }
+
     // ──────────────────────────── Admin Functions ───────────────────────
 
     /// @notice Set the flat fee amount

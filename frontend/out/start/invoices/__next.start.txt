@@ -1,0 +1,7 @@
+1:"$Sreact.fragment"
+2:I[78616,[],"ClientSegmentRoot"]
+3:I[50439,["8451","static/chunks/4e88bc13-510cfdf2b9034f84.js","9976","static/chunks/561ceb03-28f52b9e2e233245.js","8768","static/chunks/503c2b4b-d2c40e11817f80a5.js","4391","static/chunks/3a636d3f-9f64f9f17d7cd46b.js","8956","static/chunks/3a91511d-003fc9367e5c2c47.js","919","static/chunks/97b52221-d1c1c47616158f93.js","5033","static/chunks/2f0b94e8-e82fcfd965e1e82f.js","277","static/chunks/277-94d16357fb905c7a.js","6683","static/chunks/6683-b723a0949f37127a.js","5530","static/chunks/5530-02f513f8c5660d3b.js","5909","static/chunks/5909-61623b70e5cde57b.js","4177","static/chunks/4177-2e89164a9001823f.js","5799","static/chunks/5799-5b5ef21d2f4bbbfc.js","8138","static/chunks/8138-5fa1ac452ee01645.js","3458","static/chunks/3458-8101e056233a9931.js","2748","static/chunks/2748-ebece7003e0a9648.js","5468","static/chunks/5468-c31e5d55d55fa25b.js","6662","static/chunks/app/start/layout-0fe135cbf55766b9.js"],"default"]
+4:I[57121,[],""]
+5:I[74581,[],""]
+0:{"rsc":["$","$1","c",{"children":[null,["$","$L2",null,{"Component":"$3","slots":{"children":["$","$L4",null,{"parallelRouterKey":"children","template":["$","$L5",null,{}]}]},"serverProvidedParams":{"params":{},"promises":["$@6"]}}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Tv8cYQ1gdDk9UWv4_8lzi"}
+6:"$0:rsc:props:children:1:props:serverProvidedParams:params"

@@ -189,6 +189,27 @@ export const RECEIVABLE_TOKEN_ABI = [
   },
   {
     "type": "function",
+    "name": "complianceRegistry",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "requiredComplianceTier",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint8" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAllowedCountries",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "bytes2[]" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getReceivableInfo",
     "inputs": [],
     "outputs": [

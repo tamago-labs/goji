@@ -24,17 +24,17 @@ export default function Hero() {
           {...fadeUp(0.1)}
           className='font-display text-[50px] font-semibold leading-[1.12] mb-[22px]'
         >
-          Private Payments.
+          Web3 Payments
           <br />
           <span className='underline decoration-mint decoration-[6px] underline-offset-[4px]'>
-            Public Proof.
+            That Issue RWAs
           </span>
         </motion.h1>
         <motion.p
           {...fadeUp(0.2)}
-          className='text-[17px] leading-[1.6] text-ink/70 max-w-[420px] mb-[34px]'
+          className='text-[17px] leading-[1.6] text-ink/70 max-w-[520px] mb-[34px]'
         >
-         Run invoices, payroll, and contractor payments peer-to-peer. Every settlement creates verifiable proof on Arc, enabling businesses to originate receivables and other real-world assets for financial partners.
+          Run business payments privately in a P2P workspace. Each settlement creates verifiable proof on Arc, enabling compliance-ready RWA origination for financial partners.
         </motion.p>
         <motion.div {...fadeUp(0.3)} className='flex gap-3.5'>
           <Link
@@ -44,7 +44,7 @@ export default function Hero() {
             Get started now
           </Link>
           <Link
-            href='/rwa'
+            href='/start'
             className='text-ink text-[15px] font-medium py-[15px] px-2.5 hover:opacity-70 transition-opacity'
           >
             Explore Assets →

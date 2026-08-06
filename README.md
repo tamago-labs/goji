@@ -51,7 +51,7 @@ Goji is a stablecoin-native payment and treasury workspace built on Arc, where b
 
 ## How It Works
 
-Goji runs as a local terminal that hosts a private workspace. The frontend connects to the terminal over HTTP and WebSocket, while authorized workspace data replicates through an encrypted Pear P2P room.
+Goji runs as a local terminal that hosts a private workspace with an embedded web interface. The frontend is served directly from the terminal — no separate processes needed.
 
 ### Host a Workspace
 
@@ -60,6 +60,8 @@ Run the company terminal:
 ```bash
 npx @tamago-labs/goji
 ```
+
+Opens at `http://localhost:3001` with the full web interface.
 
 The host terminal prints an invite code. Share it with the people who should join the workspace.
 
@@ -75,6 +77,15 @@ Goji prompts for the invite code and connects the terminal to the existing works
 
 After joining, the company administrator assigns each participant a role from **Organization → Members**.
 
+### Development Mode
+
+For development with hot reload:
+
+```bash
+npm start          # CLI on port 3001 (API only)
+cd frontend && npm run dev  # Frontend on port 3000
+```
+
 ### Workspace Roles
 
 | Role              | Access                                                 |
@@ -82,7 +93,8 @@ After joining, the company administrator assigns each participant a role from **
 | Company           | Manages members, workflows, documents, and receivables |
 | Payee             | Receives payments and views permitted documents        |
 | Payer             | Reviews and approves payment flows                     |
-| Financial Partner | Verifies proofs and funds receivables                  |
+| Financial Partner | Verifies proofs, funds receivables, and manages pools  |
+| Compliance Officer | Reviews identities and audits available transfer data |
 
 ## P2P Identity
 
@@ -136,11 +148,32 @@ GojiProof anchors Merkle roots for payment documents on Arc. The private documen
 - `getRootByConnection(bytes32 connectionId)` looks up a root from its canvas connection
 - `hasDocument(bytes32 connectionId)` checks whether a connection has an anchored document
 
+### SoulboundIdentityPass
+
+The Arc Testnet identity pass binds one non-transferable NFT to each wallet. It stores only the token/pass reference on-chain; compliance and banking data remain workspace-scoped.
+
+- `mint()` creates one pass per wallet
+- `tokenIdOf(address wallet)` returns the wallet's NFT id
+- `passIdOf(address wallet)` returns the separate identity pass id
+- `isValid(address wallet)` checks revocation and expiry
+
+### ComplianceRegistry
+
+ComplianceRegistry is a company or pool-specific eligibility layer. It does not change the global identity NFT. Reviewers approve a pass with a compliance tier, expiry, and ISO country code; pools can then apply their own country allowlist.
+
+- `approveIdentity(...)` records an approved pass
+- `revokeIdentity(...)` removes approval
+- `isEligible(...)` checks pass validity and tier
+- `isEligibleForCountry(...)` checks pass, tier, and country
+
+The Identity Review page performs the on-chain approval transaction through `approveIdentity(...)` before recording the workspace review status. A reviewer wallet must be granted access with `setReviewer(...)` by the registry owner.
+
 ### ReceivableFactory
 
 ReceivableFactory creates and tracks receivable token contracts for company issuers.
 
 - Creates receivables with amount, interest rate, minimum investment, expiry, and proof hashes
+- `createReceivableWithCompliance(...)` optionally applies an identity registry, required tier, and on-chain country allowlist
 - Charges a configurable flat creation fee of 1 USDC by default
 - Tracks receivables and total value by issuer
 - Allows the administrator to configure the treasury and withdraw platform fees
@@ -155,6 +188,27 @@ Each receivable has an ERC-20 token representing fractional ownership of the fin
 - Interest is calculated pro rata using investment amount and time funded
 - The company repays principal plus interest at expiry
 - Token holders redeem their share after repayment
+- Repayment is restricted to the receivable issuer
+- Financing checks the investor's valid Identity Pass, registry tier, and allowed country when a compliance policy is configured
+
+### ReceivablePool
+
+Financial partners first finance company receivables, then transfer the resulting receivable-token positions into a managed pool. Pool investors deposit native USDC and receive pool-share tokens instead of interacting with each receivable directly.
+
+- Custodies actual receivable-token positions contributed by the manager
+- Mints manager shares against contributed receivable value
+- Allows pool cash to finance additional receivables selected by the manager
+- Values pool shares against cash and custodied receivable positions
+- Checks optional identity tier and country eligibility on deposits
+- Configures target APY, pool capacity, term, and minimum stake period
+- Closes deposits before redemption preparation
+- Opens redemptions only after underlying receivable positions are redeemed
+
+### ReceivablePoolFactory
+
+Creates pools owned by the financial partner who created them. Pool policy can require a minimum compliance tier, allow multiple countries, and control the investor redemption window.
+
+Pool investors use the public RWA Explorer at `/rwa`. The pool list is public; investing and redemption require a connected wallet and execute directly against the pool contract.
 
 #### Default Receivable Parameters
 
@@ -165,6 +219,16 @@ Each receivable has an ERC-20 token representing fractional ownership of the fin
 | Minimum investment | 1 USDC             | Configured by the company          |
 | Term options       | 30, 60, or 90 days | Configured at creation             |
 | Creation fee       | 1 USDC             | Paid by the company issuer         |
+
+#### Pool Parameters
+
+| Parameter           | Description                                                    |
+| ------------------- | -------------------------------------------------------------- |
+| Target APY          | Manager projection based on underlying receivables             |
+| Pool capacity       | Maximum pool asset value; zero means unlimited                  |
+| Pool term           | Intended pool duration                                          |
+| Minimum stake       | Minimum time before an investor can redeem                      |
+| Country policy      | Optional ISO country allowlist                                  |
 
 Interest is distributed pro rata: investors who contribute more or fund earlier receive a larger share of the return.
 
@@ -203,6 +267,8 @@ Source documents and embeddings are never replicated. Members receive only relev
 | `POST /api/knowledge/url`                       | Fetch website text for ingestion                      |
 | `POST /api/knowledge/search`                    | Local or P2P knowledge search                         |
 | `/api/members`                                  | Employer member and role management                   |
+| `/api/receivables`                              | P2P receivable metadata and proof references          |
+| `/api/identities`                               | Workspace identity submission and review records      |
 | `ws://localhost:3001`                           | Live browser updates for the visual payment workspace |
 
 ## Getting Started
@@ -241,14 +307,46 @@ The frontend runs on port `3000` and connects to `http://localhost:3001` by defa
 
 ## Arc Testnet Contracts
 
-| Contract          | Address                                      |
-| ----------------- | -------------------------------------------- |
-| GojiProof         | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
-| ReceivableFactory | `0x5646647B48b5458D8352764F1b697195454D52Bf` |
+| Contract              | Address                                      |
+| --------------------- | -------------------------------------------- |
+| GojiProof             | `0x9465a4C246D44F32F391Ebda165Acb12886746Ca` |
+| ReceivableFactory     | `0x53F71eC10939d4aD243903B496E403B3C27784Ae` |
+| SoulboundIdentityPass | `0x9829724359A49c36B53deB1e059c14d3C2eA5458` |
+| ComplianceRegistry    | `0x31289306250CeB6dC5Bb78A32AC2393Dab250b22` |
+| ReceivablePoolFactory | `0x839bDD622641bF9b0680F8aC9B2Fd7FC9f44263F` |
 
 - Chain: Arc Testnet, chain ID `5042002`
 - Receivable creation fee: 1 USDC, configurable by the administrator
-- Receivable funding uses native USDC on Arc
+- Receivable and pool funding uses native USDC on Arc
+- ERC-20 approval is used when a financial partner transfers receivable-token positions into pool custody
+
+Deployment order for the compliance and pooled-financing layer:
+
+```text
+SoulboundIdentityPass
+        ↓
+ComplianceRegistry
+        ↓
+ReceivableFactory
+        ↓
+ReceivablePoolFactory
+```
+
+Configure the wallet that will approve identities on-chain. This transaction must be sent by the `ComplianceRegistry` owner:
+
+```bash
+cd contracts
+forge script script/8-ConfigureComplianceReviewer.s.sol \
+  --rpc-url $RPC_URL \
+  --broadcast
+```
+
+Required environment variables:
+
+- `PRIVATE_KEY`: ComplianceRegistry owner key
+- `REGISTRY_ADDRESS`: deployed ComplianceRegistry address
+- `REVIEWER_ADDRESS`: wallet used by the Identity Review page
+- `REVIEWER_ENABLED`: `true` to grant access, `false` to revoke it
 
 ## Roadmap
 

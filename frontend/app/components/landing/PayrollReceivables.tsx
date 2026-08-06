@@ -4,14 +4,15 @@ import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 
 const permissions = [
-  { action: 'Manage workspace & flows', company: true, counterparty: false, partner: false },
-  { action: 'Receive payments', company: true, counterparty: true, partner: false },
-  { action: 'Approve invoices', company: false, counterparty: true, partner: false },
-  { action: 'View documents', company: true, counterparty: 'View own', partner: 'Permissioned' },
-  { action: 'Verify proofs', company: true, counterparty: true, partner: true },
-  { action: 'Issue receivables', company: true, counterparty: false, partner: false },
-  { action: 'Fund receivables', company: false, counterparty: false, partner: true },
-  { action: 'On-chain privacy (APS)', company: true, counterparty: true, partner: true, comingSoon: true },
+  { action: 'Manage workspace & flows', company: true, counterparty: false, partner: false, poolInvestor: 'Pool access only' },
+  { action: 'Receive payments', company: true, counterparty: true, partner: false, poolInvestor: false },
+  { action: 'Approve invoices', company: false, counterparty: true, partner: false, poolInvestor: false },
+  { action: 'View documents', company: true, counterparty: 'View own', partner: 'Permissioned', poolInvestor: false },
+  { action: 'Verify proofs', company: true, counterparty: true, partner: true, poolInvestor: true },
+  { action: 'Originate RWA receivables', company: 'Issue', counterparty: false, partner: 'Purchase or Pool', poolInvestor: false },
+  { action: 'Staking pools', company: false, counterparty: false, partner: 'Create & manage', poolInvestor: 'Stake' },
+  { action: 'Travel rule & on-chain compliance', company: true, counterparty: true, partner: true, poolInvestor: true },
+  { action: 'On-chain privacy (APS)', company: true, counterparty: true, partner: true, poolInvestor: true, comingSoon: true },
 ]
 
 function Cell({ value, comingSoon }: { value: boolean | string; comingSoon?: boolean }) {
@@ -54,16 +55,17 @@ export default function PayrollReceivables() {
         transition={{ duration: 0.5, delay: 0.1 }}
         className='bg-card rounded-2xl shadow-[0_4px_20px_rgba(43,36,64,0.06)] overflow-hidden'
       >
-        <div className='grid grid-cols-4 border-b border-ink/8'>
+        <div className='grid grid-cols-5 border-b border-ink/8'>
           <div className='px-6 py-4 text-sm font-medium text-ink/40'>Permission</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Company</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Counter-party</div>
           <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Financial Partner</div>
+          <div className='px-6 py-4 text-sm font-medium text-ink/70 text-center'>Pool Investor</div>
         </div>
         {permissions.map((row, i) => (
           <div
             key={i}
-            className={`grid grid-cols-4 ${
+            className={`grid grid-cols-5 ${
               i < permissions.length - 1 ? 'border-b border-ink/5' : ''
             }`}
           >
@@ -71,6 +73,7 @@ export default function PayrollReceivables() {
             <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.company} comingSoon={row.comingSoon} /></div>
             <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.counterparty} comingSoon={row.comingSoon} /></div>
             <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.partner} comingSoon={row.comingSoon} /></div>
+            <div className='px-6 py-4 flex items-center justify-center'><Cell value={row.poolInvestor} comingSoon={row.comingSoon} /></div>
           </div>
         ))}
       </motion.div>

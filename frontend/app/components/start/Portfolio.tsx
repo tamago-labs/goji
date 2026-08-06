@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { usePublicClient, useWalletClient } from 'wagmi'
-import { Wallet, Loader2, ExternalLink } from 'lucide-react'
+import { arcTestnet } from 'viem/chains'
+import { Wallet, Loader2 } from 'lucide-react'
 import { RECEIVABLE_TOKEN_ABI, getTokenStatusLabel, getTokenStatusColor } from '../../../lib/receivableToken'
-import { RECEIVABLE_FACTORY_ABI, RECEIVABLE_FACTORY_ADDRESS } from '../../../lib/receivableFactory'
+import { useStart } from './StartProvider'
 
 interface PortfolioItem {
   address: string
@@ -19,25 +20,23 @@ interface PortfolioItem {
 
 export default function Portfolio() {
   const { address } = useAccount()
-  const publicClient = usePublicClient()
+  const { apiUrl } = useStart()
+  const publicClient = usePublicClient({ chainId: arcTestnet.id })
   const { data: walletClient } = useWalletClient()
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!publicClient || !address) {
-      setLoading(false)
-      return
+      const handle = window.setTimeout(() => setLoading(false), 0)
+      return () => window.clearTimeout(handle)
     }
 
     async function loadPortfolio() {
       try {
-        const tokenAddresses = await publicClient!.readContract({
-          address: RECEIVABLE_FACTORY_ADDRESS,
-          abi: RECEIVABLE_FACTORY_ABI,
-          functionName: 'getReceivables',
-          args: [address!]
-        }) as string[]
+        const receivablesResponse = await fetch(`${apiUrl}/api/receivables`)
+        const receivables = receivablesResponse.ok ? await receivablesResponse.json() : []
+        const tokenAddresses = receivables.map((receivable: { tokenAddress: string }) => receivable.tokenAddress)
 
         const items: PortfolioItem[] = []
         for (const addr of tokenAddresses) {
@@ -98,7 +97,7 @@ export default function Portfolio() {
     }
 
     loadPortfolio()
-  }, [publicClient, address])
+  }, [apiUrl, publicClient, address])
 
   const handleRedeem = async (tokenAddr: string) => {
     if (!walletClient || !publicClient || !address) return

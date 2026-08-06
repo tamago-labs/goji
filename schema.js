@@ -207,7 +207,10 @@ schema.register({
     { name: 'isDefault', type: 'int' },
     { name: 'createdBy', type: 'buffer' },
     { name: 'createdAt', type: 'int', required: true },
-    { name: 'updatedAt', type: 'int', required: true }
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'key', type: 'string' },
+    { name: 'flowType', type: 'string' },
+    { name: 'version', type: 'int' }
   ]
 })
 
@@ -231,13 +234,68 @@ schema.register({
     { name: 'status', type: 'string', required: true },
     { name: 'issuer', type: 'buffer', required: true },
     { name: 'createdAt', type: 'int', required: true },
-    { name: 'updatedAt', type: 'int', required: true }
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'complianceRegistry', type: 'string' },
+    { name: 'requiredTier', type: 'int' },
+    { name: 'allowedCountries', type: 'json' }
   ]
 })
 
 schema.register({
   name: 'receivable-remove',
   fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
+schema.register({
+  name: 'company-profile',
+  fields: [
+    { name: 'id', type: 'buffer', required: true },
+    { name: 'legalName', type: 'string', required: true },
+    { name: 'tradingName', type: 'string' },
+    { name: 'country', type: 'string' },
+    { name: 'entityType', type: 'string' },
+    { name: 'registrationNumber', type: 'string' },
+    { name: 'taxId', type: 'string' },
+    { name: 'localCurrency', type: 'string' },
+    { name: 'fiscalYearStart', type: 'string' },
+    { name: 'contactEmail', type: 'string' },
+    { name: 'contactPhone', type: 'string' },
+    { name: 'address', type: 'string' },
+    { name: 'description', type: 'string' },
+    { name: 'updatedAt', type: 'int', required: true }
+  ]
+})
+
+schema.register({
+  name: 'company-profile-remove',
+  fields: [{ name: 'id', type: 'buffer', required: true }]
+})
+
+schema.register({
+  name: 'compliance-identity',
+  fields: [
+    { name: 'id', type: 'string', required: true },
+    { name: 'walletId', type: 'string', required: true },
+    { name: 'walletAddress', type: 'string', required: true },
+    { name: 'tokenId', type: 'string', required: true },
+    { name: 'passId', type: 'string', required: true },
+    { name: 'ownerKey', type: 'buffer', required: true },
+    { name: 'status', type: 'string', required: true },
+    { name: 'kycSource', type: 'string' },
+    { name: 'kycId', type: 'string' },
+    { name: 'subTier', type: 'int' },
+    { name: 'subGroup', type: 'string' },
+    { name: 'expirationTime', type: 'int' },
+    { name: 'identityData', type: 'json' },
+    { name: 'bankAccountData', type: 'json' },
+    { name: 'approvedBy', type: 'buffer' },
+    { name: 'approvedAt', type: 'int' },
+    { name: 'lockedAt', type: 'int' },
+    { name: 'rejectionReason', type: 'string' },
+    { name: 'createdAt', type: 'int', required: true },
+    { name: 'updatedAt', type: 'int', required: true },
+    { name: 'auditLog', type: 'json' }
+  ]
 })
 
 schema.register({
@@ -290,9 +348,11 @@ db.collections.register({ name: 'wallets', schema: '@goji/wallet', key: ['id'] }
 db.collections.register({ name: 'flowStatuses', schema: '@goji/flow-status', key: ['id'] })
 db.collections.register({ name: 'templates', schema: '@goji/template', key: ['id'] })
 db.collections.register({ name: 'receivables', schema: '@goji/receivable', key: ['id'] })
+db.collections.register({ name: 'companyProfiles', schema: '@goji/company-profile', key: ['id'] })
 db.collections.register({ name: 'knowledgeDocuments', schema: '@goji/knowledge-document', key: ['id'] })
 db.collections.register({ name: 'ragSearches', schema: '@goji/rag-search', key: ['requestId'] })
 db.collections.register({ name: 'ragSearchResults', schema: '@goji/rag-search-result', key: ['requestId'] })
+db.collections.register({ name: 'complianceIdentities', schema: '@goji/compliance-identity', key: ['id'] })
 
 HyperdbBuilder.toDisk(hyperdb)
 
@@ -324,9 +384,14 @@ dispatch.register({ name: 'remove-template', requestType: '@goji/template-remove
 dispatch.register({ name: 'add-receivable', requestType: '@goji/receivable' })
 dispatch.register({ name: 'update-receivable', requestType: '@goji/receivable' })
 dispatch.register({ name: 'remove-receivable', requestType: '@goji/receivable-remove' })
+dispatch.register({ name: 'set-company-profile', requestType: '@goji/company-profile' })
+dispatch.register({ name: 'remove-company-profile', requestType: '@goji/company-profile-remove' })
 dispatch.register({ name: 'add-knowledge-document', requestType: '@goji/knowledge-document' })
 dispatch.register({ name: 'rag-search', requestType: '@goji/rag-search' })
 dispatch.register({ name: 'rag-search-result', requestType: '@goji/rag-search-result' })
+dispatch.register({ name: 'add-compliance-identity', requestType: '@goji/compliance-identity' })
+dispatch.register({ name: 'update-compliance-identity', requestType: '@goji/compliance-identity' })
+dispatch.register({ name: 'remove-compliance-identity', requestType: '@goji/compliance-identity' })
 
 Hyperdispatch.toDisk(hyperdispatch)
 

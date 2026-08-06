@@ -10,6 +10,7 @@ contract ReceivableFactoryTest is Test {
     address public treasury;
     address public owner;
     bytes32[] public proofHashes;
+    bytes2[] public allowedCountries;
 
     uint256 constant FEE = 1e18; // 1 USDC (18 decimals on Arc)
 
@@ -23,6 +24,7 @@ contract ReceivableFactoryTest is Test {
         treasury = makeAddr("treasury");
         proofHashes.push(keccak256("proof-1"));
         proofHashes.push(keccak256("proof-2"));
+        allowedCountries.push(bytes2("US"));
 
         vm.deal(issuer, 100_000 * 1e18);
         vm.deal(treasury, 0);
@@ -63,6 +65,33 @@ contract ReceivableFactoryTest is Test {
         assertEq(factory.getReceivablesCount(issuer), 1);
         assertEq(factory.getTotalValue(issuer), 10000 * 1e6);
         assertEq(factory.getCollectedFees(), FEE);
+    }
+
+    function test_createReceivableWithComplianceStoresCountries() public {
+        bytes2[] memory countries = new bytes2[](2);
+        countries[0] = bytes2("US");
+        countries[1] = bytes2("TH");
+
+        vm.prank(issuer);
+        address tokenAddress = factory.createReceivableWithCompliance{value: FEE}(
+            "Compliant invoice",
+            "invoice",
+            10000 * 1e6,
+            2000,
+            100 * 1e6,
+            block.timestamp + 90 days,
+            proofHashes,
+            address(1),
+            2,
+            countries
+        );
+
+        ReceivableToken token = ReceivableToken(tokenAddress);
+        assertEq(token.complianceRegistry(), address(1));
+        assertEq(token.requiredComplianceTier(), 2);
+        assertTrue(token.isCountryAllowed(bytes2("US")));
+        assertTrue(token.isCountryAllowed(bytes2("TH")));
+        assertFalse(token.isCountryAllowed(bytes2("VN")));
     }
 
     function test_createReceivable_insufficientFee() public {

@@ -4,7 +4,7 @@
 
 Goji transforms verified payment records into real-world assets (RWAs). Companies use their payment history as collateral to receive financing from financial partners.
 
-**Note:** USDC is the native token on Arc (Chain ID: 5042002). All funding uses `msg.value` (native transfers), not ERC-20 approvals.
+**Note:** USDC is the native token on Arc (Chain ID: 5042002). USDC funding uses `msg.value`; ERC-20 approval is used when a financial partner transfers receivable-token positions into pool custody.
 
 ---
 
@@ -12,10 +12,10 @@ Goji transforms verified payment records into real-world assets (RWAs). Companie
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Frontend (Next.js)                        │
+│                    Node.js Terminal (Port 3001)                  │
 ├─────────────────────────────────────────────────────────────────┤
-│  Landing Page  │  Company App  │  Partner App  │  RWA Explorer  │
-│  /             │  /start/*     │  /start/*     │  /rwa          │
+│  Embedded Frontend  │  Express API  │  WebSocket  │  P2P Room   │
+│  (static files)     │  /api/*       │  Real-time  │  Autobase   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                     ┌─────────┴─────────┐
@@ -24,16 +24,10 @@ Goji transforms verified payment records into real-world assets (RWAs). Companie
                     └─────────┬─────────┘
                               │
 ┌─────────────────────────────┼───────────────────────────────────┐
-│                    Node.js Terminal                             │
-├─────────────────────────────────────────────────────────────────┤
-│  Express API  │  WebSocket  │  Autobase  │  Hyperschema        │
-│  Local QVAC embeddings + private RAG index                     │
-└─────────────────────────────┬───────────────────────────────────┘
-                              │
-┌─────────────────────────────┼───────────────────────────────────┐
 │                    Smart Contracts (Arc)                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  GojiProof  │  ReceivableFactory  │  ReceivableToken            │
+│  GojiProof  │  ComplianceRegistry │  ReceivableFactory          │
+│  ReceivableToken  │  ReceivablePoolFactory  │  ReceivablePool      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -88,6 +82,23 @@ Partner funds:
 ### Company Repays
 
 ```
+
+### Partner Creates a Managed Pool
+
+```
+Financial Partner has financed receivables
+            ↓
+1. Creates a pool through ReceivablePoolFactory
+2. Approves the pool to transfer selected ReceivableToken positions
+3. Pool takes custody and mints manager pool shares
+4. Manager configures APY, term, capacity, stake period, and compliance
+5. Public pool investors deposit native USDC and receive pool shares
+6. Manager may use pool cash to finance additional receivables
+            ↓
+Deposits close → underlying receivables are redeemed → redemptions open
+```
+
+Pool investors interact with the pool smart contract directly. P2P is used for company and financial-partner coordination, documents, proofs, and workspace metadata; it is not used to settle pool-investor capital.
 At expiry:
   Company calls ReceivableToken.claimRepayment{value: repayment}()
            ↓
@@ -128,7 +139,7 @@ contract GojiProof {
 
 ### ReceivableFactory
 
-**Address:** `0x5646647B48b5458D8352764F1b697195454D52Bf`
+**Address:** `0x53F71eC10939d4aD243903B496E403B3C27784Ae`
 
 Creates and tracks receivable tokens. Collects platform fees.
 
@@ -146,6 +157,19 @@ contract ReceivableFactory {
         uint256 minInvestment,
         uint256 expiresAt,
         bytes32[] memory proofs
+    ) external payable returns (address);
+
+    function createReceivableWithCompliance(
+        string memory name,
+        string memory receivableType,
+        uint256 amount,
+        uint256 interestRate,
+        uint256 minInvestment,
+        uint256 expiresAt,
+        bytes32[] memory proofs,
+        address complianceRegistry,
+        uint8 requiredTier,
+        bytes2[] memory allowedCountries
     ) external payable returns (address);
 
     function getReceivables(address issuer) external view returns (address[]);
@@ -170,6 +194,9 @@ contract ReceivableToken is ERC20, Ownable {
     uint256 public minInvestment;
     uint256 public maxSupply;        // 1,000,000 * 1e6
     uint256 public expiresAt;
+    address public complianceRegistry;
+    uint8 public requiredComplianceTier;
+    bytes2[] public allowedCountries; // Empty means unrestricted
 
     uint256 public fundedAmount;
     uint256 public totalRedeemable;
@@ -181,6 +208,8 @@ contract ReceivableToken is ERC20, Ownable {
     Status public status;
 
     function finance() external payable;
+    function getAllowedCountries() external view returns (bytes2[] memory);
+    function isCountryAllowed(bytes2 countryCode) public view returns (bool);
     function claimRepayment() external payable;
     function redeem() external;
 
@@ -189,6 +218,32 @@ contract ReceivableToken is ERC20, Ownable {
     function getTotalRepayment() public view returns (uint256);
 }
 ```
+
+### SoulboundIdentityPass
+
+**Address:** `0x9829724359A49c36B53deB1e059c14d3C2eA5458`
+
+One non-transferable ERC-721 identity pass is minted per wallet. The pass exposes a token ID and separate pass ID, with owner-controlled expiry and revocation. It contains no passport, bank, or KYC payload.
+
+### ComplianceRegistry
+
+**Address:** `0x31289306250CeB6dC5Bb78A32AC2393Dab250b22`
+
+Company or compliance reviewers approve identity passes with a tier, expiry, and ISO country code. This registry is policy-specific; it does not modify the global identity pass. Pools can use the registry and apply an allowlist of multiple countries.
+
+The wallet used by the Identity Review page must be configured with `setReviewer(reviewer, true)` by the registry owner before it can approve identities on-chain. Use `script/8-ConfigureComplianceReviewer.s.sol` for this configuration.
+
+### ReceivablePool
+
+Pools aggregate receivable positions for financial partners. The manager transfers actual `ReceivableToken` positions into the pool and receives manager shares based on their underlying value. Pool investors deposit native USDC and receive ERC-20 pool shares. Pool cash can finance additional receivables selected by the manager. Redemptions open only after the manager has redeemed the underlying receivable positions.
+
+The pool values a custodied position from its token balance and the receivable's `totalReceivable`/`totalSupply`. Pool share issuance uses the current cash plus underlying receivable value. Redemption is blocked until the manager closes deposits and redeems all underlying positions.
+
+### ReceivablePoolFactory
+
+**Address:** `0x839bDD622641bF9b0680F8aC9B2Fd7FC9f44263F`
+
+Creates pools owned by the financial partner that created them. Each pool can configure a compliance registry, minimum tier, and multiple allowed country codes.
 
 ---
 
@@ -236,10 +291,14 @@ Expired  Defaulted
 | ---------------------------------- | ------------------ | -------------------------------- |
 | `/`                                | Public             | Landing page                     |
 | `/rwa`                             | Public             | RWA Explorer (on-chain data)     |
-| `/rwa/[address]`                   | Public             | Token detail                     |
+| `/rwa`                             | Public             | Public pool listing              |
+| `/rwa/pool?address=<pool>`         | Public             | Pool detail, invest, redeem      |
 | `/start/overview`                  | Auth               | Dashboard with portfolio         |
 | `/start/receivables/*`             | Company            | Create/manage receivables        |
 | `/start/available-receivables/*`   | Partner            | Browse and invest                |
+| `/start/pools`                     | Partner            | Create and manage pools          |
+| `/start/identities`                | Compliance         | Review and on-chain approve IDs  |
+| `/start/travel-rule`               | Compliance         | Read-only audit and CSV export   |
 | `/start/proof`                     | All                | Verify merkle roots              |
 | `/start/knowledge`                 | All assigned roles | Search private P2P knowledge     |
 | `/start/organization/ai-assistant` | Company            | Manage local model and documents |
@@ -250,6 +309,8 @@ Expired  Defaulted
 | --------- | ----------------------------------------------- |
 | P2P (API) | Flow details, document previews, workspace data |
 | On-chain  | Token info, funding status, investor balances   |
+
+Pool pages read pool inventory, APY, term, capacity, compliance policy, share balances, and redemption state directly from Arc.
 
 ### Key Components
 
@@ -268,4 +329,6 @@ Expired  Defaulted
 3. **Pro-rata interest** — Fair distribution based on funding time
 4. **Expiry enforcement** — Timestamp-based
 5. **Fee admin** — Only owner can change fee/treasury
-6. **Native USDC** — No ERC-20 approvals needed on Arc
+6. **Native USDC** — USDC funding uses native transfers on Arc
+7. **Pool custody** — Receivable positions must be transferred into pool custody before manager shares are issued
+8. **Compliance separation** — Identity documents remain workspace-scoped while eligibility enforcement occurs on-chain

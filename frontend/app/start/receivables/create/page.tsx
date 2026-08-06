@@ -39,6 +39,16 @@ interface Terms {
   interestRate: string
   minInvestment: string
   expiryDays: string
+  complianceEnabled: boolean
+  requiredTier: string
+  allowedCountries: string[]
+}
+
+const COMPLIANCE_REGISTRY_ADDRESS = '0x31289306250CeB6dC5Bb78A32AC2393Dab250b22' as `0x${string}`
+const COUNTRIES = [['US', 'United States'], ['TH', 'Thailand'], ['VN', 'Vietnam'], ['SG', 'Singapore'], ['JP', 'Japan'], ['GB', 'United Kingdom'], ['DE', 'Germany']] as const
+
+function countryCodeToBytes2(code: string): `0x${string}` {
+  return `0x${Array.from(code.slice(0, 2)).map((character) => character.charCodeAt(0).toString(16).padStart(2, '0')).join('')}`
 }
 
 export default function CreateReceivablePage() {
@@ -65,7 +75,10 @@ export default function CreateReceivablePage() {
     amount: '',
     interestRate: '20',
     minInvestment: '1',
-    expiryDays: '90'
+    expiryDays: '90',
+    complianceEnabled: false,
+    requiredTier: '1',
+    allowedCountries: []
   })
 
   // Load data
@@ -149,7 +162,10 @@ export default function CreateReceivablePage() {
       amount: flow.amount,
       interestRate: '20',
       minInvestment: '1',
-      expiryDays: '90'
+      expiryDays: '90',
+      complianceEnabled: false,
+      requiredTier: '1',
+      allowedCountries: []
     })
     setShowModal(true)
   }
@@ -183,28 +199,15 @@ export default function CreateReceivablePage() {
         functionName: 'feeAmount'
       }) as bigint
 
-      const { request, result } = await publicClient.simulateContract({
-        address: RECEIVABLE_FACTORY_ADDRESS,
-        abi: RECEIVABLE_FACTORY_ABI,
-        functionName: 'createReceivable',
-        args: [
-          terms.name,
-          terms.type,
-          amount,
-          interestRate,
-          minInvest,
-          expiresAt,
-          proofHashes
-        ],
-        value: fee,
-        account: address
-      })
+      const simulation = terms.complianceEnabled
+        ? await (publicClient as any).simulateContract({ address: RECEIVABLE_FACTORY_ADDRESS, abi: RECEIVABLE_FACTORY_ABI, functionName: 'createReceivableWithCompliance', args: [terms.name, terms.type, amount, interestRate, minInvest, expiresAt, proofHashes, COMPLIANCE_REGISTRY_ADDRESS, Number(terms.requiredTier), terms.allowedCountries.map(countryCodeToBytes2)], value: fee, account: address })
+        : await (publicClient as any).simulateContract({ address: RECEIVABLE_FACTORY_ADDRESS, abi: RECEIVABLE_FACTORY_ABI, functionName: 'createReceivable', args: [terms.name, terms.type, amount, interestRate, minInvest, expiresAt, proofHashes], value: fee, account: address })
 
-      const hash = await walletClient.writeContract(request)
-      const receipt = await publicClient.waitForTransactionReceipt({ hash })
+      const hash = await walletClient.writeContract(simulation.request)
+      await publicClient.waitForTransactionReceipt({ hash })
 
       // Get token address from event logs
-      const tokenAddress = result as string
+      const tokenAddress = simulation.result as string
 
       // Save to P2P
       await fetch(`${apiUrl}/api/receivables`, {
@@ -219,7 +222,10 @@ export default function CreateReceivablePage() {
           minInvestment: terms.minInvestment,
           expiryDays: terms.expiryDays,
           proofs: proofHashes,
-          status: 'active'
+          status: 'active',
+          complianceRegistry: terms.complianceEnabled ? COMPLIANCE_REGISTRY_ADDRESS : null,
+          requiredTier: terms.complianceEnabled ? Number(terms.requiredTier) : 0,
+          allowedCountries: terms.complianceEnabled ? terms.allowedCountries : []
         })
       })
 
@@ -408,11 +414,20 @@ export default function CreateReceivablePage() {
                 </div>
               </div>
 
+              {/* Compliance Section */}
+              <div className='mb-6 rounded-xl border border-ink/8 bg-ink/[0.02] p-4'>
+                <div className='flex items-start justify-between gap-4'>
+                  <div><h4 className='text-xs font-medium uppercase tracking-wider text-ink/45'>Compliance requirements</h4><p className='mt-1 text-[11px] text-ink/35'>Require investors to hold an approved Identity Pass.</p></div>
+                  <button type='button' onClick={() => setTerms({ ...terms, complianceEnabled: !terms.complianceEnabled })} className={`relative h-5 w-9 rounded-full transition-colors ${terms.complianceEnabled ? 'bg-mint' : 'bg-ink/15'}`} aria-pressed={terms.complianceEnabled}><span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${terms.complianceEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} /></button>
+                </div>
+                {terms.complianceEnabled && <div className='mt-4 grid grid-cols-1 gap-3 md:grid-cols-2'><label className='text-xs text-ink/45'>Minimum identity tier<select value={terms.requiredTier} onChange={(event) => setTerms({ ...terms, requiredTier: event.target.value })} className='mt-1.5 w-full rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm outline-none'><option value='1'>Tier 1</option><option value='2'>Tier 2</option><option value='3'>Tier 3</option></select></label><div className='text-xs text-ink/45'><span>Allowed countries (pool policy)</span><div className='mt-1.5 flex flex-wrap gap-1.5'>{COUNTRIES.map(([code, name]) => <button type='button' key={code} onClick={() => setTerms({ ...terms, allowedCountries: terms.allowedCountries.includes(code) ? terms.allowedCountries.filter((country) => country !== code) : [...terms.allowedCountries, code] })} className={`rounded-full px-2 py-1 text-[10px] ${terms.allowedCountries.includes(code) ? 'bg-mint/20 text-[#1B7A50]' : 'bg-ink/5 text-ink/45'}`}>{name} ({code})</button>)}</div></div></div>}
+              </div>
+
               {/* Proofs Section */}
               <div>
                 <div className='flex items-center justify-between mb-3'>
                   <h4 className='text-xs text-ink/40 uppercase tracking-wider'>
-                    Collateral Proofs ({selectedProofs.length} selected)
+                     Verified Payment History ({selectedProofs.length} selected)
                   </h4>
                   <div className='relative'>
                     <Search className='absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-ink/30' />
@@ -428,7 +443,7 @@ export default function CreateReceivablePage() {
                 {settledProofs.length === 0 ? (
                   <div className='bg-ink/[0.02] rounded-xl p-4 text-center'>
                     <p className='text-xs text-ink/40'>No settled proofs available</p>
-                    <p className='text-[10px] text-ink/30 mt-1'>Settle some payment flows first to use as collateral</p>
+                     <p className='text-[10px] text-ink/30 mt-1'>Settle payment flows first to build verified payment history.</p>
                   </div>
                 ) : (
                   <div className='space-y-1 max-h-[200px] overflow-y-auto'>

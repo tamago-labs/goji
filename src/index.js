@@ -17,6 +17,7 @@ const crypto = require('hypercore-crypto')
 
 const PORT = parseInt(process.argv.find((a, i) => process.argv[i - 1] === '--port') || '3001', 10)
 const isGuest = process.argv.includes('--guest') || process.argv.includes('--join')
+const isDev = process.argv.includes('--dev')
 const joinIdx = process.argv.indexOf('--join')
 const INVITE = joinIdx !== -1 ? process.argv[joinIdx + 1] : null
 const NAME = process.argv.find((a, i) => process.argv[i - 1] === '--name') || null
@@ -25,6 +26,7 @@ const STORAGE = isGuest
   : require('path').join(require('os').homedir(), '.goji', 'host')
 process.env.GOJI_STORAGE = STORAGE
 const ragStore = require('./ragStore')
+const { getDefaultTemplates } = require('./defaultTemplates')
 
 class GojiRoom {
   constructor(store, swarm, invite) {
@@ -267,9 +269,32 @@ class GojiRoom {
     this.router.add('@goji/remove-receivable', async (data, ctx) => {
       await ctx.view.delete('@goji/receivables', { id: data.id })
     })
+    this.router.add('@goji/set-company-profile', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/companyProfiles', { id: data.id })
+      if (existing) {
+        await applyUpdate(ctx.view, '@goji/companyProfiles', { id: data.id }, () => data)
+      } else {
+        await ctx.view.insert('@goji/companyProfiles', data)
+      }
+    })
+    this.router.add('@goji/remove-company-profile', async (data, ctx) => {
+      await ctx.view.delete('@goji/companyProfiles', { id: data.id })
+    })
     this.router.add('@goji/add-knowledge-document', async (data, ctx) => {
       const existing = await ctx.view.get('@goji/knowledgeDocuments', { id: data.id })
       if (!existing) await ctx.view.insert('@goji/knowledgeDocuments', data)
+    })
+    this.router.add('@goji/add-compliance-identity', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/complianceIdentities', { id: data.id })
+      if (!existing) await ctx.view.insert('@goji/complianceIdentities', data)
+    })
+    this.router.add('@goji/update-compliance-identity', async (data, ctx) => {
+      const existing = await ctx.view.get('@goji/complianceIdentities', { id: data.id })
+      if (existing) await applyUpdate(ctx.view, '@goji/complianceIdentities', { id: data.id }, () => data)
+      else await ctx.view.insert('@goji/complianceIdentities', data)
+    })
+    this.router.add('@goji/remove-compliance-identity', async (data, ctx) => {
+      await ctx.view.delete('@goji/complianceIdentities', { id: data.id })
     })
     this.router.add('@goji/rag-search', async (data, ctx) => {
       await ctx.view.insert('@goji/ragSearches', data)
@@ -341,6 +366,10 @@ class GojiRoom {
     }))
   }
 
+  async getIdentitiesRaw() {
+    return await this.view.find('@goji/identity', {}).toArray()
+  }
+
   async buildSnapshot() {
     const [rawBoards, rawCards, rawConnections] = await Promise.all([
       this.getBoards(),
@@ -394,6 +423,10 @@ class GojiRoom {
     return await this.view.find('@goji/knowledgeDocuments', {}).toArray()
   }
 
+  async getComplianceIdentities() {
+    return await this.view.find('@goji/complianceIdentities', {}).toArray()
+  }
+
   async appendIdentity({ displayName, role, assignedBy, assignedAt }) {
     await this.base.append(
       GojiDispatch.encode('@goji/update-identity', {
@@ -412,7 +445,7 @@ class GojiRoom {
     const existing = await this.view.get('@goji/identity', { writerKey })
     if (!existing) return null
 
-    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
+    const validRoles = ['company', 'counterparty', 'compliance', 'partner', 'pending']
     if (!validRoles.includes(role)) return null
 
     const next = {
@@ -620,7 +653,7 @@ async function main() {
 
   // Check if identity already exists in view (guest may have been assigned a role)
   const existingIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-  const role = isGuest ? (existingIdentity?.role || 'pending') : 'employer'
+    const role = isGuest ? (existingIdentity?.role || 'pending') : 'company'
   await room.appendIdentity({ displayName: identityName, role })
 
   // Set up Keet identity for message signing
@@ -717,53 +750,62 @@ async function main() {
     const existingTemplates = await room.view.find('@goji/templates', {}).toArray()
     if (existingTemplates.length === 0) {
       console.log('[templates] Creating default templates...')
-      const defaultTemplates = [
+      /* Legacy inline templates are retained below only as historical reference.
+       * Runtime defaults come from src/defaultTemplates.js. */
+      /* const legacyDefaultTemplates = [
         {
           name: 'Payment Receipt',
           companyName: identityName,
           fields: [
-            { key: 'recipient', label: 'To', type: 'text', autoFill: true, position: 'body' },
-            { key: 'amount', label: 'Amount', type: 'number', autoFill: true, position: 'body' },
-            { key: 'date', label: 'Date', type: 'date', autoFill: true, position: 'body' },
-            { key: 'txHash', label: 'Transaction', type: 'text', autoFill: true, position: 'footer' }
+            { key: 'senderAddress', label: 'From Address', type: 'textarea', autoFill: false, position: 'body' },
+            { key: 'recipientAddress', label: 'To Address', type: 'textarea', autoFill: false, position: 'body' },
+            { key: 'reference', label: 'Reference #', type: 'text', autoFill: false, position: 'body' },
+            { key: 'notes', label: 'Notes', type: 'textarea', autoFill: false, position: 'footer' }
           ],
-          html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;color:#333}h1{border-bottom:2px solid #7FD9B0;padding-bottom:10px;margin-bottom:5px}.subtitle{color:#666;margin-bottom:30px}.section{margin:20px 0}.section-title{font-size:12px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px}.field{margin:12px 0}.label{color:#666;font-size:12px}.value{font-size:16px;color:#333}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:11px}</style></head><body><h1>${identityName}</h1><div class="subtitle">Payment Receipt</div><div class="section"><div class="section-title">Details</div><div class="field"><div class="label">To</div><div class="value">{{recipient}}</div></div><div class="field"><div class="label">Amount</div><div class="value">{{amount}} USDC</div></div><div class="field"><div class="label">Date</div><div class="value">{{date}}</div></div></div><div class="footer"><div class="field"><div class="label">Transaction</div><div class="value" style="font-family:monospace;font-size:12px">{{txHash}}</div></div>Generated by Goji</div></body></html>`
+          html: `<html><head><style>body{font-family:'Segoe UI',system-ui,sans-serif;padding:32px;max-width:640px;margin:0 auto;color:#1a1a2e;background:#fafafa}.container{background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #7FD9B0}.header-left h1{font-size:22px;color:#1a1a2e;margin:0 0 4px}.header-left .company{font-size:13px;color:#666}.badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}.badge-paid{background:#7FD9B0;color:#fff}.badge-unpaid{background:#f0f0f0;color:#666}.section{margin:20px 0}.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px}.party{display:flex;gap:24px;margin-bottom:16px}.party-box{flex:1;background:#f8f9fa;border-radius:8px;padding:16px}.party-box .role{font-size:10px;text-transform:uppercase;color:#999;margin-bottom:4px}.party-box .name{font-weight:600;color:#1a1a2e;font-size:14px}.party-box .address{font-size:12px;color:#666;margin-top:4px}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}.row:last-child{border-bottom:none}.label{color:#666;font-size:13px}.value{font-weight:600;color:#1a1a2e;font-size:13px}.amount-box{background:#f8f9fa;border-radius:8px;padding:16px;margin:16px 0;text-align:center}.amount-box .label{font-size:12px;color:#999;margin-bottom:4px}.amount-box .value{font-size:28px;font-weight:700;color:#1a1a1a}.notes{background:#fffde7;border-radius:8px;padding:12px;margin-top:16px;font-size:12px;color:#666}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center}</style></head><body><div class="container"><div class="header"><div class="header-left"><h1>Payment Receipt</h1><div class="company">${identityName}</div></div><div><span class="badge badge-paid">PAID</span></div></div><div class="party"><div class="party-box"><div class="role">From</div><div class="name">{{sender}}</div>{{#senderAddress}}<div class="address">{{senderAddress}}</div>{{/senderAddress}}</div><div class="party-box"><div class="role">To</div><div class="name">{{recipient}}</div>{{#recipientAddress}}<div class="address">{{recipientAddress}}</div>{{/recipientAddress}}</div></div><div class="section"><div class="section-title">Payment Details</div><div class="row"><span class="label">Date</span><span class="value">{{date}}</span></div><div class="row"><span class="label">Reference</span><span class="value">{{txHash}}</span></div>{{#reference}}<div class="row"><span class="label">Reference #</span><span class="value">{{reference}}</span></div>{{/reference}}</div><div class="amount-box"><div class="label">Amount Paid</div><div class="value">{{amount}} USDC</div></div>{{#notes}}<div class="notes"><strong>Notes:</strong> {{notes}}</div>{{/notes}}<div class="footer">Generated by Goji P2P Workspace</div></div></body></html>`
         },
         {
           name: 'Invoice',
           companyName: identityName,
           fields: [
-            { key: 'recipient', label: 'Bill To', type: 'text', autoFill: true, position: 'body' },
-            { key: 'amount', label: 'Amount', type: 'number', autoFill: true, position: 'body' },
             { key: 'invoiceNumber', label: 'Invoice Number', type: 'text', autoFill: false, position: 'header' },
+            { key: 'invoiceDate', label: 'Invoice Date', type: 'date', autoFill: false, position: 'header' },
             { key: 'dueDate', label: 'Due Date', type: 'date', autoFill: false, position: 'header' },
-            { key: 'date', label: 'Date', type: 'date', autoFill: true, position: 'header' },
-            { key: 'txHash', label: 'Transaction', type: 'text', autoFill: true, position: 'footer' }
+            { key: 'billToName', label: 'Bill To Name', type: 'text', autoFill: true, position: 'body' },
+            { key: 'billToAddress', label: 'Bill To Address', type: 'textarea', autoFill: false, position: 'body' },
+            { key: 'billToTaxId', label: 'Bill To Tax ID', type: 'text', autoFill: false, position: 'body' },
+            { key: 'lineItems', label: 'Line Items (one per line: Description | Qty | Price)', type: 'textarea', autoFill: false, position: 'body' },
+            { key: 'taxRate', label: 'Tax Rate (%)', type: 'number', autoFill: false, position: 'body' },
+            { key: 'paymentTerms', label: 'Payment Terms', type: 'text', autoFill: false, position: 'footer' },
+            { key: 'notes', label: 'Notes', type: 'textarea', autoFill: false, position: 'footer' }
           ],
-          html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;color:#333}h1{border-bottom:2px solid #8B7FD6;padding-bottom:10px;margin-bottom:5px}.invoice-header{display:flex;justify-content:space-between;margin-bottom:30px}.subtitle{color:#666}.section{margin:20px 0}.section-title{font-size:12px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px}.field{margin:12px 0}.label{color:#666;font-size:12px}.value{font-size:16px;color:#333}.total{font-size:20px;font-weight:bold;margin-top:20px;padding-top:20px;border-top:2px solid #8B7FD6}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:11px}</style></head><body><div class="invoice-header"><div><h1>${identityName}</h1><div class="subtitle">Invoice</div></div><div style="text-align:right"><div class="label">Invoice #</div><div class="value">{{invoiceNumber}}</div><div class="label">Date</div><div class="value">{{date}}</div><div class="label">Due Date</div><div class="value">{{dueDate}}</div></div></div><div class="section"><div class="section-title">Details</div><div class="field"><div class="label">Bill To</div><div class="value">{{recipient}}</div></div><div class="total"><div class="label">Total Amount</div><div class="value">{{amount}} USDC</div></div></div><div class="footer"><div class="field"><div class="label">Transaction</div><div class="value" style="font-family:monospace;font-size:12px">{{txHash}}</div></div>Generated by Goji</div></body></html>`
+          html: `<html><head><style>body{font-family:'Segoe UI',system-ui,sans-serif;padding:32px;max-width:640px;margin:0 auto;color:#1a1a2e;background:#fafafa}.container{background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #8B7FD6}.header-left h1{font-size:22px;color:#5A4FB8;margin:0 0 4px}.header-left .company{font-size:13px;color:#666}.badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600}.badge-paid{background:#7FD9B0;color:#fff}.badge-unpaid{background:#f0f0f0;color:#666}.meta{display:flex;gap:24px;margin-bottom:24px;padding:12px;background:#f8f9fa;border-radius:8px}.meta-item{font-size:12px;color:#666}.meta-item strong{display:block;color:#1a1a2e;font-size:13px}.section{margin:20px 0}.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px}.party{display:flex;gap:24px;margin-bottom:16px}.party-box{flex:1;background:#f8f9fa;border-radius:8px;padding:16px}.party-box .role{font-size:10px;text-transform:uppercase;color:#999;margin-bottom:4px}.party-box .name{font-weight:600;color:#1a1a2e;font-size:14px}.party-box .address{font-size:12px;color:#666;margin-top:4px}.party-box .tax-id{font-size:11px;color:#999;margin-top:2px}table{width:100%;border-collapse:collapse;margin:16px 0}th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999;padding:8px 0;border-bottom:2px solid #eee}td{padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px}td:last-child{text-align:right}.total-box{background:#f0eeff;border-radius:8px;padding:16px;margin:20px 0}.total-row{display:flex;justify-content:space-between;padding:4px 0}.total-row.grand{font-size:18px;font-weight:700;color:#5A4FB8;padding-top:8px;border-top:2px solid #8B7FD6}.notes{background:#fffde7;border-radius:8px;padding:12px;margin-top:16px;font-size:12px;color:#666}.payment-terms{background:#f8f9fa;border-radius:8px;padding:12px;margin-top:16px;font-size:12px;color:#666}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center}</style></head><body><div class="container"><div class="header"><div class="header-left"><h1>INVOICE</h1><div class="company">${identityName}</div></div><div><span class="badge badge-unpaid">UNPAID</span></div></div><div class="meta"><div class="meta-item"><strong>Invoice #</strong>{{invoiceNumber}}</div><div class="meta-item"><strong>Date</strong>{{invoiceDate}}</div><div class="meta-item"><strong>Due Date</strong>{{dueDate}}</div></div><div class="party"><div class="party-box"><div class="role">From</div><div class="name">{{sender}}</div></div><div class="party-box"><div class="role">Bill To</div><div class="name">{{billToName}}</div>{{#billToAddress}}<div class="address">{{billToAddress}}</div>{{/billToAddress}}{{#billToTaxId}}<div class="tax-id">Tax ID: {{billToTaxId}}</div>{{/billToTaxId}}</div></div><div class="section"><div class="section-title">Line Items</div><table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>{{lineItems}}</tbody></table></div><div class="total-box"><div class="total-row"><span>Subtotal</span><span>{{subtotal}} USDC</span></div>{{#taxAmount}}<div class="total-row"><span>Tax ({{taxRate}}%)</span><span>{{taxAmount}} USDC</span></div>{{/taxAmount}}<div class="total-row grand"><span>Total Due</span><span>{{total}} USDC</span></div></div>{{#paymentTerms}}<div class="payment-terms"><strong>Payment Terms:</strong> {{paymentTerms}}</div>{{/paymentTerms}}{{#notes}}<div class="notes"><strong>Notes:</strong> {{notes}}</div>{{/notes}}<div class="footer">Transaction: {{txHash}}<br>Generated by Goji P2P Workspace</div></div></body></html>`
         },
         {
           name: 'Service Agreement',
           companyName: identityName,
           fields: [
-            { key: 'recipient', label: 'Client', type: 'text', autoFill: true, position: 'body' },
-            { key: 'amount', label: 'Amount', type: 'number', autoFill: true, position: 'body' },
-            { key: 'serviceDate', label: 'Service Date', type: 'date', autoFill: false, position: 'header' },
-            { key: 'terms', label: 'Terms', type: 'textarea', autoFill: false, position: 'body' },
-            { key: 'date', label: 'Date', type: 'date', autoFill: true, position: 'header' },
-            { key: 'txHash', label: 'Transaction', type: 'text', autoFill: true, position: 'footer' }
+            { key: 'clientAddress', label: 'Client Address', type: 'textarea', autoFill: false, position: 'body' },
+            { key: 'effectiveDate', label: 'Effective Date', type: 'date', autoFill: false, position: 'header' },
+            { key: 'duration', label: 'Duration', type: 'text', autoFill: false, position: 'body' },
+            { key: 'scope', label: 'Scope of Work', type: 'textarea', autoFill: false, position: 'body' },
+            { key: 'paymentSchedule', label: 'Payment Schedule', type: 'text', autoFill: false, position: 'body' },
+            { key: 'terminationClause', label: 'Termination Clause', type: 'textarea', autoFill: false, position: 'footer' }
           ],
-          html: `<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;padding:40px;max-width:600px;margin:0 auto;color:#333}h1{border-bottom:2px solid #ccc;padding-bottom:10px;margin-bottom:5px}.subtitle{color:#666;margin-bottom:30px}.section{margin:20px 0}.section-title{font-size:12px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:5px}.field{margin:12px 0}.label{color:#666;font-size:12px}.value{font-size:16px;color:#333}.textarea{background:#f9f9f9;padding:12px;border-radius:6px;min-height:60px}.footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;color:#999;font-size:11px}</style></head><body><h1>${identityName}</h1><div class="subtitle">Service Agreement</div><div class="section"><div class="section-title">Details</div><div class="field"><div class="label">Service Date</div><div class="value">{{serviceDate}}</div></div><div class="field"><div class="label">Client</div><div class="value">{{recipient}}</div></div><div class="field"><div class="label">Agreed Amount</div><div class="value">{{amount}} USDC</div></div><div class="field"><div class="label">Terms & Conditions</div><div class="textarea">{{terms}}</div></div></div><div class="footer"><div class="field"><div class="label">Transaction</div><div class="value" style="font-family:monospace;font-size:12px">{{txHash}}</div></div>Generated by Goji</div></body></html>`
+          html: `<html><head><style>body{font-family:'Segoe UI',system-ui,sans-serif;padding:32px;max-width:640px;margin:0 auto;color:#1a1a2e;background:#fafafa;line-height:1.6}.container{background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}.header{text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #ddd}.header h1{font-size:22px;color:#1a1a2e;margin:0 0 4px}.header .company{font-size:13px;color:#666}.section{margin:24px 0}.section-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:6px}.party{display:flex;gap:24px;margin-bottom:16px}.party-box{flex:1;background:#f8f9fa;border-radius:8px;padding:16px}.party-box .role{font-size:10px;text-transform:uppercase;color:#999;margin-bottom:4px}.party-box .name{font-weight:600;color:#1a1a2e;font-size:14px}.party-box .address{font-size:12px;color:#666;margin-top:4px}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}.row:last-child{border-bottom:none}.label{color:#666;font-size:13px}.value{font-weight:600;color:#1a1a2e;font-size:13px}.highlight{background:#f0f0f0;border-radius:8px;padding:16px;margin:16px 0}.highlight .label{font-size:12px;color:#666;margin-bottom:4px}.highlight .value{font-size:18px;font-weight:700;color:#1a1a1a}.scope{background:#f8f9fa;border-radius:8px;padding:16px;margin:16px 0;font-size:13px;color:#444}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center}.signature{margin-top:40px;display:flex;justify-content:space-between}.signature-box{width:45%}.signature-box .line{border-bottom:1px solid #333;margin-top:40px;margin-bottom:4px}.signature-box .label{font-size:11px;color:#666}</style></head><body><div class="container"><div class="header"><h1>SERVICE AGREEMENT</h1><div class="company">${identityName}</div></div><div class="section"><div class="section-title">Effective Date</div><p>{{effectiveDate}}</p></div><div class="section"><div class="section-title">Parties</div><div class="party"><div class="party-box"><div class="role">Company (Service Provider)</div><div class="name">{{sender}}</div></div><div class="party-box"><div class="role">Client</div><div class="name">{{recipient}}</div>{{#clientAddress}}<div class="address">{{clientAddress}}</div>{{/clientAddress}}</div></div></div><div class="section"><div class="section-title">Duration</div><p>{{duration}}</p></div><div class="section"><div class="section-title">Scope of Work</div><div class="scope">{{scope}}</div></div><div class="section"><div class="section-title">Compensation</div><div class="highlight"><div class="label">Total Compensation</div><div class="value">{{amount}} USDC</div></div>{{#paymentSchedule}}<div class="row"><span class="label">Payment Schedule</span><span class="value">{{paymentSchedule}}</span></div>{{/paymentSchedule}}</div>{{#terminationClause}}<div class="section"><div class="section-title">Termination</div><p>{{terminationClause}}</p></div>{{/terminationClause}}<div class="signature"><div class="signature-box"><div class="line"></div><div class="label">{{sender}} (Authorized Signatory)</div></div><div class="signature-box"><div class="line"></div><div class="label">{{recipient}} (Client)</div></div></div><div class="footer">Transaction: {{txHash}}<br>Generated by Goji P2P Workspace</div></div></body></html>`
         }
-      ]
+      ] */
 
-      for (const tmpl of defaultTemplates) {
+      for (const tmpl of getDefaultTemplates()) {
         const now = Date.now()
         const id = require('crypto').randomBytes(16).toString('hex')
         const template = {
           id: b4a.from(id, 'hex'),
+          key: tmpl.key,
           name: tmpl.name,
-          companyName: tmpl.companyName,
+          flowType: tmpl.flowType,
+          version: tmpl.version,
+          companyName: tmpl.companyName || identityName,
           fields: tmpl.fields,
           html: tmpl.html,
           isDefault: 1,
@@ -808,7 +850,7 @@ async function main() {
       }
     }
     
-    const role = identity?.role || (isGuest ? 'pending' : 'employer')
+    const role = identity?.role || (isGuest ? 'pending' : 'company')
     res.json({
       status: 'ok',
       name: identityName,
@@ -826,13 +868,14 @@ async function main() {
   app.get('/api/username', (req, res) => res.json({ name: identityName }))
 
   async function getCurrentRole() {
-    if (!isGuest) return 'employer'
+    if (!isGuest) return 'company'
     const identity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
     return identity?.role || 'pending'
   }
 
-  async function isEmployer() {
-    return !isGuest && (await getCurrentRole()) === 'employer'
+  async function isCompanyOrCompliance() {
+    const role = await getCurrentRole()
+    return !isGuest && (role === 'company' || role === 'compliance')
   }
 
   app.get('/api/knowledge/model', (_req, res) => {
@@ -840,7 +883,7 @@ async function main() {
   })
 
   app.post('/api/knowledge/model/load', async (_req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can manage the knowledge service' })
     try {
       await ragStore.ensureEmbeddingModel()
       res.json(ragStore.getModelStatus())
@@ -850,18 +893,18 @@ async function main() {
   })
 
   app.post('/api/knowledge/model/unload', async (_req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can manage the knowledge service' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can manage the knowledge service' })
     await ragStore.unloadEmbeddingModel()
     res.json(ragStore.getModelStatus())
   })
 
   app.get('/api/knowledge/documents', async (_req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can list managed documents' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can list managed documents' })
     res.json(ragStore.listDocuments().map(({ qvacIds, ...document }) => document))
   })
 
   app.post('/api/knowledge/documents', async (req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can add documents' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can add documents' })
     const { name, content, source = 'text' } = req.body || {}
     if (!name?.trim() || !content?.trim()) return res.status(400).json({ error: 'name and content are required' })
     try {
@@ -874,7 +917,7 @@ async function main() {
   })
 
   app.post('/api/knowledge/url', async (req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can import websites' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can import websites' })
     const { url } = req.body || {}
     if (!url?.trim()) return res.status(400).json({ error: 'url is required' })
     const result = await ragStore.fetchUrlContent(url.trim())
@@ -883,7 +926,7 @@ async function main() {
   })
 
   app.delete('/api/knowledge/documents/:id', async (req, res) => {
-    if (!(await isEmployer())) return res.status(403).json({ error: 'Only the employer can delete documents' })
+    if (!(await isCompanyOrCompliance())) return res.status(403).json({ error: 'Only the company administrator can delete documents' })
     try {
       res.json(await ragStore.deleteDocument(req.params.id))
     } catch (error) {
@@ -897,7 +940,7 @@ async function main() {
     const { query, topK = 5 } = req.body || {}
     if (!query?.trim()) return res.status(400).json({ error: 'query is required' })
     try {
-      const results = (await isEmployer())
+      const results = (await isCompanyOrCompliance())
         ? (await ragStore.searchDocuments(query.trim(), topK)).results
         : await relayRagSearch(query.trim(), topK)
       res.json({ success: true, results })
@@ -1099,10 +1142,10 @@ async function main() {
   })
 
   app.get('/api/wallets/all', async (req, res) => {
-    // Only employer can list all wallets
+    // Only company or compliance can list all wallets
     const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-    if (!callerIdentity || callerIdentity.role !== 'employer') {
-      return res.status(403).json({ error: 'Only employer can list all wallets' })
+    if (!callerIdentity || (callerIdentity.role !== 'company' && callerIdentity.role !== 'compliance')) {
+      return res.status(403).json({ error: 'Only company administrators can list all wallets' })
     }
 
     const rows = await room.view.find('@goji/wallets', {}).toArray()
@@ -1173,6 +1216,112 @@ async function main() {
     wsBroadcast({ type: 'wallet:deleted', id: req.params.id })
     res.json({ ok: true })
   })
+
+  // Workspace-scoped compliance identities. The NFT/pass reference is
+  // public; the identity and bank payloads remain in the private room.
+  function serializeComplianceIdentity(record, identities) {
+    const owner = identities.find((item) => b4a.equals(item.writerKey, record.ownerKey))
+    return {
+      ...record,
+      countryCode: record.identityData?.[0]?.issuingCountryISO2 || null,
+      ownerKey: b4a.toString(record.ownerKey, 'hex'),
+      approvedBy: record.approvedBy ? b4a.toString(record.approvedBy, 'hex') : null,
+      ownerName: owner?.displayName || 'Unknown'
+    }
+  }
+
+  async function canReviewIdentities() {
+    const caller = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
+    return caller?.role === 'company' || caller?.role === 'compliance'
+  }
+
+  app.get('/api/identities', async (_req, res) => {
+    const rows = await room.getComplianceIdentities()
+    const mine = rows.filter((row) => b4a.equals(row.ownerKey, room.localBase.key))
+    res.json(mine.map((row) => serializeComplianceIdentity(row, [])))
+  })
+
+  app.get('/api/identities/all', async (_req, res) => {
+    if (!(await canReviewIdentities())) return res.status(403).json({ error: 'Only company and compliance roles can review identities' })
+    const [rows, identities] = await Promise.all([
+      room.getComplianceIdentities(),
+      room.getIdentitiesRaw()
+    ])
+    res.json(rows.map((row) => serializeComplianceIdentity(row, identities)))
+  })
+
+  app.post('/api/identities', async (req, res) => {
+    const { walletId, walletAddress, tokenId, passId, expirationTime, identityDataList, bankAccountList } = req.body || {}
+    if (!walletId || !walletAddress || !tokenId || !passId) return res.status(400).json({ error: 'walletId, walletAddress, tokenId, and passId are required' })
+    const wallet = (await room.view.find('@goji/wallets', {}).toArray()).find((row) => b4a.toString(row.id, 'hex') === walletId && b4a.equals(row.identityKey, room.localBase.key))
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found for this P2P identity' })
+    const existing = (await room.getComplianceIdentities()).find((row) => row.walletId === walletId)
+    if (existing) return res.status(409).json({ error: 'This wallet already has a workspace identity' })
+    const now = Date.now()
+    const record = {
+      id: `identity_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+      walletId,
+      walletAddress,
+      tokenId: String(tokenId),
+      passId: String(passId),
+      ownerKey: room.localBase.key,
+      status: 'pending',
+      kycSource: null,
+      kycId: null,
+      subTier: null,
+      subGroup: null,
+      expirationTime: Number(expirationTime) || 0,
+      identityData: identityDataList || [],
+      bankAccountData: bankAccountList || [],
+      approvedBy: null,
+      approvedAt: null,
+      lockedAt: null,
+      rejectionReason: null,
+      createdAt: now,
+      updatedAt: now,
+      auditLog: [{ action: 'submitted', actor: b4a.toString(room.localBase.key, 'hex'), at: now }]
+    }
+    await room.base.append(GojiDispatch.encode('@goji/add-compliance-identity', record))
+    res.json(serializeComplianceIdentity(record, []))
+  })
+
+  app.put('/api/identities/:id', async (req, res) => {
+    const existing = await room.view.get('@goji/complianceIdentities', { id: req.params.id })
+    if (!existing) return res.status(404).json({ error: 'Identity not found' })
+    if (!b4a.equals(existing.ownerKey, room.localBase.key)) return res.status(403).json({ error: 'Only the identity owner can edit this record' })
+    if (existing.status !== 'pending' && existing.status !== 'rejected') return res.status(409).json({ error: 'Only pending or rejected identities can be edited' })
+    const now = Date.now()
+    const next = { ...existing, ...req.body, id: existing.id, ownerKey: existing.ownerKey, status: 'pending', updatedAt: now, rejectionReason: null, auditLog: [...(existing.auditLog || []), { action: 'resubmitted', actor: b4a.toString(room.localBase.key, 'hex'), at: now }] }
+    await room.base.append(GojiDispatch.encode('@goji/update-compliance-identity', next))
+    res.json(serializeComplianceIdentity(next, []))
+  })
+
+  async function updateIdentityReview(req, res, status) {
+    if (!(await canReviewIdentities())) return res.status(403).json({ error: 'Only company and compliance roles can review identities' })
+    const existing = await room.view.get('@goji/complianceIdentities', { id: req.params.id })
+    if (!existing) return res.status(404).json({ error: 'Identity not found' })
+    if (existing.status === 'locked' && status !== 'approved') return res.status(409).json({ error: 'Locked identities cannot be changed' })
+    const now = Date.now()
+    const next = {
+      ...existing,
+      status,
+      subTier: status === 'approved' && req.body?.subTier ? Number(req.body.subTier) : existing.subTier,
+      approvedBy: status === 'approved' || status === 'locked' ? room.localBase.key : null,
+      approvedAt: status === 'approved' || status === 'locked' ? now : existing.approvedAt,
+      lockedAt: status === 'locked' ? now : existing.lockedAt,
+      rejectionReason: status === 'rejected' ? String(req.body?.reason || 'Changes requested') : null,
+      updatedAt: now,
+      auditLog: [...(existing.auditLog || []), { action: existing.status === 'locked' && status === 'approved' ? 'unlocked' : status, actor: b4a.toString(room.localBase.key, 'hex'), at: now, reason: status === 'rejected' ? String(req.body?.reason || 'Changes requested') : null }]
+    }
+    await room.base.append(GojiDispatch.encode('@goji/update-compliance-identity', next))
+    res.json(serializeComplianceIdentity(next, []))
+  }
+
+  app.post('/api/identities/:id/approve', (req, res) => updateIdentityReview(req, res, 'approved'))
+  app.post('/api/identities/:id/reject', (req, res) => updateIdentityReview(req, res, 'rejected'))
+  app.post('/api/identities/:id/lock', (req, res) => updateIdentityReview(req, res, 'locked'))
+  app.post('/api/identities/:id/unlock', (req, res) => updateIdentityReview(req, res, 'approved'))
+  app.post('/api/identities/:id/expire', (req, res) => updateIdentityReview(req, res, 'expired'))
 
   app.get('/api/wallets/:id/balance', async (req, res) => {
     const rows = await room.view.find('@goji/wallets', {}).toArray()
@@ -1295,7 +1444,10 @@ async function main() {
     const templates = await room.view.find('@goji/templates', {}).toArray()
     const result = templates.map((t) => ({
       id: b4a.toString(t.id, 'hex'),
+      key: t.key,
       name: t.name,
+      flowType: t.flowType,
+      version: t.version,
       companyName: t.companyName || null,
       fields: t.fields || [],
       html: t.html,
@@ -1308,13 +1460,16 @@ async function main() {
   })
 
   app.post('/api/templates', async (req, res) => {
-    const { name, companyName, fields, html } = req.body
+    const { key, name, companyName, flowType = 'payment', version = 1, fields, html } = req.body
     if (!name || !html) return res.status(400).json({ error: 'name and html required' })
     const now = Date.now()
     const id = require('crypto').randomBytes(16).toString('hex')
     const template = {
       id: b4a.from(id, 'hex'),
+      key: key || `custom-${id}`,
       name,
+      flowType,
+      version,
       companyName: companyName || null,
       fields: fields || [],
       html,
@@ -1325,18 +1480,21 @@ async function main() {
     }
     await room.base.append(GojiDispatch.encode('@goji/add-template', template))
     wsBroadcast({ type: 'template:added', template: { ...template, id } })
-    res.json({ id, name, companyName, fields, html, isDefault: false, createdAt: now })
+    res.json({ id, key: key || `custom-${id}`, name, companyName, flowType, version, fields, html, isDefault: false, createdAt: now })
   })
 
   app.put('/api/templates/:id', async (req, res) => {
-    const { name, companyName, fields, html } = req.body
+    const { key, name, companyName, flowType, version, fields, html } = req.body
     const id = b4a.from(req.params.id, 'hex')
     const existing = await room.view.get('@goji/templates', { id })
     if (!existing) return res.status(404).json({ error: 'template not found' })
     const now = Date.now()
     const next = {
       ...existing,
+      key: key || existing.key,
       name: name || existing.name,
+      flowType: flowType || existing.flowType,
+      version: version || existing.version,
       companyName: companyName !== undefined ? companyName : existing.companyName,
       fields: fields || existing.fields,
       html: html || existing.html,
@@ -1370,6 +1528,9 @@ async function main() {
       proofs: r.proofs || [],
       status: r.status,
       issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      complianceRegistry: r.complianceRegistry || null,
+      requiredTier: r.requiredTier || 0,
+      allowedCountries: r.allowedCountries || [],
       createdAt: r.createdAt,
       updatedAt: r.updatedAt
     }))
@@ -1392,13 +1553,16 @@ async function main() {
       proofs: r.proofs || [],
       status: r.status,
       issuer: r.issuer ? b4a.toString(r.issuer, 'hex') : null,
+      complianceRegistry: r.complianceRegistry || null,
+      requiredTier: r.requiredTier || 0,
+      allowedCountries: r.allowedCountries || [],
       createdAt: r.createdAt,
       updatedAt: r.updatedAt
     })
   })
 
   app.post('/api/receivables', async (req, res) => {
-    const { tokenAddress, name, type, amount, interestRate, minInvestment, expiryDays, proofs, status } = req.body
+    const { tokenAddress, name, type, amount, interestRate, minInvestment, expiryDays, proofs, status, complianceRegistry, requiredTier, allowedCountries } = req.body
     if (!tokenAddress || !name || !type || !amount) {
       return res.status(400).json({ error: 'tokenAddress, name, type, amount required' })
     }
@@ -1416,6 +1580,9 @@ async function main() {
       proofs: proofs || [],
       status: status || 'active',
       issuer: room.localBase.key,
+      complianceRegistry: complianceRegistry || null,
+      requiredTier: Number(requiredTier) || 0,
+      allowedCountries: allowedCountries || [],
       createdAt: now,
       updatedAt: now
     }
@@ -1447,6 +1614,68 @@ async function main() {
     res.json({ ok: true })
   })
 
+  // ── Company Profile ──────────────────────────────────────
+
+  app.get('/api/company-profile', async (req, res) => {
+    const rows = await room.view.find('@goji/companyProfiles', {}).toArray()
+    if (rows.length === 0) return res.json(null)
+    const r = rows[0]
+    res.json({
+      id: b4a.toString(r.id, 'hex'),
+      legalName: r.legalName || '',
+      tradingName: r.tradingName || '',
+      country: r.country || '',
+      entityType: r.entityType || '',
+      registrationNumber: r.registrationNumber || '',
+      taxId: r.taxId || '',
+      localCurrency: r.localCurrency || '',
+      fiscalYearStart: r.fiscalYearStart || '',
+      contactEmail: r.contactEmail || '',
+      contactPhone: r.contactPhone || '',
+      address: r.address || '',
+      description: r.description || '',
+      updatedAt: r.updatedAt
+    })
+  })
+
+  app.post('/api/company-profile', async (req, res) => {
+    const { legalName, tradingName, country, entityType, registrationNumber, taxId, localCurrency, fiscalYearStart, contactEmail, contactPhone, address, description } = req.body
+    if (!legalName) return res.status(400).json({ error: 'legalName is required' })
+
+    const now = Date.now()
+    const id = require('crypto').randomBytes(16).toString('hex')
+    const profile = {
+      id: b4a.from(id, 'hex'),
+      legalName,
+      tradingName: tradingName || '',
+      country: country || '',
+      entityType: entityType || '',
+      registrationNumber: registrationNumber || '',
+      taxId: taxId || '',
+      localCurrency: localCurrency || '',
+      fiscalYearStart: fiscalYearStart || '',
+      contactEmail: contactEmail || '',
+      contactPhone: contactPhone || '',
+      address: address || '',
+      description: description || '',
+      updatedAt: now
+    }
+
+    // Check if profile already exists
+    const existing = await room.view.find('@goji/companyProfiles', {}).toArray()
+    if (existing.length > 0) {
+      // Update existing
+      const existingProfile = { ...existing[0], ...profile, id: existing[0].id }
+      await room.base.append(GojiDispatch.encode('@goji/set-company-profile', existingProfile))
+    } else {
+      // Create new
+      await room.base.append(GojiDispatch.encode('@goji/set-company-profile', profile))
+    }
+
+    wsBroadcast({ type: 'company-profile:updated', profile: { ...profile, id } })
+    res.json({ ok: true, id })
+  })
+
   app.get('/api/peers', async (req, res) => {
     // Load from view to get all identities including remote peers
     const rows = await room.view.find('@goji/identity', {}).toArray()
@@ -1470,10 +1699,10 @@ async function main() {
   })
 
   app.get('/api/members', async (req, res) => {
-    // Only employer can list members
+    // Only company or compliance can list members
     const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-    if (!callerIdentity || callerIdentity.role !== 'employer') {
-      return res.status(403).json({ error: 'Only employer can list members' })
+    if (!callerIdentity || (callerIdentity.role !== 'company' && callerIdentity.role !== 'compliance')) {
+      return res.status(403).json({ error: 'Only company administrators can list members' })
     }
 
     const identities = await room.getIdentities()
@@ -1481,10 +1710,10 @@ async function main() {
   })
 
   app.post('/api/members/assign', async (req, res) => {
-    // Only employer can assign roles
+    // Only company or compliance can assign roles
     const callerIdentity = await room.view.get('@goji/identity', { writerKey: room.localBase.key })
-    if (!callerIdentity || callerIdentity.role !== 'employer') {
-      return res.status(403).json({ error: 'Only employer can assign roles' })
+    if (!callerIdentity || (callerIdentity.role !== 'company' && callerIdentity.role !== 'compliance')) {
+      return res.status(403).json({ error: 'Only company administrators can assign roles' })
     }
 
     const { writerKey, role } = req.body
@@ -1492,7 +1721,7 @@ async function main() {
       return res.status(400).json({ error: 'writerKey and role required' })
     }
 
-    const validRoles = ['employer', 'payee', 'payer', 'partner', 'pending']
+    const validRoles = ['company', 'counterparty', 'compliance', 'partner', 'pending']
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` })
     }
@@ -1520,6 +1749,28 @@ async function main() {
     await room.appendIdentity({ displayName: name })
     res.json({ ok: true, name })
   })
+
+  // Serve frontend static files (production mode only)
+  if (!isDev) {
+    const path = require('path')
+    const fs = require('fs')
+    const frontendPath = path.join(__dirname, '..', 'frontend', 'out')
+    
+    if (fs.existsSync(frontendPath)) {
+      app.use(express.static(frontendPath))
+      // SPA fallback - serve index.html for all non-API routes
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(frontendPath, 'index.html'))
+      })
+      console.log(`[goji] Frontend: http://localhost:${PORT}`)
+    } else {
+      console.log(`[goji] Frontend not built. Run: npm run build`)
+      console.log(`[goji] API only: http://localhost:${PORT}/api/health`)
+    }
+  } else {
+    console.log(`[goji] Dev mode - run frontend separately on port 3000`)
+    console.log(`[goji] API only: http://localhost:${PORT}/api/health`)
+  }
 
   const server = app.listen(PORT, () => {
     console.log(`[goji] HTTP  http://localhost:${PORT}/api/health`)

@@ -10,6 +10,7 @@ import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
 import { createPublicClient, createWalletClient, http } from 'viem'
 import { arcTestnet, baseSepolia, sepolia } from 'viem/chains'
 import { fetchBalances } from '../../lib/unified-balance'
+import { RPC_URLS } from '../../lib/rpc'
 import { useInterval } from 'usehooks-ts'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,11 +89,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (isConnected && walletClient) {
       async function createAdapter() {
         try {
-          const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
           const RPC_MAP: Record<string, string> = {
-            'Arc Testnet': `https://arc-testnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-            'Base Sepolia': `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-            'Ethereum Sepolia': `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
+            'Arc Testnet': RPC_URLS.arc,
+            'Base Sepolia': RPC_URLS.base,
+            'Ethereum Sepolia': RPC_URLS.ethereum
           }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const CHAIN_MAP: Record<string, any> = {

@@ -1,341 +1,304 @@
 'use client'
 
-import Link from 'next/link'
-import { Suspense } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { useAccount, usePublicClient, useSwitchChain, useWalletClient } from 'wagmi'
+import Link from 'next/link'
+import { useAccount, usePublicClient, useWalletClient, useSwitchChain } from 'wagmi'
 import { arcTestnet } from 'viem/chains'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Loader2, Shield, CheckCircle, ShieldAlert } from 'lucide-react'
+import { RECEIVABLE_POOL_ABI } from '../../../lib/receivablePool'
 import { COMPLIANCE_REGISTRY_ABI } from '../../../lib/complianceRegistry'
 import { IDENTITY_PASS_ABI, IDENTITY_PASS_ADDRESS } from '../../../lib/identityPass'
-import { RECEIVABLE_POOL_ABI } from '../../../lib/receivablePool'
 
-const ZERO = '0x0000000000000000000000000000000000000000'
-
-function RwaPoolContent() {
-  const params = useSearchParams()
-  const poolAddress = params.get('address') as `0x${string}` | null
-  const publicClient = usePublicClient({ chainId: arcTestnet.id })
-  const { address: walletAddress } = useAccount()
-  const { data: walletClient } = useWalletClient()
-  const { switchChainAsync } = useSwitchChain()
-  const [pool, setPool] = useState<{
-    name: string
-    manager: string
-    registry: string
-    tier: number
-    apy: bigint
-    assets: bigint
-    supply: bigint
-    depositsOpen: boolean
-    redemptionsOpen: boolean
-    minimumStake: bigint
-    term: bigint
-    metadata: string
-  } | null>(null)
-  const [balance, setBalance] = useState(BigInt(0))
-  const [amountInput, setAmountInput] = useState('')
-  const [eligible, setEligible] = useState<boolean | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
-
-  useEffect(() => {
-    if (!publicClient || !poolAddress) return
-    async function load() {
-      const [
-        name,
-        manager,
-        registry,
-        tier,
-        apy,
-        assets,
-        supply,
-        depositsOpen,
-        redemptionsOpen,
-        minimumStake,
-        metadata,
-        term
-      ] = await Promise.all([
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'name'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'owner'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'complianceRegistry'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'requiredComplianceTier'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'targetApyBps'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'totalAssets'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'totalSupply'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'depositsOpen'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'redemptionsOpen'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'minimumStakePeriod'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'poolMetadata'
-        }),
-        publicClient!.readContract({
-          address: poolAddress!,
-          abi: RECEIVABLE_POOL_ABI,
-          functionName: 'poolTerm'
-        })
-      ])
-      setPool({
-        name: String(name),
-        manager: String(manager),
-        registry: String(registry),
-        tier: Number(tier),
-        apy: apy as bigint,
-        assets: assets as bigint,
-        supply: supply as bigint,
-        depositsOpen: Boolean(depositsOpen),
-        redemptionsOpen: Boolean(redemptionsOpen),
-        minimumStake: minimumStake as bigint,
-        term: term as bigint,
-        metadata: String(metadata)
-      })
-      if (walletAddress)
-        setBalance(
-          (await publicClient!.readContract({
-            address: poolAddress!,
-            abi: RECEIVABLE_POOL_ABI,
-            functionName: 'balanceOf',
-            args: [walletAddress]
-          })) as bigint
-        )
-    }
-    void load().catch((error) =>
-      setMessage(error instanceof Error ? error.message : 'Could not load pool')
-    )
-  }, [poolAddress, publicClient, walletAddress])
-
-  useEffect(() => {
-    if (!pool || !walletAddress || !publicClient || pool.registry === ZERO) {
-      const handle = window.setTimeout(() => setEligible(pool?.registry === ZERO ? true : null), 0)
-      return () => window.clearTimeout(handle)
-    }
-    async function check() {
-      const valid = await publicClient!.readContract({
-        address: IDENTITY_PASS_ADDRESS,
-        abi: IDENTITY_PASS_ABI,
-        functionName: 'isValid',
-        args: [walletAddress!]
-      })
-      const approved =
-        valid &&
-        (await publicClient!.readContract({
-          address: pool!.registry as `0x${string}`,
-          abi: COMPLIANCE_REGISTRY_ABI,
-          functionName: 'isEligible',
-          args: [walletAddress!, pool!.tier]
-        }))
-      setEligible(Boolean(approved))
-    }
-    void check().catch(() => setEligible(false))
-  }, [pool, publicClient, walletAddress])
-
-  async function transact(functionName: 'deposit' | 'redeem', value?: bigint) {
-    if (!walletClient || !publicClient || !walletAddress || !poolAddress) return
-    setBusy(true)
-    setMessage('')
-    try {
-      if ((await walletClient.getChainId()) !== arcTestnet.id && switchChainAsync)
-        await switchChainAsync({ chainId: arcTestnet.id })
-      const simulation = await publicClient.simulateContract({
-        address: poolAddress,
-        abi: RECEIVABLE_POOL_ABI,
-        functionName: functionName as never,
-        ...(value !== undefined ? { value } : { args: [balance] }),
-        account: walletAddress
-      } as never)
-      const hash = await walletClient.writeContract(simulation.request)
-      await publicClient.waitForTransactionReceipt({ hash })
-      setMessage('Transaction confirmed on Arc Testnet.')
-      window.location.reload()
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Transaction failed')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  if (!poolAddress)
-    return <main className='p-8 text-center text-sm text-ink/40'>Pool address is missing.</main>
-  if (!pool)
-    return (
-      <main className='flex min-h-[500px] items-center justify-center'>
-        <Loader2 className='h-6 w-6 animate-spin text-ink/35' />
-      </main>
-    )
-  const depositValue =
-    amountInput && Number(amountInput) > 0
-      ? BigInt(Math.floor(Number(amountInput) * 1e18))
-      : BigInt(0)
-  return (
-    <main className='min-h-screen bg-lavender px-6 py-12'>
-      <div className='mx-auto max-w-5xl'>
-        <Link href='/rwa' className='mb-8 inline-flex items-center gap-2 text-xs text-ink/45'>
-          <ArrowLeft className='h-4 w-4' />
-          All pools
-        </Link>
-        <div className='mb-8 flex items-start justify-between gap-4'>
-          <div>
-            <p className='text-[10px] uppercase tracking-[0.2em] text-ink/35'>
-              Verified manager pool
-            </p>
-            <h1 className='mt-2 font-display text-3xl font-semibold'>{pool.name}</h1>
-            <p className='mt-2 font-mono text-xs text-ink/35'>Manager {pool.manager}</p>
-          </div>
-          <span className='rounded-full bg-mint/15 px-3 py-1 text-xs font-medium text-[#1B7A50]'>
-            {pool.depositsOpen ? 'Deposits open' : 'Deposits closed'}
-          </span>
-        </div>
-        <div className='grid gap-3 sm:grid-cols-5'>
-          <Stat label='Projected APY' value={`${Number(pool.apy) / 100}%`} />
-          <Stat label='Pool assets' value={amount(pool.assets)} />
-          <Stat label='Compliance' value={pool.tier ? `Tier ${pool.tier}+` : 'Open'} />
-          <Stat label='Term' value={pool.term ? `${Number(pool.term) / 86400} days` : 'Open'} />
-          <Stat label='Minimum stake' value={`${Number(pool.minimumStake) / 86400} days`} />
-        </div>
-        <div className='mt-6 grid gap-5 lg:grid-cols-[1.5fr_1fr]'>
-          <section className='space-y-5'>
-            <Panel title='Pool overview'>
-              <p className='text-sm leading-6 text-ink/55'>
-                {pool.metadata || 'Managed pool of verified company receivable positions.'}
-              </p>
-            </Panel>
-            <Panel title='Investment and redemption'>
-              <p className='text-xs text-ink/45'>
-                Pool shares represent a pro-rata claim on cash and receivable positions held by the
-                pool.
-              </p>
-              {walletAddress && (
-                <div className='mt-4 rounded-2xl bg-ink/[0.03] p-4'>
-                  <Stat label='Your pool shares' value={amount(balance)} />
-                  {pool.redemptionsOpen && (
-                    <button
-                      type='button'
-                      onClick={() => void transact('redeem')}
-                      disabled={busy || balance === BigInt(0)}
-                      className='mt-4 w-full rounded-xl bg-mint px-4 py-2.5 text-xs font-medium text-white disabled:opacity-40'
-                    >
-                      Redeem shares
-                    </button>
-                  )}
-                </div>
-              )}
-            </Panel>
-          </section>
-          <aside>
-            <Panel title='Invest'>
-              <div className='space-y-3'>
-                <div
-                  className={`rounded-xl p-3 text-xs ${eligible === true ? 'bg-mint/10 text-[#1B7A50]' : 'bg-amber-100 text-amber-700'}`}
-                >
-                  {pool.registry === ZERO
-                    ? 'Open to investors'
-                    : eligible
-                      ? 'Wallet eligible'
-                      : 'Identity approval required'}
-                </div>
-                <input
-                  type='number'
-                  value={amountInput}
-                  onChange={(event) => setAmountInput(event.target.value)}
-                  placeholder='Amount in USDC'
-                  className='w-full rounded-xl border border-ink/10 bg-ink/5 px-3 py-2.5 text-sm outline-none'
-                />
-                <button
-                  type='button'
-                  onClick={() => void transact('deposit', depositValue)}
-                  disabled={busy || !pool.depositsOpen || !depositValue || eligible === false}
-                  className='w-full rounded-xl bg-ink px-4 py-2.5 text-xs font-medium text-lavender disabled:opacity-40'
-                >
-                  Invest in pool
-                </button>
-                <p className='text-[10px] text-ink/35'>
-                  Deposits and redemptions are settled by smart contract.
-                </p>
-              </div>
-            </Panel>
-            {message && (
-              <p className='mt-3 rounded-xl bg-ink/5 p-3 text-xs text-ink/55'>{message}</p>
-            )}
-          </aside>
-        </div>
-      </div>
-    </main>
-  )
-}
-
-export default function RwaPoolPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className='flex min-h-screen items-center justify-center bg-lavender'>
-          <Loader2 className='h-6 w-6 animate-spin text-ink/35' />
-        </main>
-      }
-    >
-      <RwaPoolContent />
-    </Suspense>
-  )
-}
-
-function amount(value: bigint) {
-  return `${(Number(value) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`
-}
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className='rounded-3xl bg-card p-5 shadow-[0_8px_30px_rgba(43,36,64,0.06)]'>
-      <h2 className='mb-4 text-sm font-semibold'>{title}</h2>
-      {children}
-    </section>
-  )
-}
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className='rounded-2xl bg-card p-4 shadow-[0_5px_20px_rgba(43,36,64,0.04)]'>
-      <p className='text-[10px] text-ink/35'>{label}</p>
-      <p className='mt-1 text-sm font-semibold'>{value}</p>
+    <div className='bg-ink/[0.02] rounded-xl p-3 text-center'>
+      <div className='text-sm font-semibold text-ink'>{value}</div>
+      <div className='text-[10px] text-ink/40 uppercase tracking-wider mt-1'>{label}</div>
+    </div>
+  )
+}
+
+export default function PoolDetailPage() {
+  const searchParams = useSearchParams()
+  const poolAddress = searchParams.get('address') as `0x${string}` | null
+  const { address: walletAddress } = useAccount()
+  const publicClient = usePublicClient({ chainId: arcTestnet.id })
+  const { data: walletClient } = useWalletClient()
+  const { switchChainAsync } = useSwitchChain()
+
+  const [pool, setPool] = useState<{
+    name: string; manager: string; registry: string; tier: number; apy: number;
+    assets: bigint; totalSupply: bigint; depositsOpen: boolean; redemptionsOpen: boolean;
+    term: number; minimumStake: number; metadata: string; receivables: number;
+  } | null>(null)
+  const [eligible, setEligible] = useState<boolean | null>(null)
+  const [userBalance, setUserBalance] = useState<bigint>(BigInt(0))
+  const [depositAmount, setDepositAmount] = useState('')
+  const [activeTab, setActiveTab] = useState<'overview' | 'invest' | 'redeem'>('overview')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  // Load pool data
+  useEffect(() => {
+    if (!publicClient || !poolAddress) { setLoading(false); return }
+
+    async function load() {
+      try {
+        const [name, manager, registry, tier, apy, assets, totalSupply, depositsOpen, redemptionsOpen, term, minimumStake, metadata, receivables] = await Promise.all([
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'name' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'owner' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'complianceRegistry' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'requiredComplianceTier' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'targetApyBps' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'totalAssets' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'totalSupply' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'depositsOpen' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'redemptionsOpen' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'poolTerm' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'minimumStakePeriod' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'poolMetadata' }),
+          publicClient!.readContract({ address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'receivableCount' })
+        ])
+
+        setPool({
+          name: String(name || 'Unnamed Pool'),
+          manager: String(manager),
+          registry: String(registry),
+          tier: Number(tier),
+          apy: Number(apy) / 100,
+          assets: assets as bigint,
+          totalSupply: totalSupply as bigint,
+          depositsOpen: Boolean(depositsOpen),
+          redemptionsOpen: Boolean(redemptionsOpen),
+          term: Number(term),
+          minimumStake: Number(minimumStake),
+          metadata: String(metadata || ''),
+          receivables: Number(receivables)
+        })
+      } catch (e) {
+        console.error('Failed to load pool:', e)
+      }
+      setLoading(false)
+    }
+
+    load()
+  }, [publicClient, poolAddress])
+
+  // Load user balance and eligibility
+  useEffect(() => {
+    if (!publicClient || !poolAddress || !walletAddress || !pool) return
+
+    async function loadUserData() {
+      try {
+        const balance = await publicClient!.readContract({
+          address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'balanceOf', args: [walletAddress!]
+        }) as bigint
+        setUserBalance(balance)
+
+        // Check eligibility if pool has compliance
+        if (pool.registry !== '0x0000000000000000000000000000000000000000') {
+          const validPass = await publicClient!.readContract({
+            address: IDENTITY_PASS_ADDRESS, abi: IDENTITY_PASS_ABI, functionName: 'isValid', args: [walletAddress!]
+          }) as boolean
+          if (!validPass) { setEligible(false); return }
+          const approved = await publicClient!.readContract({
+            address: pool.registry as `0x${string}`, abi: COMPLIANCE_REGISTRY_ABI, functionName: 'isEligibleForCountry', args: [walletAddress!, pool.tier]
+          }) as boolean
+          setEligible(approved)
+        } else {
+          setEligible(true)
+        }
+      } catch {
+        setEligible(false)
+      }
+    }
+
+    loadUserData()
+  }, [publicClient, poolAddress, walletAddress, pool])
+
+  const formatAmount = (amount: bigint) => `$${(Number(amount) / 1e18).toLocaleString()}`
+
+  const handleInvest = async () => {
+    if (!walletClient || !publicClient || !walletAddress || !pool || !depositAmount) return
+    setBusy(true); setMessage('')
+    try {
+      if ((await walletClient.getChainId()) !== arcTestnet.id) {
+        if (!switchChainAsync) throw new Error('Wallet cannot switch to Arc Testnet')
+        await switchChainAsync({ chainId: arcTestnet.id })
+      }
+      const hash = await walletClient.writeContract({
+        address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'deposit',
+        value: BigInt(Math.floor(Number(depositAmount) * 1e18)), chain: arcTestnet, account: walletAddress
+      })
+      await publicClient!.waitForTransactionReceipt({ hash })
+      setMessage('Deposit confirmed!')
+      window.location.reload()
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Deposit failed')
+    } finally { setBusy(false) }
+  }
+
+  if (loading) {
+    return <div className='flex items-center justify-center min-h-[400px]'><Loader2 className='w-6 h-6 text-ink/40 animate-spin' /></div>
+  }
+
+  if (!pool) {
+    return <div className='text-center py-12'><p className='text-ink/40'>Pool not found</p><Link href='/rwa' className='text-sm text-mint'>Back to pools</Link></div>
+  }
+
+  return (
+    <div className='max-w-4xl'>
+      {/* Back link */}
+      <Link href='/rwa' className='mb-6 inline-flex items-center gap-2 text-xs text-ink/45 hover:text-ink'>
+        <ArrowLeft className='h-3.5 w-3.5' /> All pools
+      </Link>
+
+      {/* Header */}
+      <div className='flex items-start justify-between mb-6'>
+        <div>
+          <div className='flex items-center gap-2 mb-1'>
+            <span className='text-[10px] font-medium px-2 py-0.5 rounded-full bg-mint/15 text-[#1B7A50]'>Verified manager pool</span>
+          </div>
+          <h1 className='font-display text-3xl font-semibold'>{pool.name}</h1>
+          <p className='mt-1 font-mono text-xs text-ink/40'>{poolAddress}</p>
+        </div>
+        <span className={`px-3 py-1.5 text-xs font-medium rounded-full ${pool.depositsOpen ? 'bg-mint/15 text-[#1B7A50]' : 'bg-ink/10 text-ink/45'}`}>
+          {pool.depositsOpen ? 'Deposits Open' : 'Deposits Closed'}
+        </span>
+      </div>
+
+      {/* Stats */}
+      <div className='grid grid-cols-5 gap-3 mb-6'>
+        <Stat label='Projected APY' value={`${pool.apy}%`} />
+        <Stat label='Pool Assets' value={formatAmount(pool.assets)} />
+        <Stat label='Compliance' value={pool.tier ? `Tier ${pool.tier}+` : 'Open'} />
+        <Stat label='Term' value={pool.term ? `${Math.floor(pool.term / 86400)} days` : 'Open'} />
+        <Stat label='Receivables' value={String(pool.receivables)} />
+      </div>
+
+      {/* Tabs */}
+      <div className='flex gap-1 mb-6 bg-ink/5 rounded-xl p-1'>
+        {(['overview', 'invest', 'redeem'] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === tab ? 'bg-card shadow-sm text-ink' : 'text-ink/50 hover:text-ink/70'
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className='bg-card rounded-2xl shadow-[0_2px_8px_rgba(43,36,64,0.04)] p-6'>
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div>
+            <h3 className='text-sm font-semibold text-ink mb-4'>Pool Overview</h3>
+            <p className='text-sm text-ink/60 mb-4'>
+              {pool.metadata || 'This pool aggregates verified receivable assets from compliant businesses. Investors deposit USDC and receive pool shares proportional to their investment.'}
+            </p>
+            <div className='grid grid-cols-2 gap-4 text-xs text-ink/50'>
+              <div>Manager: <span className='font-mono text-ink/60'>{pool.manager.slice(0, 10)}...</span></div>
+              <div>Receivables: {pool.receivables}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Invest Tab */}
+        {activeTab === 'invest' && (
+          <div>
+            <h3 className='text-sm font-semibold text-ink mb-4'>Invest in Pool</h3>
+            
+            {!walletAddress ? (
+              <div className='text-center py-8'>
+                <p className='text-sm text-ink/50 mb-4'>Connect your wallet to invest in this pool.</p>
+              </div>
+            ) : eligible === false ? (
+              <div className='bg-amber-50 rounded-xl p-4 flex items-center gap-3 mb-4'>
+                <ShieldAlert className='w-5 h-5 text-amber-600' />
+                <div>
+                  <p className='text-sm font-medium text-amber-700'>Not eligible</p>
+                  <p className='text-xs text-amber-600'>Identity Pass and compliance approval required.</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {pool.registry !== '0x0000000000000000000000000000000000000000' && eligible && (
+                  <div className='bg-mint/5 rounded-xl p-3 flex items-center gap-2 mb-4 text-xs text-[#1B7A50]'>
+                    <CheckCircle className='w-4 h-4' /> Wallet eligible for this pool
+                  </div>
+                )}
+                <div className='mb-4'>
+                  <label className='block text-xs text-ink/40 mb-1.5'>Amount (USDC)</label>
+                  <input
+                    type='number'
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder='1000'
+                    className='w-full text-sm text-ink bg-ink/5 border border-ink/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-ink/20'
+                  />
+                </div>
+                <button
+                  onClick={handleInvest}
+                  disabled={busy || !pool.depositsOpen || eligible === false || !depositAmount}
+                  className='w-full px-4 py-2.5 bg-mint text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-30 transition-opacity'
+                >
+                  {busy ? <Loader2 className='w-4 h-4 animate-spin mx-auto' /> : 'Invest in Pool'}
+                </button>
+              </>
+            )}
+            {message && <p className='mt-3 text-xs text-ink/50'>{message}</p>}
+          </div>
+        )}
+
+        {/* Redeem Tab */}
+        {activeTab === 'redeem' && (
+          <div>
+            <h3 className='text-sm font-semibold text-ink mb-4'>Redeem</h3>
+            {!walletAddress ? (
+              <p className='text-sm text-ink/50'>Connect your wallet to see your balance.</p>
+            ) : userBalance === BigInt(0) ? (
+              <p className='text-sm text-ink/50'>You have no shares in this pool.</p>
+            ) : (
+              <div>
+                <div className='bg-ink/[0.02] rounded-xl p-4 mb-4'>
+                  <div className='flex justify-between text-sm mb-2'>
+                    <span className='text-ink/40'>Your Balance</span>
+                    <span className='text-ink font-medium'>{(Number(userBalance) / 1e18).toLocaleString()} shares</span>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!walletClient || !publicClient || !walletAddress) return
+                    setBusy(true); setMessage('')
+                    try {
+                      const hash = await walletClient.writeContract({
+                        address: poolAddress!, abi: RECEIVABLE_POOL_ABI, functionName: 'redeem',
+                        args: [userBalance], chain: arcTestnet, account: walletAddress
+                      })
+                      await publicClient!.waitForTransactionReceipt({ hash })
+                      setMessage('Redemption confirmed!')
+                      window.location.reload()
+                    } catch (e) {
+                      setMessage(e instanceof Error ? e.message : 'Redemption failed')
+                    } finally { setBusy(false) }
+                  }}
+                  disabled={busy || !pool.redemptionsOpen}
+                  className='w-full px-4 py-2.5 bg-ink text-lavender text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-30 transition-opacity'
+                >
+                  {busy ? <Loader2 className='w-4 h-4 animate-spin mx-auto' /> : 'Redeem'}
+                </button>
+                {!pool.redemptionsOpen && <p className='mt-2 text-xs text-ink/40'>Redemptions are not yet open for this pool.</p>}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

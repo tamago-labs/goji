@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAccount, usePublicClient, useWalletClient, useSwitchChain } from 'wagmi'
@@ -19,7 +19,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-export default function PoolDetailPage() {
+function PoolDetailContent() {
   const searchParams = useSearchParams()
   const poolAddress = searchParams.get('address') as `0x${string}` | null
   const { address: walletAddress } = useAccount()
@@ -95,7 +95,7 @@ export default function PoolDetailPage() {
         }) as bigint
         setUserBalance(balance)
 
-        if (pool.registry !== '0x0000000000000000000000000000000000000000') {
+        if (pool && pool.registry !== '0x0000000000000000000000000000000000000000') {
           const validPass = await publicClient!.readContract({
             address: IDENTITY_PASS_ADDRESS, abi: IDENTITY_PASS_ABI, functionName: 'isValid', args: [walletAddress!]
           }) as boolean
@@ -322,7 +322,7 @@ export default function PoolDetailPage() {
                 )}
                 <button
                   onClick={handleInvest}
-                  disabled={busy || !pool.depositsOpen || eligible === false || !depositAmount}
+                  disabled={busy || !pool.depositsOpen || eligible !== true || !depositAmount}
                   className='w-full px-4 py-2.5 bg-mint text-white text-sm font-medium rounded-xl hover:opacity-90 disabled:opacity-30 transition-opacity'
                 >
                   {busy ? <Loader2 className='w-4 h-4 animate-spin mx-auto' /> : 'Invest Now'}
@@ -411,5 +411,13 @@ export default function PoolDetailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PoolDetailPage() {
+  return (
+    <Suspense fallback={<div className='flex items-center justify-center min-h-[400px]'><Loader2 className='w-6 h-6 text-ink/40 animate-spin' /></div>}>
+      <PoolDetailContent />
+    </Suspense>
   )
 }
